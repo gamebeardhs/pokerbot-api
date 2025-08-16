@@ -113,19 +113,21 @@ async def gto_testing_gui():
     <head>
         <title>GTO Testing Interface</title>
         <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #000000; color: #ffffff; }
             .form-group { margin-bottom: 15px; }
-            label { display: block; margin-bottom: 5px; font-weight: bold; }
-            input, select, button { padding: 8px; margin-right: 10px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; color: #ffffff; }
+            input, select, button { padding: 8px; margin-right: 10px; background-color: #333333; color: #ffffff; border: 1px solid #555555; }
             input[type="text"], input[type="number"], select { width: 120px; }
             button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; }
             button:hover { background-color: #45a049; }
             .card-input { width: 40px; }
-            .results { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
-            .gto-decision { font-size: 20px; font-weight: bold; color: #2196F3; }
-            .metrics { margin-top: 10px; }
-            .error { color: red; }
-            .loading { color: #FF9800; }
+            .results { margin-top: 20px; padding: 15px; background-color: #222222; border-radius: 5px; border: 1px solid #444444; }
+            .gto-decision { font-size: 20px; font-weight: bold; color: #00BFFF; }
+            .metrics { margin-top: 10px; color: #cccccc; }
+            .error { color: #ff6666; }
+            .loading { color: #FFA500; }
+            small { color: #aaaaaa; }
+            h1 { color: #ffffff; }
         </style>
     </head>
     <body>
