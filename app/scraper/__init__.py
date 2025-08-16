@@ -1,0 +1,1 @@
+"""Poker table scraping modules for ACR and ClubWPT Gold."""

@@ -17,6 +17,7 @@ from app.api.models import (
     StateHistoryResponse, ErrorResponse
 )
 from app.advisor.gto_service import GTODecisionService
+from app.scraper.scraper_manager import ScraperManager
 from app import __version__
 
 # Configure logging
@@ -59,6 +60,15 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize GTO service: {e}")
     gto_service = None
+
+# Initialize scraper manager
+scraper_manager = None
+if gto_service:
+    try:
+        scraper_manager = ScraperManager(gto_service)
+        logger.info("Scraper Manager initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize scraper manager: {e}")
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
@@ -244,6 +254,75 @@ async def websocket_endpoint(websocket: WebSocket, table_id: str):
         logger.info(f"WebSocket disconnected for table {table_id}")
         if websocket in active_websockets[table_id]:
             active_websockets[table_id].remove(websocket)
+
+
+@app.post("/scraper/start")
+async def start_scraper(
+    platform: str = "auto",  # 'clubwpt', 'acr', or 'auto'
+    token: str = Depends(verify_token)
+):
+    """Start table scraping for specified platform."""
+    try:
+        if not scraper_manager:
+            raise HTTPException(status_code=503, detail="Scraper manager not available")
+        
+        success = await scraper_manager.start_scraping(platform)
+        if success:
+            return {"ok": True, "message": f"Scraper started for {platform}", "platform": platform}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to start scraper")
+            
+    except Exception as e:
+        logger.error(f"Scraper start failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scraper start failed: {str(e)}")
+
+
+@app.post("/scraper/stop")
+async def stop_scraper(token: str = Depends(verify_token)):
+    """Stop active table scraping."""
+    try:
+        if not scraper_manager:
+            raise HTTPException(status_code=503, detail="Scraper manager not available")
+        
+        await scraper_manager.stop_scraping()
+        return {"ok": True, "message": "Scraper stopped"}
+        
+    except Exception as e:
+        logger.error(f"Scraper stop failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scraper stop failed: {str(e)}")
+
+
+@app.get("/scraper/status")
+async def get_scraper_status():
+    """Get current scraper status."""
+    try:
+        if not scraper_manager:
+            return {"ok": False, "message": "Scraper manager not available"}
+        
+        status = scraper_manager.get_status()
+        return {"ok": True, **status}
+        
+    except Exception as e:
+        logger.error(f"Failed to get scraper status: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/scraper/advice")
+async def get_live_gto_advice():
+    """Get GTO advice for current table state (from active scraper)."""
+    try:
+        if not scraper_manager:
+            raise HTTPException(status_code=503, detail="Scraper manager not available")
+        
+        advice = await scraper_manager.get_current_gto_advice()
+        if advice:
+            return {"ok": True, **advice}
+        else:
+            return {"ok": False, "message": "No active table or unable to scrape"}
+            
+    except Exception as e:
+        logger.error(f"Failed to get live GTO advice: {e}")
+        raise HTTPException(status_code=500, detail=f"GTO advice failed: {str(e)}")
 
 
 if __name__ == "__main__":
