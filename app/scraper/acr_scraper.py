@@ -369,7 +369,7 @@ class ACRScraper(BaseScraper):
             # Convert to string format and normalize
             card_strings = []
             for card in detected_cards:
-                if card.confidence > 0.3:  # Minimum confidence threshold
+                if card.confidence > 0.6:  # Higher confidence threshold to reduce false positives
                     card_str = self.normalize_card_format(str(card))
                     if card_str:
                         card_strings.append(card_str)
@@ -396,8 +396,8 @@ class ACRScraper(BaseScraper):
             # Use card recognition system
             detected_cards = self.card_recognizer.detect_cards_in_region(pil_image, max_cards=5)
             
-            # Return card strings
-            return [str(card) for card in detected_cards if card.confidence > 0.3]
+            # Return card strings with higher confidence threshold
+            return [str(card) for card in detected_cards if card.confidence > 0.6]
             
         except Exception as e:
             self.logger.error(f"Card detection failed: {e}")

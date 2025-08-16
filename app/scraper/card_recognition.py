@@ -60,31 +60,38 @@ class CardRecognition:
     def detect_cards_in_region(self, image: Image.Image, max_cards: int = 5) -> List[Card]:
         """
         Detect and recognize cards in an image region.
-        Uses multiple detection methods for best accuracy.
+        Uses multiple detection methods with strict validation to avoid false positives.
         """
         try:
             if image is None:
                 return []
             
+            # Pre-validate image looks like it could contain cards
+            if not self._image_could_contain_cards(image):
+                logger.debug("Image doesn't appear to contain card-like content")
+                return []
+            
             # Convert to OpenCV format
             cv_img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             
-            # Method 1: Contour-based card detection
+            # Method 1: Contour-based card detection (most reliable)
             cards_contour = self._detect_cards_by_contours(cv_img, max_cards)
             
-            # Method 2: Template/grid-based detection
-            cards_grid = self._detect_cards_by_grid(cv_img, max_cards)
+            # Method 2: Template/grid-based detection (only if contours found something)
+            cards_grid = []
+            if cards_contour:
+                cards_grid = self._detect_cards_by_grid(cv_img, max_cards)
             
-            # Method 3: OCR-based detection
-            cards_ocr = self._detect_cards_by_ocr(image, max_cards)
+            # Method 3: OCR-based detection (only with strict validation)
+            cards_ocr = self._detect_cards_by_ocr_strict(image, max_cards)
             
-            # Combine and rank results
+            # Combine and rank results with strict filtering
             all_cards = cards_contour + cards_grid + cards_ocr
             
-            # Filter and rank by confidence
-            best_cards = self._rank_and_filter_cards(all_cards, max_cards)
+            # Apply strict filtering and ranking
+            best_cards = self._rank_and_filter_cards_strict(all_cards, max_cards)
             
-            logger.debug(f"Detected {len(best_cards)} cards: {[str(c) for c in best_cards]}")
+            logger.debug(f"Detected {len(best_cards)} cards after strict filtering: {[str(c) for c in best_cards]}")
             return best_cards
             
         except Exception as e:
@@ -164,21 +171,32 @@ class CardRecognition:
             
         return cards
     
-    def _detect_cards_by_ocr(self, image: Image.Image, max_cards: int) -> List[Card]:
-        """Detect cards using enhanced OCR approaches."""
+    def _detect_cards_by_ocr_strict(self, image: Image.Image, max_cards: int) -> List[Card]:
+        """Detect cards using OCR with strict validation to prevent false positives."""
         cards = []
         
         try:
-            # Multiple OCR preprocessing approaches
-            preprocessed_images = self._preprocess_for_card_ocr(image)
+            # Only proceed if image has card-like characteristics
+            if not self._validate_card_region(image):
+                return []
             
-            for method_name, proc_img in preprocessed_images.items():
-                text = self._extract_card_text(proc_img)
-                detected_cards = self._parse_cards_from_text(text, method_name)
-                cards.extend(detected_cards)
+            # Use only the most reliable preprocessing method
+            enhanced = self._enhance_for_ocr(image)
+            
+            # Extract text with strict card-only config
+            text = self._extract_card_text_strict(enhanced)
+            
+            # Parse with strict validation
+            if text and len(text.strip()) >= 2:
+                detected_cards = self._parse_cards_from_text_strict(text)
+                
+                # Additional validation for each detected card
+                for card in detected_cards:
+                    if self._validate_detected_card(card, image):
+                        cards.append(card)
                 
         except Exception as e:
-            logger.debug(f"OCR detection failed: {e}")
+            logger.debug(f"Strict OCR detection failed: {e}")
             
         return cards
     
@@ -379,46 +397,32 @@ class CardRecognition:
             
         return ""
     
-    def _parse_cards_from_text(self, text: str, method: str) -> List[Card]:
-        """Parse individual cards from OCR text."""
+    def _parse_cards_from_text_strict(self, text: str) -> List[Card]:
+        """Parse cards from text with strict validation to prevent false positives."""
         cards = []
         
         try:
-            # Clean text
-            cleaned = re.sub(r'[^23456789TJQKAHSCDhscd♠♥♦♣\s]', '', text)
+            # Clean text - only allow valid card characters
+            cleaned = re.sub(r'[^23456789TJQKAHSCDhscd♠♥♦♣]', '', text)
             
-            # Look for card patterns
-            patterns = [
-                r'([23456789TJQKA])([hscd♠♥♦♣])',  # Rank + suit
-                r'([23456789TJQKA])\s*([hscd♠♥♦♣])',  # Rank space suit
-                r'([23456789TJQKA])([HSCD])',  # Rank + uppercase suit
-            ]
+            # Must have at least 2 characters for a valid card
+            if len(cleaned) < 2:
+                return []
             
-            for pattern in patterns:
-                matches = re.findall(pattern, cleaned, re.IGNORECASE)
-                for rank, suit in matches:
-                    normalized_rank = self._normalize_rank(rank)
-                    normalized_suit = self._normalize_suit(suit)
-                    
-                    if normalized_rank and normalized_suit:
-                        confidence = 0.9 if method == 'original' else 0.7
-                        cards.append(Card(normalized_rank, normalized_suit, confidence, (0, 0, 0, 0)))
+            # Look for exact card patterns only
+            pattern = r'([23456789TJQKA])([hscdHSCD♠♥♦♣])'
+            matches = re.findall(pattern, cleaned)
             
-            # Also try splitting by spaces and parsing pairs
-            tokens = cleaned.split()
-            for token in tokens:
-                if len(token) >= 2:
-                    rank_char = token[0]
-                    suit_char = token[1] if len(token) > 1 else token[-1]
-                    
-                    normalized_rank = self._normalize_rank(rank_char)
-                    normalized_suit = self._normalize_suit(suit_char)
-                    
-                    if normalized_rank and normalized_suit:
-                        cards.append(Card(normalized_rank, normalized_suit, 0.6, (0, 0, 0, 0)))
+            for rank, suit in matches:
+                normalized_rank = self._normalize_rank(rank)
+                normalized_suit = self._normalize_suit(suit)
+                
+                if normalized_rank and normalized_suit:
+                    # Lower confidence for OCR-only detection
+                    cards.append(Card(normalized_rank, normalized_suit, 0.4, (0, 0, 0, 0)))
                         
         except Exception as e:
-            logger.debug(f"Card parsing failed: {e}")
+            logger.debug(f"Strict card parsing failed: {e}")
             
         return cards
     
@@ -461,23 +465,138 @@ class CardRecognition:
         
         return suit_map.get(suit)
     
-    def _rank_and_filter_cards(self, cards: List[Card], max_cards: int) -> List[Card]:
-        """Rank cards by confidence and filter duplicates."""
+    def _image_could_contain_cards(self, image: Image.Image) -> bool:
+        """Pre-validate if image could realistically contain cards."""
+        try:
+            # Check image size - too small unlikely to have readable cards
+            w, h = image.size
+            if w < 30 or h < 40:
+                return False
+            
+            # Check if image has sufficient contrast/variation
+            gray = image.convert('L')
+            gray_array = np.array(gray)
+            
+            # Cards should have reasonable contrast
+            std_dev = np.std(gray_array)
+            if std_dev < 10:  # Too uniform, unlikely to be cards
+                return False
+            
+            # Check for card-like colors (white backgrounds, colored suits)
+            rgb_array = np.array(image)
+            
+            # Look for white-ish areas (card backgrounds)
+            white_pixels = np.sum(np.all(rgb_array > [200, 200, 200], axis=2))
+            total_pixels = w * h
+            white_ratio = white_pixels / total_pixels
+            
+            # Cards usually have some white background
+            if white_ratio < 0.1:  # Less than 10% white pixels
+                return False
+                
+            return True
+            
+        except Exception:
+            return True  # If validation fails, assume it could contain cards
+    
+    def _validate_card_region(self, image: Image.Image) -> bool:
+        """Validate if a region looks like it could contain a card."""
+        try:
+            w, h = image.size
+            
+            # Check minimum size for readable cards
+            if w < 20 or h < 25:
+                return False
+            
+            # Check aspect ratio - cards are rectangular
+            aspect_ratio = w / h if h > 0 else 0
+            if aspect_ratio < 0.3 or aspect_ratio > 3.0:
+                return False
+                
+            # Check for text-like patterns
+            gray = image.convert('L')
+            gray_array = np.array(gray)
+            
+            # Apply edge detection to see if there are text-like patterns
+            edges = cv2.Canny(gray_array, 50, 150)
+            edge_pixels = np.sum(edges > 0)
+            total_pixels = w * h
+            edge_ratio = edge_pixels / total_pixels
+            
+            # Should have some edges (text/symbols) but not too many (noise)
+            return 0.02 < edge_ratio < 0.3
+            
+        except Exception:
+            return True
+    
+    def _validate_detected_card(self, card: Card, image: Image.Image) -> bool:
+        """Validate that a detected card makes sense in context."""
+        try:
+            # Check that rank and suit are valid
+            valid_ranks = {'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'}
+            valid_suits = {'s', 'h', 'd', 'c'}
+            
+            if card.rank not in valid_ranks or card.suit not in valid_suits:
+                return False
+            
+            # Minimum confidence for acceptance
+            if card.confidence < 0.3:
+                return False
+                
+            return True
+            
+        except Exception:
+            return False
+    
+    def _extract_card_text_strict(self, image: Image.Image) -> str:
+        """Extract text with strict card-only configuration."""
+        try:
+            # Very restrictive OCR config for cards only
+            config = r'--oem 3 --psm 8 -c tessedit_char_whitelist=23456789TJQKAhscd '
+            
+            text = pytesseract.image_to_string(image, config=config).strip()
+            
+            # Additional filtering - text should be very short for cards
+            if len(text) > 10:  # Cards should be 2-3 characters max
+                return ""
+                
+            # Remove any remaining non-card characters
+            cleaned = re.sub(r'[^23456789TJQKAhscd]', '', text)
+            
+            return cleaned
+            
+        except Exception:
+            return ""
+    
+    def _rank_and_filter_cards_strict(self, cards: List[Card], max_cards: int) -> List[Card]:
+        """Rank cards by confidence with strict filtering to prevent false positives."""
         if not cards:
+            return []
+        
+        # Apply minimum confidence threshold
+        MIN_CONFIDENCE = 0.6
+        filtered_cards = [card for card in cards if card.confidence >= MIN_CONFIDENCE]
+        
+        if not filtered_cards:
             return []
         
         # Group by card string
         card_groups = {}
-        for card in cards:
+        for card in filtered_cards:
             card_str = str(card)
             if card_str not in card_groups:
                 card_groups[card_str] = []
             card_groups[card_str].append(card)
         
-        # Take best confidence for each unique card
+        # Take best confidence for each unique card, but require multiple detections for OCR-only cards
         best_cards = []
         for card_str, group in card_groups.items():
             best_card = max(group, key=lambda c: c.confidence)
+            
+            # If this is a low-confidence OCR-only detection, require multiple methods to agree
+            if best_card.confidence < 0.7 and len(group) == 1:
+                continue  # Skip single low-confidence detections
+                
             best_cards.append(best_card)
         
         # Sort by confidence and limit
