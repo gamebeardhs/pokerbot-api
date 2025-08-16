@@ -956,6 +956,117 @@ async def manual_test_ocr(token: str = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"OCR test failed: {str(e)}")
 
 
+@app.post("/manual/test-cards")
+async def manual_test_card_reading(token: str = Depends(verify_token)):
+    """
+    Test card reading functionality on current screen.
+    
+    Captures screenshot and tests card recognition on hero_cards and board_cards regions.
+    Returns detected cards with confidence scores for debugging.
+    """
+    if not manual_trigger_service:
+        raise HTTPException(
+            status_code=503,
+            detail="Manual trigger service not available"
+        )
+    
+    try:
+        from PIL import ImageGrab
+        import time
+        
+        logger.info("Testing card reading functionality")
+        
+        # Capture screenshot
+        screenshot = ImageGrab.grab()
+        
+        results = {
+            "timestamp": datetime.now().isoformat(),
+            "calibrated": manual_trigger_service.acr_scraper.calibrated,
+            "regions_tested": {},
+            "summary": {}
+        }
+        
+        total_cards = 0
+        regions_with_cards = 0
+        
+        # Test card regions
+        for region_name in ['hero_cards', 'board_cards']:
+            if region_name in manual_trigger_service.acr_scraper.ui_regions:
+                logger.debug(f"Testing card reading in {region_name}")
+                
+                # Extract region
+                coords = manual_trigger_service.acr_scraper.ui_regions[region_name]
+                x1, y1, x2, y2 = coords
+                region_image = screenshot.crop((x1, y1, x2, y2))
+                
+                # Use card recognition
+                max_cards = 2 if 'hero' in region_name else 5
+                detected_cards = manual_trigger_service.acr_scraper.card_recognizer.detect_cards_in_region(
+                    region_image, max_cards
+                )
+                
+                # Also test ACR scraper method
+                scraper_result = manual_trigger_service.acr_scraper._extract_cards_from_region(coords)
+                
+                region_results = {
+                    "coordinates": coords,
+                    "max_expected": max_cards,
+                    "detected_cards": [],
+                    "scraper_result": scraper_result,
+                    "recognition_methods": len(detected_cards)
+                }
+                
+                for card in detected_cards:
+                    region_results["detected_cards"].append({
+                        "card": str(card),
+                        "rank": card.rank,
+                        "suit": card.suit,
+                        "confidence": round(card.confidence, 3),
+                        "bbox": card.bbox
+                    })
+                
+                results["regions_tested"][region_name] = region_results
+                
+                if detected_cards:
+                    total_cards += len(detected_cards)
+                    regions_with_cards += 1
+                    
+                logger.info(f"Found {len(detected_cards)} cards in {region_name}: {[str(c) for c in detected_cards]}")
+        
+        # Summary
+        results["summary"] = {
+            "total_cards_detected": total_cards,
+            "regions_with_cards": regions_with_cards,
+            "regions_tested": len(results["regions_tested"]),
+            "success_rate": f"{regions_with_cards}/{len(results['regions_tested'])}",
+            "status": "good" if total_cards >= 2 else "poor" if total_cards == 0 else "partial"
+        }
+        
+        # Recommendations
+        if total_cards == 0:
+            results["recommendations"] = [
+                "Check that ACR poker table is active and visible",
+                "Verify cards are dealt and visible on screen", 
+                "Consider re-calibrating regions if cards should be visible"
+            ]
+        elif total_cards < 3:
+            results["recommendations"] = [
+                "Some cards detected - system is working",
+                "May need fine-tuning for better accuracy"
+            ]
+        else:
+            results["recommendations"] = [
+                "Card reading system is working well!",
+                "Ready for live poker analysis"
+            ]
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Card reading test failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Card reading test failed: {str(e)}")
+
+
 @app.websocket("/ws/{table_id}")
 async def websocket_endpoint(websocket: WebSocket, table_id: str):
     """WebSocket endpoint for real-time state updates."""

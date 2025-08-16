@@ -9,6 +9,7 @@ import os
 from PIL import Image, ImageGrab
 from typing import Optional, Dict, Any, List, Tuple
 from app.scraper.base_scraper import BaseScraper
+from app.scraper.card_recognition import CardRecognition
 
 class ACRScraper(BaseScraper):
     """Screen capture + OCR scraper for ACR desktop client."""
@@ -21,6 +22,7 @@ class ACRScraper(BaseScraper):
         self.ui_regions = {}
         self.calibration_file = calibration_file or 'acr_calibration_results.json'
         self.calibrated = False
+        self.card_recognizer = CardRecognition()
         self.setup_regions()
         
     def setup_regions(self):
@@ -347,36 +349,59 @@ class ACRScraper(BaseScraper):
         return self._extract_cards_from_region(self.ui_regions['board_cards'])
     
     def _extract_cards_from_region(self, region: Tuple[int, int, int, int]) -> List[str]:
-        """Extract cards from a specific region using image recognition."""
+        """Extract cards from a specific region using advanced card recognition."""
         try:
             image = self._capture_region(region)
             if image is None:
                 return []
-                
-            # Convert to OpenCV format
-            cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             
-            # This is a simplified card detection - would need more sophisticated
-            # computer vision for accurate card recognition
-            cards = self._detect_cards_in_image(cv_image)
+            # Determine max cards based on region type
+            if 'hero' in str(region) or 'hole' in str(region):
+                max_cards = 2  # Hero cards
+            elif 'board' in str(region) or 'community' in str(region):
+                max_cards = 5  # Board cards
+            else:
+                max_cards = 5  # Default
             
-            return [self.normalize_card_format(card) for card in cards if card]
+            # Use advanced card recognition
+            detected_cards = self.card_recognizer.detect_cards_in_region(image, max_cards)
             
-        except:
+            # Convert to string format and normalize
+            card_strings = []
+            for card in detected_cards:
+                if card.confidence > 0.3:  # Minimum confidence threshold
+                    card_str = self.normalize_card_format(str(card))
+                    if card_str:
+                        card_strings.append(card_str)
+            
+            self.logger.debug(f"Extracted {len(card_strings)} cards from region: {card_strings}")
+            return card_strings
+            
+        except Exception as e:
+            self.logger.error(f"Card extraction failed: {e}")
             return []
     
     def _detect_cards_in_image(self, image) -> List[str]:
-        """Detect and recognize cards in image (simplified implementation)."""
-        # This would need a full card recognition system
-        # For now, return empty list - would require training card templates
-        # or using more advanced CV techniques
-        
-        # Placeholder: In real implementation, you'd:
-        # 1. Detect card rectangles using contour detection
-        # 2. Extract rank and suit using template matching or trained models
-        # 3. Return list of cards like ["ah", "ks"]
-        
-        return []
+        """Detect and recognize cards in image using advanced recognition."""
+        try:
+            # Convert OpenCV image to PIL format
+            if isinstance(image, np.ndarray):
+                if len(image.shape) == 3:
+                    pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+                else:
+                    pil_image = Image.fromarray(image)
+            else:
+                pil_image = image
+            
+            # Use card recognition system
+            detected_cards = self.card_recognizer.detect_cards_in_region(pil_image, max_cards=5)
+            
+            # Return card strings
+            return [str(card) for card in detected_cards if card.confidence > 0.3]
+            
+        except Exception as e:
+            self.logger.error(f"Card detection failed: {e}")
+            return []
     
     def _extract_to_call(self) -> float:
         """Extract amount needed to call from action area."""
