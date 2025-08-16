@@ -188,13 +188,41 @@ async def gto_testing_gui():
                             <label>Pot Size: $</label>
                             <input type="number" id="pot" value="15.0" step="0.01" min="0">
                             <label style="display: inline; margin-left: 15px;">To Call: $</label>
-                            <input type="number" id="toCall" value="0.0" step="0.01" min="0">
+                            <input type="number" id="toCall" value="0.0" step="0.01" min="0" onchange="updateActionContext()">
                         </div>
                         
                         <div class="form-group">
                             <label>Min Bet: $</label>
                             <input type="number" id="minBet" value="2.0" step="0.01" min="0">
                             <span class="calculated-field">SPR: <span id="spr">--</span></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Action Type:</label>
+                            <select id="actionType" class="wide-input" onchange="updateActionTypeLogic()">
+                                <option value="check_fold">Check/Fold (No bet to call)</option>
+                                <option value="open">Opening Bet</option>
+                                <option value="call">Call</option>
+                                <option value="raise">Raise</option>
+                                <option value="3bet">3-Bet</option>
+                                <option value="4bet">4-Bet</option>
+                                <option value="5bet">5-Bet+</option>
+                                <option value="shove">All-in/Shove</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Aggressor Seat:</label>
+                            <select id="aggressorSeat" class="wide-input">
+                                <option value="">No current bet</option>
+                            </select>
+                            <span class="calculated-field">Position vs Aggressor: <span id="positionVsAggressor">--</span></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Raises This Street:</label>
+                            <input type="number" id="numRaises" value="0" min="0" max="5" onchange="updateActionTypeFromRaises()">
+                            <small>Number of raises on current street</small>
                         </div>
                     </div>
 
@@ -300,13 +328,16 @@ async def gto_testing_gui():
                 const seatConfigsDiv = document.getElementById('seatConfigs');
                 const buttonSeat = document.getElementById('buttonSeat');
                 const heroSeat = document.getElementById('heroSeat');
+                const aggressorSeat = document.getElementById('aggressorSeat');
                 
                 // Update button and hero seat options
                 buttonSeat.innerHTML = '';
                 heroSeat.innerHTML = '';
+                aggressorSeat.innerHTML = '<option value="">No current bet</option>';
                 for (let i = 1; i <= numPlayers; i++) {
                     buttonSeat.innerHTML += `<option value="${i}">Seat ${i}</option>`;
                     heroSeat.innerHTML += `<option value="${i}">Seat ${i}</option>`;
+                    aggressorSeat.innerHTML += `<option value="${i}">Seat ${i}</option>`;
                 }
                 buttonSeat.value = numPlayers; // Button defaults to last seat
                 heroSeat.value = 1; // Hero defaults to seat 1
@@ -324,6 +355,7 @@ async def gto_testing_gui():
                     seatConfigsDiv.appendChild(seatDiv);
                 }
                 updateSPR();
+                updatePositionVsAggressor();
             }
 
             function updateSPR() {
@@ -341,6 +373,131 @@ async def gto_testing_gui():
                 return positions[positionIndex];
             }
 
+            function updatePositionVsAggressor() {
+                const heroSeat = parseInt(document.getElementById('heroSeat').value);
+                const aggressorSeat = parseInt(document.getElementById('aggressorSeat').value);
+                const buttonSeat = parseInt(document.getElementById('buttonSeat').value);
+                const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                
+                if (!aggressorSeat || heroSeat === aggressorSeat) {
+                    document.getElementById('positionVsAggressor').textContent = '--';
+                    return;
+                }
+                
+                // Calculate if hero acts after aggressor (in position)
+                let heroActsAfter = false;
+                
+                if (numPlayers === 2) {
+                    // Heads up - button acts first preflop, last postflop
+                    const street = document.getElementById('street').value;
+                    if (street === 'PREFLOP') {
+                        heroActsAfter = (heroSeat === buttonSeat && aggressorSeat !== buttonSeat) || 
+                                       (heroSeat !== buttonSeat && aggressorSeat === buttonSeat);
+                    } else {
+                        heroActsAfter = heroSeat === buttonSeat;
+                    }
+                } else {
+                    // Multi-way - calculate action order
+                    const street = document.getElementById('street').value;
+                    let firstToAct, heroOrder, aggressorOrder;
+                    
+                    if (street === 'PREFLOP') {
+                        // Preflop: UTG acts first
+                        firstToAct = (buttonSeat % numPlayers) + 1;
+                        if (firstToAct > numPlayers) firstToAct = 1;
+                        if (firstToAct === buttonSeat) firstToAct = (firstToAct % numPlayers) + 1;
+                        if (firstToAct > numPlayers) firstToAct = 1;
+                    } else {
+                        // Postflop: SB acts first (or next active player)
+                        firstToAct = (buttonSeat % numPlayers) + 1;
+                        if (firstToAct > numPlayers) firstToAct = 1;
+                    }
+                    
+                    // Calculate action order
+                    heroOrder = (heroSeat - firstToAct + numPlayers) % numPlayers;
+                    aggressorOrder = (aggressorSeat - firstToAct + numPlayers) % numPlayers;
+                    
+                    heroActsAfter = heroOrder > aggressorOrder;
+                }
+                
+                document.getElementById('positionVsAggressor').textContent = 
+                    heroActsAfter ? 'In Position' : 'Out of Position';
+            }
+
+            function updateActionContext() {
+                const toCall = parseFloat(document.getElementById('toCall').value) || 0;
+                const actionType = document.getElementById('actionType');
+                
+                if (toCall === 0) {
+                    actionType.value = 'check_fold';
+                    document.getElementById('aggressorSeat').value = '';
+                } else {
+                    // Auto-detect action type based on amount and context
+                    const numRaises = parseInt(document.getElementById('numRaises').value) || 0;
+                    if (numRaises === 0) {
+                        actionType.value = 'call';
+                    } else if (numRaises === 1) {
+                        actionType.value = 'raise';
+                    } else if (numRaises === 2) {
+                        actionType.value = '3bet';
+                    } else if (numRaises === 3) {
+                        actionType.value = '4bet';
+                    } else {
+                        actionType.value = '5bet';
+                    }
+                }
+                updatePositionVsAggressor();
+            }
+
+            function updateActionTypeLogic() {
+                const actionType = document.getElementById('actionType').value;
+                const toCallField = document.getElementById('toCall');
+                const numRaisesField = document.getElementById('numRaises');
+                
+                if (actionType === 'check_fold') {
+                    toCallField.value = '0';
+                    numRaisesField.value = '0';
+                    document.getElementById('aggressorSeat').value = '';
+                } else if (actionType === 'call') {
+                    if (parseFloat(toCallField.value) === 0) toCallField.value = '2';
+                    numRaisesField.value = '0';
+                } else if (actionType === 'raise') {
+                    if (parseFloat(toCallField.value) === 0) toCallField.value = '2';
+                    numRaisesField.value = '1';
+                } else if (actionType === '3bet') {
+                    if (parseFloat(toCallField.value) === 0) toCallField.value = '6';
+                    numRaisesField.value = '2';
+                } else if (actionType === '4bet') {
+                    if (parseFloat(toCallField.value) === 0) toCallField.value = '18';
+                    numRaisesField.value = '3';
+                } else if (actionType === '5bet') {
+                    if (parseFloat(toCallField.value) === 0) toCallField.value = '50';
+                    numRaisesField.value = '4';
+                }
+                updatePositionVsAggressor();
+            }
+
+            function updateActionTypeFromRaises() {
+                const numRaises = parseInt(document.getElementById('numRaises').value) || 0;
+                const actionType = document.getElementById('actionType');
+                const toCall = parseFloat(document.getElementById('toCall').value) || 0;
+                
+                if (toCall === 0) {
+                    actionType.value = 'check_fold';
+                } else if (numRaises === 0) {
+                    actionType.value = 'call';
+                } else if (numRaises === 1) {
+                    actionType.value = 'raise';
+                } else if (numRaises === 2) {
+                    actionType.value = '3bet';
+                } else if (numRaises === 3) {
+                    actionType.value = '4bet';
+                } else {
+                    actionType.value = '5bet';
+                }
+                updatePositionVsAggressor();
+            }
+
             // Initialize seats on page load
             updateSeats();
 
@@ -351,6 +508,12 @@ async def gto_testing_gui():
                     updateSPR();
                 }
             });
+
+            // Update position calculations when button/hero/aggressor changes
+            document.getElementById('buttonSeat').addEventListener('change', updatePositionVsAggressor);
+            document.getElementById('heroSeat').addEventListener('change', updatePositionVsAggressor);
+            document.getElementById('aggressorSeat').addEventListener('change', updatePositionVsAggressor);
+            document.getElementById('street').addEventListener('change', updatePositionVsAggressor);
 
             document.getElementById('gtoForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -382,7 +545,11 @@ async def gto_testing_gui():
                     const buttonSeat = parseInt(document.getElementById('buttonSeat').value);
                     const heroSeat = parseInt(document.getElementById('heroSeat').value);
                     
-                    // Build table state with enhanced fields
+                    // Build table state with enhanced fields including betting context
+                    const aggressorSeat = document.getElementById('aggressorSeat').value;
+                    const actionType = document.getElementById('actionType').value;
+                    const positionVsAggressor = document.getElementById('positionVsAggressor').textContent;
+                    
                     const tableState = {
                         table_id: 'enhanced_gui_test_' + Date.now(),
                         street: document.getElementById('street').value,
@@ -403,6 +570,14 @@ async def gto_testing_gui():
                         bb_seat: buttonSeat === numPlayers ? 1 : (buttonSeat === numPlayers - 1 ? numPlayers : buttonSeat + 1),
                         rake_cap: parseFloat(document.getElementById('rakeCap').value),
                         rake_percentage: parseFloat(document.getElementById('rakePercent').value) / 100,
+                        
+                        // Enhanced betting context
+                        current_aggressor_seat: aggressorSeat ? parseInt(aggressorSeat) : null,
+                        current_action_type: actionType !== 'check_fold' ? actionType : null,
+                        hero_position_vs_aggressor: positionVsAggressor !== '--' ? 
+                            (positionVsAggressor === 'In Position' ? 'in_position' : 'out_of_position') : null,
+                        num_raises_this_street: parseInt(document.getElementById('numRaises').value) || 0,
+                        
                         seats: []
                     };
                     

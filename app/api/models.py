@@ -119,6 +119,8 @@ class StreetAction(BaseModel):
     pot_size_start: float = 0.0
     pot_size_end: float = 0.0
     aggressor_seat: Optional[int] = None  # Last player to bet/raise
+    action_type: Optional[Literal["open", "call", "raise", "3bet", "4bet", "5bet", "shove"]] = None
+    aggressor_position: Optional[Position] = None  # Position of last aggressor
     
 
 class TableState(BaseModel):
@@ -152,6 +154,12 @@ class TableState(BaseModel):
     bb_seat: Optional[int] = None
     rake_cap: Optional[float] = None
     rake_percentage: Optional[float] = None
+    
+    # Action context for decision making
+    current_aggressor_seat: Optional[int] = None  # Seat of player who made current bet
+    current_action_type: Optional[Literal["open", "call", "raise", "3bet", "4bet", "5bet", "shove"]] = None
+    hero_position_vs_aggressor: Optional[Literal["in_position", "out_of_position", "heads_up"]] = None
+    num_raises_this_street: int = 0  # Number of raises on current street
 
     @validator("board", "hero_hole", pre=True)
     def _lower_cards(cls, v):

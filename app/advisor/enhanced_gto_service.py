@@ -490,6 +490,10 @@ class EnhancedGTODecisionService:
         meta_adjustments = self.opponent_modeling.get_meta_adjustments(state)
         table_dynamic = meta_adjustments.get("table_dynamic", "unknown")
         
+        # Only provide adjustments if we have actual opponent data
+        if table_dynamic in ["no_data", "unknown"]:
+            return adjustments
+        
         if "tight" in table_dynamic:
             adjustments.append("Widened range due to tight table")
             adjustments.append("Increased bluff frequency")

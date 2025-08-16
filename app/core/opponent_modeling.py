@@ -457,9 +457,12 @@ class OpponentModeling:
                 avg_vpip += stats.vpip
                 avg_aggression += stats.aggression_factor
         
-        if player_types:
-            avg_vpip /= len(player_types)
-            avg_aggression /= len(player_types)
+        # Only provide adjustments if we have actual opponent data
+        if not player_types:
+            return {"table_dynamic": "no_data"}
+        
+        avg_vpip /= len(player_types)
+        avg_aggression /= len(player_types)
         
         # Determine table dynamics
         table_dynamic = "unknown"
