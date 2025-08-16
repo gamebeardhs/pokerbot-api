@@ -13,6 +13,8 @@ except ImportError:
     pyspiel = None
     cfr = None
 
+from app.core.hand_evaluator import HandEvaluator
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +25,7 @@ class OpenSpielWrapper:
         """Initialize OpenSpiel wrapper."""
         self.game = None
         self.cfr_solver = None
+        self.hand_evaluator = HandEvaluator()
         
         if OPENSPIEL_AVAILABLE:
             try:
@@ -126,34 +129,28 @@ class OpenSpielWrapper:
             return self._fallback_cfr_result(game_context)
     
     def _estimate_equity(self, game_context: Dict, policy) -> float:
-        """Estimate hero's equity based on game context."""
-        # This is a simplified estimation - in a full implementation,
-        # you'd use the actual game state and policy to compute precise equity
+        """Estimate hero's equity using proper hand evaluation."""
+        hero_cards_int = game_context.get("hero_cards", [])
+        board_cards_int = game_context.get("board_cards", [])
+        num_opponents = game_context.get("num_players", 2) - 1
         
-        street = game_context.get("street", 0)
-        num_players = game_context.get("num_players", 2)
-        hero_cards = game_context.get("hero_cards", [])
-        board_cards = game_context.get("board_cards", [])
+        # Convert integer cards back to string format for hand evaluator
+        hero_cards = [self.hand_evaluator.int_to_card(c) for c in hero_cards_int]
+        board_cards = [self.hand_evaluator.int_to_card(c) for c in board_cards_int]
         
-        # Basic equity estimation based on street and cards
-        base_equity = 1.0 / num_players  # Fair share
+        # Filter out invalid cards
+        hero_cards = [c for c in hero_cards if c and len(c) == 2]
+        board_cards = [c for c in board_cards if c and len(c) == 2]
         
-        # Adjust based on street (more information = more accurate)
-        if street == 0:  # Preflop
-            # Very rough preflop equity estimation
-            if len(hero_cards) == 2:
-                card1, card2 = hero_cards[0], hero_cards[1]
-                if card1 // 4 == card2 // 4:  # Pocket pair
-                    base_equity = min(0.8, base_equity * 2.0)
-                elif abs(card1 // 4 - card2 // 4) <= 2:  # Connected cards
-                    base_equity = min(0.7, base_equity * 1.5)
-                else:
-                    base_equity = max(0.2, base_equity)
-        else:
-            # Post-flop: assume strategy gives reasonable estimate
-            base_equity = max(0.1, min(0.9, base_equity + (street * 0.1)))
+        if not hero_cards:
+            return 0.2  # Default low equity if no cards
         
-        return base_equity
+        # Use proper hand evaluator
+        equity = self.hand_evaluator.estimate_equity_vs_opponents(
+            hero_cards, board_cards, num_opponents
+        )
+        
+        return max(0.05, min(0.95, equity))  # Clamp to reasonable range
     
     def _estimate_expected_value(self, game_context: Dict, policy) -> float:
         """Estimate expected value of the computed strategy."""
@@ -177,46 +174,61 @@ class OpenSpielWrapper:
             return 0.05  # Default reasonable exploitability
     
     def _extract_action_probabilities(self, game_context: Dict, policy) -> Dict[str, float]:
-        """Extract action probabilities from policy."""
-        # This is simplified - in practice you'd need to map the exact game state
-        # to the policy and extract the action probabilities
-        
-        # For demonstration, create reasonable action probabilities
-        street = game_context.get("street", 0)
+        """Extract action probabilities based on proper poker equity."""
+        equity = self._estimate_equity(game_context, policy)
         to_call = game_context.get("to_call", 0)
+        pot_size = game_context.get("pot_size", 0)
+        
+        # Calculate pot odds
+        if to_call > 0 and pot_size > 0:
+            pot_odds = to_call / (pot_size + to_call)
+        else:
+            pot_odds = 0
         
         if to_call == 0:  # Can check
-            if street == 0:  # Preflop
+            if equity > 0.7:  # Strong hand
                 return {
-                    "check": 0.3,
-                    "bet": 0.6,
-                    "fold": 0.1
+                    "check": 0.2,
+                    "bet": 0.75,
+                    "fold": 0.05
                 }
-            else:  # Postflop
+            elif equity > 0.4:  # Decent hand
                 return {
-                    "check": 0.5,
-                    "bet": 0.4,
+                    "check": 0.6,
+                    "bet": 0.35,
+                    "fold": 0.05
+                }
+            else:  # Weak hand
+                return {
+                    "check": 0.8,
+                    "bet": 0.1,
                     "fold": 0.1
                 }
         else:  # Must call or fold
-            equity = self._estimate_equity(game_context, policy)
-            if equity > 0.6:
+            # Use proper pot odds calculation
+            if equity > pot_odds + 0.15:  # Good call with margin
                 return {
-                    "call": 0.8,
-                    "raise": 0.15,
+                    "call": 0.4,
+                    "raise": 0.55,
                     "fold": 0.05
                 }
-            elif equity > 0.4:
+            elif equity > pot_odds:  # Marginal call
                 return {
-                    "call": 0.6,
+                    "call": 0.7,
                     "raise": 0.1,
-                    "fold": 0.3
+                    "fold": 0.2
                 }
-            else:
+            elif equity > pot_odds - 0.1:  # Close decision
                 return {
-                    "call": 0.2,
+                    "call": 0.4,
                     "raise": 0.05,
-                    "fold": 0.75
+                    "fold": 0.55
+                }
+            else:  # Clear fold
+                return {
+                    "call": 0.1,
+                    "raise": 0.02,
+                    "fold": 0.88
                 }
     
     def _fallback_cfr_result(self, game_context: Dict) -> Dict:
