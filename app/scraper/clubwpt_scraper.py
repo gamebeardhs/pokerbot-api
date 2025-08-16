@@ -82,39 +82,85 @@ class ClubWPTGoldScraper(BaseScraper):
             return False
     
     async def scrape_table_state(self) -> Optional[Dict[str, Any]]:
-        """Scrape current table state from ClubWPT Gold."""
+        """Scrape enhanced table state from ClubWPT Gold."""
         if not self.page or not self.is_table_active():
             return None
             
         try:
-            # Extract table data (these selectors need to be adjusted based on actual ClubWPT Gold DOM)
-            table_data = {}
-            
             # Basic table info
-            table_data['table_id'] = await self._extract_table_id()
-            table_data['street'] = await self._extract_street()
-            table_data['pot'] = await self._extract_pot_size()
-            table_data['stakes'] = await self._extract_stakes()
+            table_data = {
+                'table_id': await self._extract_table_id(),
+                'street': await self._extract_street(),
+                'pot': await self._extract_pot_size(),
+                'stakes': await self._extract_stakes(),
+                'hero_hole': await self._extract_hero_cards(),
+                'board': await self._extract_board_cards(),
+                'to_call': await self._extract_to_call(),
+                'bet_min': await self._extract_min_bet()
+            }
             
-            # Cards
-            table_data['hero_hole'] = await self._extract_hero_cards()
-            table_data['board'] = await self._extract_board_cards()
+            # Enhanced seat data with positions
+            seats = await self._extract_enhanced_seat_info()
+            table_data['seats'] = seats
+            table_data['hero_seat'] = await self._find_hero_seat(seats)
+            table_data['max_seats'] = len(seats) if seats else 6
             
-            # Betting info
-            table_data['to_call'] = await self._extract_to_call()
-            table_data['bet_min'] = await self._extract_min_bet()
+            # Detect button and assign positions
+            table_data['button_seat'] = await self._detect_button_position()
             
-            # Players and seats
-            table_data['seats'] = await self._extract_seat_info()
-            table_data['hero_seat'] = await self._find_hero_seat(table_data['seats'])
-            table_data['max_seats'] = len(table_data['seats'])
+            if table_data['button_seat'] and seats:
+                active_seats = [s['seat'] for s in seats if s.get('in_hand')]
+                num_players = len(active_seats)
+                positions = self.determine_positions(num_players, table_data['button_seat'])
+                
+                # Add positions to seats and identify SB/BB
+                for seat in seats:
+                    if seat['seat'] in positions:
+                        seat['position'] = positions[seat['seat']]
+                        if positions[seat['seat']] == 'SB':
+                            table_data['sb_seat'] = seat['seat']
+                        elif positions[seat['seat']] == 'BB':
+                            table_data['bb_seat'] = seat['seat']
+            
+            # Extract betting history and context
+            action_history = await self._extract_action_history()
+            table_data['betting_history'] = action_history
+            
+            # Determine current action context
+            current_street = table_data['street']
+            action_type, num_raises = self.detect_action_type(action_history, current_street)
+            table_data['current_action_type'] = action_type
+            table_data['num_raises_this_street'] = num_raises
+            table_data['current_aggressor_seat'] = self.find_current_aggressor(action_history, current_street)
+            
+            # Calculate enhanced metrics
+            if table_data['hero_seat'] and seats:
+                table_data['effective_stacks'] = self.calculate_effective_stacks(seats, table_data['hero_seat'])
+                
+                # Calculate SPR
+                hero_stack = next((s['stack'] for s in seats if s['seat'] == table_data['hero_seat']), 0)
+                table_data['spr'] = hero_stack / max(table_data['pot'], 1) if hero_stack > 0 else 0
+                
+                # Determine position vs aggressor
+                if table_data['current_aggressor_seat'] and table_data['button_seat']:
+                    table_data['hero_position_vs_aggressor'] = await self._calculate_position_vs_aggressor(
+                        table_data['hero_seat'], 
+                        table_data['current_aggressor_seat'],
+                        table_data['button_seat'],
+                        num_players if 'num_players' in locals() else 6,
+                        current_street
+                    )
+            
+            # Add rake information (ClubWPT standard - typically no rake for social play)
+            table_data['rake_cap'] = 0.0
+            table_data['rake_percentage'] = 0.0
             
             # Validate we have minimum required data
             if not table_data.get('stakes') or not table_data.get('seats'):
                 self.logger.warning("Insufficient table data scraped")
                 return None
                 
-            self.logger.debug(f"Scraped table state: {table_data}")
+            self.logger.debug(f"Scraped enhanced table state: {table_data}")
             return table_data
             
         except Exception as e:
@@ -301,8 +347,8 @@ class ClubWPTGoldScraper(BaseScraper):
         stakes = await self._extract_stakes()
         return stakes.get('bb', 0.02)
     
-    async def _extract_seat_info(self) -> List[Dict[str, Any]]:
-        """Extract information about all seats/players."""
+    async def _extract_enhanced_seat_info(self) -> List[Dict[str, Any]]:
+        """Extract enhanced information about all seats/players."""
         try:
             seats = []
             seat_selectors = [
@@ -319,16 +365,22 @@ class ClubWPTGoldScraper(BaseScraper):
                         "name": None,
                         "stack": None,
                         "in_hand": False,
-                        "is_hero": False
+                        "is_hero": False,
+                        "acted": None,
+                        "put_in": 0.0,
+                        "total_invested": 0.0,
+                        "is_all_in": False,
+                        "position": None,
+                        "stack_bb": None
                     }
                     
                     # Extract player name
-                    name_elem = await element.query_selector('.player-name, .name')
+                    name_elem = await element.query_selector('.player-name, .name, .username')
                     if name_elem:
                         seat_data["name"] = await name_elem.text_content()
                     
                     # Extract stack size
-                    stack_elem = await element.query_selector('.stack, .chips')
+                    stack_elem = await element.query_selector('.stack, .chips, .bankroll')
                     if stack_elem:
                         stack_text = await stack_elem.text_content()
                         if stack_text:
@@ -336,18 +388,41 @@ class ClubWPTGoldScraper(BaseScraper):
                             if stack_match:
                                 seat_data["stack"] = float(stack_match.group())
                     
-                    # Check if player is in hand
-                    seat_data["in_hand"] = not await element.query_selector('.folded, .sitting-out')
+                    # Check if player is in hand (not folded/sitting out)
+                    seat_data["in_hand"] = not await element.query_selector('.folded, .sitting-out, .out')
                     
                     # Check if this is hero seat
-                    seat_data["is_hero"] = bool(await element.query_selector('.hero, .my-seat'))
+                    seat_data["is_hero"] = bool(await element.query_selector('.hero, .my-seat, .active-player'))
+                    
+                    # Check if player has acted
+                    seat_data["acted"] = bool(await element.query_selector('.acted, .action-taken'))
+                    
+                    # Extract amount put in this street
+                    bet_elem = await element.query_selector('.bet-amount, .current-bet')
+                    if bet_elem:
+                        bet_text = await bet_elem.text_content()
+                        if bet_text:
+                            bet_match = re.search(r'[\d,]+\.?\d*', bet_text.replace(',', ''))
+                            if bet_match:
+                                seat_data["put_in"] = float(bet_match.group())
+                    
+                    # Check if all-in
+                    seat_data["is_all_in"] = bool(await element.query_selector('.all-in, .allin'))
                     
                     if seat_data["name"] or seat_data["stack"]:
                         seats.append(seat_data)
             
+            # Calculate stack in big blinds for each seat
+            stakes = await self._extract_stakes()
+            bb = stakes.get('bb', 0.02)
+            for seat in seats:
+                if seat["stack"] and bb > 0:
+                    seat["stack_bb"] = seat["stack"] / bb
+            
             return seats
             
-        except:
+        except Exception as e:
+            self.logger.error(f"Failed to extract enhanced seat info: {e}")
             return []
     
     async def _find_hero_seat(self, seats: List[Dict[str, Any]]) -> Optional[int]:
@@ -356,6 +431,132 @@ class ClubWPTGoldScraper(BaseScraper):
             if seat.get("is_hero"):
                 return seat["seat"]
         return None
+    
+    async def _extract_action_history(self) -> List[Dict[str, Any]]:
+        """Extract betting action history from the table."""
+        try:
+            action_history = []
+            
+            # Look for action log or betting history elements
+            history_selectors = [
+                '.action-history .action',
+                '.betting-log .bet-action',
+                '[data-testid="action-history"] .action'
+            ]
+            
+            for selector in history_selectors:
+                elements = await self.page.query_selector_all(selector)
+                for element in elements:
+                    action_text = await element.text_content()
+                    if action_text:
+                        # Parse action text (format varies by site)
+                        # Example: "Player1 bets $5.00" or "Hero raises to $10.00"
+                        action_info = self._parse_action_text(action_text)
+                        if action_info:
+                            action_history.append(action_info)
+            
+            return action_history
+            
+        except Exception as e:
+            self.logger.error(f"Failed to extract action history: {e}")
+            return []
+    
+    def _parse_action_text(self, action_text: str) -> Optional[Dict[str, Any]]:
+        """Parse action text into structured data."""
+        try:
+            # Common patterns for poker actions
+            patterns = [
+                r'(\w+)\s+(folds?|calls?|bets?|raises?)\s*(?:to\s*)?\$?([\d,]+\.?\d*)?',
+                r'(\w+)\s+(checks?|all-?ins?)',
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, action_text, re.IGNORECASE)
+                if match:
+                    player_name = match.group(1)
+                    action = match.group(2).lower().rstrip('s')  # Remove plural
+                    amount = 0.0
+                    
+                    if len(match.groups()) > 2 and match.group(3):
+                        amount = float(match.group(3).replace(',', ''))
+                    
+                    return {
+                        'player': player_name,
+                        'action': action,
+                        'amount': amount,
+                        'street': 'PREFLOP',  # Would need to determine actual street
+                        'seat': None  # Would need to map player name to seat
+                    }
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Failed to parse action text '{action_text}': {e}")
+            return None
+    
+    async def _detect_button_position(self) -> Optional[int]:
+        """Detect button position from dealer indicator."""
+        try:
+            # Look for dealer button indicators
+            button_selectors = [
+                '.dealer-button',
+                '.button',
+                '[data-testid="dealer-button"]',
+                '.dealer-chip'
+            ]
+            
+            for selector in button_selectors:
+                element = await self.page.query_selector(selector)
+                if element:
+                    # Find which seat contains the button
+                    parent_seat = await element.query_selector('xpath=ancestor::*[contains(@class, "seat")]')
+                    if parent_seat:
+                        # Extract seat number from class or data attribute
+                        seat_classes = await parent_seat.get_attribute('class')
+                        if seat_classes:
+                            seat_match = re.search(r'seat[_-]?(\d+)', seat_classes)
+                            if seat_match:
+                                return int(seat_match.group(1))
+            
+            # Fallback: assume button is at seat 6 (common position)
+            return 6
+            
+        except Exception as e:
+            self.logger.error(f"Failed to detect button position: {e}")
+            return 6
+    
+    async def _calculate_position_vs_aggressor(self, hero_seat: int, aggressor_seat: int, 
+                                             button_seat: int, num_players: int, street: str) -> str:
+        """Calculate if hero is in position vs aggressor."""
+        if hero_seat == aggressor_seat:
+            return "heads_up"
+        
+        try:
+            # Use same logic as ACR scraper
+            if num_players == 2:
+                if street == 'PREFLOP':
+                    hero_acts_after = (hero_seat == button_seat and aggressor_seat != button_seat)
+                else:
+                    hero_acts_after = hero_seat == button_seat
+            else:
+                if street == 'PREFLOP':
+                    first_to_act = (button_seat % num_players) + 1
+                    if first_to_act > num_players:
+                        first_to_act = 1
+                else:
+                    first_to_act = (button_seat % num_players) + 1
+                    if first_to_act > num_players:
+                        first_to_act = 1
+                
+                hero_order = (hero_seat - first_to_act + num_players) % num_players
+                aggressor_order = (aggressor_seat - first_to_act + num_players) % num_players
+                hero_acts_after = hero_order > aggressor_order
+            
+            return "in_position" if hero_acts_after else "out_of_position"
+            
+        except Exception as e:
+            self.logger.error(f"Failed to calculate position vs aggressor: {e}")
+            return "out_of_position"
     
     async def cleanup(self):
         """Cleanup browser resources."""

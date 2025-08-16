@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Dict, Any
 from app.scraper.clubwpt_scraper import ClubWPTGoldScraper
 from app.scraper.acr_scraper import ACRScraper
-from app.advisor.gto_service import GTODecisionService
+from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ScraperManager:
     """Manages multiple scrapers and coordinates with GTO decision service."""
     
-    def __init__(self, gto_service: GTODecisionService):
+    def __init__(self, gto_service: EnhancedGTODecisionService):
         """Initialize scraper manager with GTO service."""
         self.gto_service = gto_service
         self.scrapers = {
@@ -80,20 +80,50 @@ class ScraperManager:
             if not table_state:
                 return None
                 
-            # Convert to TableState model
-            from app.api.models import TableState, Stakes, Seat
+            # Convert to enhanced TableState model
+            from app.api.models import TableState, Stakes, Seat, StreetAction, BettingAction
             
-            # Convert seats
+            # Convert seats with enhanced data
             seats = []
             for seat_data in table_state.get('seats', []):
-                seat = Seat(**seat_data)
+                # Ensure all enhanced fields are present
+                enhanced_seat_data = {
+                    'seat': seat_data.get('seat'),
+                    'name': seat_data.get('name'),
+                    'stack': seat_data.get('stack'),
+                    'in_hand': seat_data.get('in_hand', True),
+                    'acted': seat_data.get('acted'),
+                    'put_in': seat_data.get('put_in', 0.0),
+                    'total_invested': seat_data.get('total_invested', 0.0),
+                    'is_hero': seat_data.get('is_hero', False),
+                    'position': seat_data.get('position'),
+                    'is_all_in': seat_data.get('is_all_in', False),
+                    'stack_bb': seat_data.get('stack_bb')
+                }
+                seat = Seat(**enhanced_seat_data)
                 seats.append(seat)
             
             # Convert stakes
             stakes_data = table_state.get('stakes', {})
             stakes = Stakes(**stakes_data)
             
-            # Create TableState object
+            # Convert betting history
+            betting_history = []
+            for action_data in table_state.get('betting_history', []):
+                # Convert to StreetAction format if needed
+                if isinstance(action_data, dict):
+                    street_action = StreetAction(
+                        street=action_data.get('street', 'PREFLOP'),
+                        actions=[],
+                        pot_size_start=action_data.get('pot_size_start', 0),
+                        pot_size_end=action_data.get('pot_size_end', 0),
+                        aggressor_seat=action_data.get('aggressor_seat'),
+                        action_type=action_data.get('action_type'),
+                        aggressor_position=action_data.get('aggressor_position')
+                    )
+                    betting_history.append(street_action)
+            
+            # Create enhanced TableState object
             state = TableState(
                 table_id=table_state.get('table_id', 'scraped_table'),
                 street=table_state.get('street', 'PREFLOP'),
@@ -105,7 +135,20 @@ class ScraperManager:
                 stakes=stakes,
                 hero_seat=table_state.get('hero_seat'),
                 max_seats=table_state.get('max_seats', 6),
-                seats=seats
+                seats=seats,
+                # Enhanced fields
+                betting_history=betting_history,
+                effective_stacks=table_state.get('effective_stacks', {}),
+                spr=table_state.get('spr'),
+                button_seat=table_state.get('button_seat'),
+                sb_seat=table_state.get('sb_seat'),
+                bb_seat=table_state.get('bb_seat'),
+                rake_cap=table_state.get('rake_cap'),
+                rake_percentage=table_state.get('rake_percentage'),
+                current_aggressor_seat=table_state.get('current_aggressor_seat'),
+                current_action_type=table_state.get('current_action_type'),
+                hero_position_vs_aggressor=table_state.get('hero_position_vs_aggressor'),
+                num_raises_this_street=table_state.get('num_raises_this_street', 0)
             )
             
             # Get GTO decision
@@ -116,7 +159,7 @@ class ScraperManager:
                 'gto_advice': {
                     'action': gto_response.decision.action,
                     'size': gto_response.decision.size,
-                    'equity': gto_response.metrics.equity,
+                    'equity': gto_response.metrics.equity_breakdown.raw_equity,
                     'ev': gto_response.metrics.ev,
                     'confidence': 1.0 - (gto_response.metrics.exploitability or 0.05),
                     'computation_time_ms': gto_response.computation_time_ms

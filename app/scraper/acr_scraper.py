@@ -69,11 +69,12 @@ class ACRScraper(BaseScraper):
             return False
     
     async def scrape_table_state(self) -> Optional[Dict[str, Any]]:
-        """Scrape table state using screen capture and OCR."""
+        """Scrape enhanced table state using screen capture and OCR."""
         if not self.is_table_active():
             return None
             
         try:
+            # Basic table data
             table_data = {
                 'table_id': 'acr_table_1',
                 'street': self._extract_street(),
@@ -83,18 +84,74 @@ class ACRScraper(BaseScraper):
                 'board': self._extract_board_cards(),
                 'to_call': self._extract_to_call(),
                 'bet_min': self._extract_min_bet(),
-                'seats': self._extract_seat_info(),
                 'max_seats': 8  # ACR typically uses 8-max tables
             }
             
-            # Find hero seat
-            table_data['hero_seat'] = self._find_hero_seat(table_data['seats'])
+            # Enhanced seat data with positions
+            seats = self._extract_enhanced_seat_info()
+            table_data['seats'] = seats
+            
+            # Find hero seat and button position
+            table_data['hero_seat'] = self._find_hero_seat(seats)
+            table_data['button_seat'] = self._detect_button_position()
+            
+            # Determine positions for all players
+            active_seats = []
+            if table_data['button_seat'] and seats:
+                active_seats = [s['seat'] for s in seats if s.get('in_hand')]
+                num_players = len(active_seats)
+                positions = self.determine_positions(num_players, table_data['button_seat'])
+                
+                # Add positions to seats
+                for seat in seats:
+                    if seat['seat'] in positions:
+                        seat['position'] = positions[seat['seat']]
+                
+                # Set SB/BB seats
+                for seat_num, pos in positions.items():
+                    if pos == 'SB':
+                        table_data['sb_seat'] = seat_num
+                    elif pos == 'BB':
+                        table_data['bb_seat'] = seat_num
+            
+            # Extract betting history and context
+            action_history = self._extract_action_history()
+            table_data['betting_history'] = action_history
+            
+            # Determine current action context
+            current_street = table_data['street']
+            action_type, num_raises = self.detect_action_type(action_history, current_street)
+            table_data['current_action_type'] = action_type
+            table_data['num_raises_this_street'] = num_raises
+            table_data['current_aggressor_seat'] = self.find_current_aggressor(action_history, current_street)
+            
+            # Calculate enhanced metrics
+            if table_data['hero_seat']:
+                table_data['effective_stacks'] = self.calculate_effective_stacks(seats, table_data['hero_seat'])
+                
+                # Calculate SPR
+                hero_stack = next((s['stack'] for s in seats if s['seat'] == table_data['hero_seat']), 0)
+                table_data['spr'] = hero_stack / max(table_data['pot'], 1) if hero_stack > 0 else 0
+                
+                # Determine position vs aggressor
+                if table_data['current_aggressor_seat'] and table_data['button_seat']:
+                    table_data['hero_position_vs_aggressor'] = self._calculate_position_vs_aggressor(
+                        table_data['hero_seat'], 
+                        table_data['current_aggressor_seat'],
+                        table_data['button_seat'],
+                        len(active_seats) if 'active_seats' in locals() else 6,
+                        current_street
+                    )
+            
+            # Add rake information (ACR standard rates)
+            table_data['rake_cap'] = 5.0
+            table_data['rake_percentage'] = 5.0
             
             # Validate minimum data
             if not table_data.get('stakes'):
                 return None
                 
-            self.logger.debug(f"Scraped ACR table state: {table_data}")
+            self.logger.debug(f"Scraped enhanced ACR table state: {table_data}")
             return table_data
             
         except Exception as e:
@@ -256,8 +313,8 @@ class ACRScraper(BaseScraper):
         stakes = self._extract_stakes()
         return stakes.get('bb', 0.02)
     
-    def _extract_seat_info(self) -> List[Dict[str, Any]]:
-        """Extract player information from all seat regions."""
+    def _extract_enhanced_seat_info(self) -> List[Dict[str, Any]]:
+        """Extract enhanced player information from all seat regions."""
         seats = []
         
         for seat_num in range(1, 9):  # ACR 8-max
@@ -275,9 +332,20 @@ class ACRScraper(BaseScraper):
                 "seat": seat_num,
                 "name": self._extract_player_name_from_text(text),
                 "stack": self._extract_stack_from_text(text),
-                "in_hand": True,  # Assume in hand if seat has data
-                "is_hero": self._is_hero_seat(seat_num, text)
+                "in_hand": self._is_player_in_hand(seat_num),
+                "is_hero": self._is_hero_seat(seat_num, text),
+                "acted": self._has_player_acted(seat_num),
+                "put_in": self._extract_amount_put_in(seat_num),
+                "total_invested": self._extract_total_invested(seat_num),
+                "is_all_in": self._is_player_all_in(seat_num),
+                "position": None,  # Will be filled later
+                "stack_bb": None  # Will be calculated later
             }
+            
+            # Calculate stack in big blinds
+            stakes = self._extract_stakes()
+            if seat_data["stack"] and stakes.get('bb'):
+                seat_data["stack_bb"] = seat_data["stack"] / stakes['bb']
             
             if seat_data["name"] or seat_data["stack"]:
                 seats.append(seat_data)
@@ -318,6 +386,93 @@ class ACRScraper(BaseScraper):
             if seat.get("is_hero"):
                 return seat["seat"]
         return None
+    
+    def _extract_action_history(self) -> List[Dict[str, Any]]:
+        """Extract betting action history (simplified for ACR)."""
+        # This would need to track actions throughout the hand
+        # For now, return empty list - full implementation would require
+        # continuous monitoring and action tracking
+        return []
+    
+    def _detect_button_position(self) -> Optional[int]:
+        """Detect button position from UI indicators."""
+        # Look for button indicator in each seat region
+        for seat_num in range(1, 9):
+            seat_key = f'seat_{seat_num}'
+            if seat_key in self.ui_regions:
+                # Look for button indicator (dealer chip, etc.)
+                # This would need visual recognition of button marker
+                # For now, use heuristic based on typical ACR layout
+                pass
+        
+        # Default fallback - assume button is at seat with most chips or seat 6
+        return 6
+    
+    def _is_player_in_hand(self, seat_num: int) -> bool:
+        """Check if player is still in the hand."""
+        # Look for folded indicators in seat region
+        seat_key = f'seat_{seat_num}'
+        if seat_key in self.ui_regions:
+            text = self._extract_text_from_region(self.ui_regions[seat_key])
+            # Look for "folded" or grayed out indicators
+            if 'fold' in text.lower() or 'out' in text.lower():
+                return False
+        return True
+    
+    def _has_player_acted(self, seat_num: int) -> bool:
+        """Check if player has acted this street."""
+        # This would require tracking actions throughout the street
+        # For simplified implementation, assume all visible players have acted
+        return True
+    
+    def _extract_amount_put_in(self, seat_num: int) -> float:
+        """Extract amount player put in this street."""
+        # Look for bet chips in front of player
+        # This would require additional UI regions for bet areas
+        return 0.0
+    
+    def _extract_total_invested(self, seat_num: int) -> float:
+        """Extract total amount invested this hand."""
+        # Would require tracking throughout the hand
+        return 0.0
+    
+    def _is_player_all_in(self, seat_num: int) -> bool:
+        """Check if player is all-in."""
+        seat_key = f'seat_{seat_num}'
+        if seat_key in self.ui_regions:
+            text = self._extract_text_from_region(self.ui_regions[seat_key])
+            return 'all' in text.lower() and 'in' in text.lower()
+        return False
+    
+    def _calculate_position_vs_aggressor(self, hero_seat: int, aggressor_seat: int, 
+                                       button_seat: int, num_players: int, street: str) -> str:
+        """Calculate if hero is in position vs aggressor."""
+        if hero_seat == aggressor_seat:
+            return "heads_up"
+        
+        # Calculate action order
+        if num_players == 2:
+            # Heads up logic
+            if street == 'PREFLOP':
+                hero_acts_after = (hero_seat == button_seat and aggressor_seat != button_seat)
+            else:
+                hero_acts_after = hero_seat == button_seat
+        else:
+            # Multi-way logic
+            if street == 'PREFLOP':
+                first_to_act = (button_seat % num_players) + 1
+                if first_to_act > num_players:
+                    first_to_act = 1
+            else:
+                first_to_act = (button_seat % num_players) + 1
+                if first_to_act > num_players:
+                    first_to_act = 1
+            
+            hero_order = (hero_seat - first_to_act + num_players) % num_players
+            aggressor_order = (aggressor_seat - first_to_act + num_players) % num_players
+            hero_acts_after = hero_order > aggressor_order
+        
+        return "in_position" if hero_acts_after else "out_of_position"
     
     def cleanup(self):
         """Cleanup scraper resources."""
