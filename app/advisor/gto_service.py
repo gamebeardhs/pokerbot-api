@@ -199,40 +199,83 @@ class GTODecisionService:
         game_context: Dict, 
         state: TableState
     ) -> Dict:
-        """Convert OpenSpiel action to poker decision format."""
+        """Convert OpenSpiel action to poker decision format with proper bet sizing."""
+        
+        to_call = state.to_call or 0
+        pot_size = state.pot
+        min_bet = state.bet_min or state.stakes.bb
         
         # Action mapping from OpenSpiel to poker terms
         if openspiel_action == "fold":
             return {"action": "Fold", "size": 0}
-        elif openspiel_action == "check":
-            return {"action": "Check", "size": 0}
-        elif openspiel_action == "call":
-            return {"action": "Call", "size": state.to_call or 0}
-        elif "bet" in openspiel_action or "raise" in openspiel_action:
-            # Determine bet sizing based on probability and game context
-            pot_size = state.pot
-            min_bet = state.bet_min or state.stakes.bb
-            
-            # Use probability to adjust bet size (higher probability = larger bet)
-            if probability > 0.8:  # Very confident
-                bet_size = pot_size * 0.75
-            elif probability > 0.6:  # Confident
-                bet_size = pot_size * 0.5
-            elif probability > 0.4:  # Moderate
-                bet_size = pot_size * 0.33
-            else:  # Less confident
-                bet_size = min_bet
-                
-            bet_size = max(bet_size, min_bet)
-            
-            # Determine if it's a standard bet or a larger bet
-            if bet_size > pot_size * 0.6:
-                return {"action": "BetPlus", "size": bet_size}
-            else:
-                return {"action": "Bet", "size": bet_size}
         
-        # Default to check if action unclear
-        return {"action": "Check", "size": 0}
+        elif openspiel_action == "check":
+            if to_call > 0:
+                # Can't check when facing a bet - this is an error, default to fold
+                return {"action": "Fold", "size": 0}
+            return {"action": "Check", "size": 0}
+        
+        elif openspiel_action == "call":
+            if to_call <= 0:
+                # No bet to call - check instead
+                return {"action": "Check", "size": 0}
+            return {"action": "Call", "size": to_call}
+        
+        elif "bet" in openspiel_action or "raise" in openspiel_action:
+            if to_call > 0:
+                # Facing a bet - this is a raise/3-bet situation
+                return self._calculate_raise_size(probability, pot_size, to_call, min_bet)
+            else:
+                # No bet to face - this is an opening bet
+                return self._calculate_bet_size(probability, pot_size, min_bet)
+        
+        # Default fallback
+        if to_call > 0:
+            return {"action": "Call", "size": to_call}
+        else:
+            return {"action": "Check", "size": 0}
+    
+    def _calculate_bet_size(self, probability: float, pot_size: float, min_bet: float) -> Dict:
+        """Calculate opening bet size."""
+        # Opening bet sizing based on confidence
+        if probability > 0.8:  # Very confident - large bet
+            bet_size = pot_size * 0.75
+            action = "BetPlus"
+        elif probability > 0.6:  # Confident - standard bet
+            bet_size = pot_size * 0.5
+            action = "Bet"
+        elif probability > 0.4:  # Moderate - small bet
+            bet_size = pot_size * 0.33
+            action = "Bet"
+        else:  # Low confidence - min bet
+            bet_size = min_bet
+            action = "Bet"
+        
+        bet_size = max(bet_size, min_bet)
+        return {"action": action, "size": bet_size}
+    
+    def _calculate_raise_size(self, probability: float, pot_size: float, to_call: float, min_bet: float) -> Dict:
+        """Calculate raise/3-bet size when facing a bet."""
+        total_pot_after_call = pot_size + to_call
+        
+        if probability > 0.8:  # Very confident - large 3-bet
+            raise_size = to_call + (total_pot_after_call * 1.0)  # Pot-sized 3-bet
+            action = "BetPlus"
+        elif probability > 0.6:  # Confident - standard 3-bet
+            raise_size = to_call + (total_pot_after_call * 0.6)  # 60% pot 3-bet
+            action = "BetPlus"
+        elif probability > 0.4:  # Moderate - small 3-bet
+            raise_size = to_call + (total_pot_after_call * 0.4)  # 40% pot 3-bet
+            action = "Bet"
+        else:  # Low confidence - min raise
+            raise_size = to_call + min_bet
+            action = "Bet"
+        
+        # Ensure it's at least a legal raise
+        min_raise = to_call + min_bet
+        raise_size = max(raise_size, min_raise)
+        
+        return {"action": action, "size": raise_size}
     
     def _generate_cache_key(self, game_context: Dict) -> str:
         """Generate cache key for strategy lookup."""
