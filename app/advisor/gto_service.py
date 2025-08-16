@@ -7,10 +7,17 @@ from typing import Dict, Optional, Tuple
 import json
 from datetime import datetime
 
-from app.api.models import TableState, GTOResponse, GTODecision, GTOMetrics
+from app.api.models import (
+    TableState, GTOResponse, GTODecision, GTOMetrics, EquityBreakdown,
+    BoardTexture, RangeInfo, BettingAction, Position
+)
 from app.advisor.adapter import TableStateAdapter
 from app.core.openspiel_wrapper import OpenSpielWrapper
 from app.core.strategy_cache import StrategyCache
+from app.core.board_analyzer import BoardAnalyzer
+from app.core.range_analyzer import RangeAnalyzer
+from app.core.position_strategy import PositionStrategy
+from app.core.opponent_modeling import OpponentModeling
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +26,22 @@ class GTODecisionService:
     """Service for computing GTO poker decisions using OpenSpiel CFR."""
     
     def __init__(self):
-        """Initialize the GTO decision service."""
+        """Initialize the enhanced GTO decision service."""
         self.adapter = TableStateAdapter()
         self.openspiel_wrapper = OpenSpielWrapper()
         self.strategy_cache = StrategyCache()
         self.strategies_path = "app/strategies"
         
+        # Enhanced GTO components
+        self.board_analyzer = BoardAnalyzer()
+        self.range_analyzer = RangeAnalyzer()
+        self.position_strategy = PositionStrategy()
+        self.opponent_modeling = OpponentModeling()
+        
         # Load default strategies
         self._load_strategies()
         
-        logger.info("GTO Decision Service initialized")
+        logger.info("Enhanced GTO Decision Service initialized")
     
     def _load_strategies(self):
         """Load strategy configurations from JSON files."""
@@ -91,42 +104,42 @@ class GTODecisionService:
         state: TableState, 
         strategy_name: str = "default_cash6max"
     ) -> GTOResponse:
-        """Compute GTO decision for given table state."""
+        """Compute comprehensive GTO decision using all available analysis."""
         try:
             start_time = datetime.now()
             
-            # Get strategy configuration
-            strategy = self.strategies.get(strategy_name, self.strategies["default_cash6max"])
+            # Enhanced table analysis
+            enhanced_state = await self._enhance_table_state(state)
+            
+            # Get strategy configuration with adjustments
+            strategy = self._get_adjusted_strategy(enhanced_state, strategy_name)
             
             # Adapt table state to OpenSpiel format
-            game_context = self.adapter.adapt_to_openspiel(state)
+            game_context = self.adapter.adapt_to_openspiel(enhanced_state)
             
-            # Check strategy cache first
-            cache_key = self._generate_cache_key(game_context)
+            # Generate comprehensive cache key
+            cache_key = self._generate_enhanced_cache_key(enhanced_state, game_context)
             cached_result = self.strategy_cache.get(cache_key)
             
             if cached_result:
-                logger.debug("Using cached GTO decision")
-                return self._build_response(cached_result, strategy_name, state)
+                logger.debug("Using cached enhanced GTO decision")
+                return self._build_enhanced_response(cached_result, strategy_name, enhanced_state)
             
-            # Compute GTO solution using CFR
-            cfr_result = await self._compute_cfr_solution(game_context, strategy)
-            
-            # Convert CFR result to decision
-            decision_result = self._convert_cfr_to_decision(cfr_result, game_context, state)
+            # Compute comprehensive GTO solution
+            gto_analysis = await self._compute_comprehensive_gto(enhanced_state, game_context, strategy)
             
             # Cache the result
-            self.strategy_cache.set(cache_key, decision_result)
+            self.strategy_cache.set(cache_key, gto_analysis)
             
             computation_time = (datetime.now() - start_time).total_seconds() * 1000
-            logger.info(f"GTO decision computed in {computation_time:.2f}ms")
+            logger.info(f"Enhanced GTO decision computed in {computation_time:.2f}ms")
             
-            return self._build_response(decision_result, strategy_name, state)
+            return self._build_enhanced_response(gto_analysis, strategy_name, enhanced_state)
             
         except Exception as e:
-            logger.error(f"GTO decision computation failed: {e}")
-            # Fallback to heuristic decision
-            return self._fallback_decision(state, strategy_name)
+            logger.error(f"Enhanced GTO decision computation failed: {e}")
+            # Fallback to enhanced heuristic decision
+            return self._enhanced_fallback_decision(state, strategy_name)
     
     async def _compute_cfr_solution(self, game_context: Dict, strategy: Dict) -> Dict:
         """Compute CFR solution for the given game context."""

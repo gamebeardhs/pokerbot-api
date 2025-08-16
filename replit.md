@@ -1,6 +1,28 @@
 # Overview
 
-A FastAPI-based poker advisory service that provides mathematically optimal Game Theory Optimal (GTO) decisions using OpenSpiel's Counterfactual Regret Minimization (CFR) algorithms. The service offers real-time poker decision recommendations through a RESTful API with WebSocket support for live table state streaming. It's designed to compute Nash equilibrium strategies for Texas Hold'em poker situations with fast response times under 1 second.
+A comprehensive FastAPI-based poker advisory service that provides mathematically optimal Game Theory Optimal (GTO) decisions using advanced poker analysis. The system now implements a true GTO bot with complete table analysis including board texture evaluation, range vs range analysis, position-aware strategy, opponent modeling, and stack depth considerations. The service offers real-time poker decision recommendations through a RESTful API with WebSocket support for live table state streaming, computing optimal strategies for Texas Hold'em poker situations with comprehensive analysis under 1 second.
+
+## Recent Major Enhancements (August 2025)
+
+The system has been significantly enhanced to become a true GTO bot with comprehensive poker analysis:
+
+### Enhanced Data Models
+- **Comprehensive TableState**: Now captures board texture, player ranges, effective stacks, SPR, betting history, and positional information
+- **Advanced Decision Models**: Enhanced GTODecision with confidence, frequency, reasoning, and alternative actions
+- **Detailed Metrics**: EquityBreakdown with fold equity, realize equity, and range-based calculations
+- **Opponent Modeling**: PlayerStats tracking VPIP, PFR, aggression factor, and positional tendencies
+
+### Core Analysis Components
+- **Board Texture Analyzer**: Evaluates board wetness, connectivity, draw potential, and strategic implications
+- **Range Analyzer**: Estimates opponent ranges, calculates range vs range equity, and analyzes hand distributions
+- **Position Strategy**: Implements position-aware decisions with proper ranges and betting frequencies
+- **Opponent Modeling**: Tracks player tendencies and provides exploitative adjustments
+
+### Enhanced Decision Engine
+- **Multi-Component Analysis**: Integrates CFR, board analysis, range analysis, and opponent modeling
+- **True GTO Calculations**: Proper stack-to-pot ratio considerations and effective stack analysis
+- **Position-Aware Betting**: Dynamic bet sizing based on position, board texture, and opponent types
+- **Exploitative Adjustments**: Adapts GTO baseline based on opponent weaknesses and table dynamics
 
 # User Preferences
 

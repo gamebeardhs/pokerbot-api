@@ -18,6 +18,7 @@ from app.api.models import (
     StateHistoryResponse, ErrorResponse
 )
 from app.advisor.gto_service import GTODecisionService
+from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 from app.scraper.scraper_manager import ScraperManager
 from app import __version__
 
@@ -54,13 +55,20 @@ security = HTTPBearer()
 table_states: Dict[str, deque] = defaultdict(lambda: deque(maxlen=300))
 active_websockets: Dict[str, List[WebSocket]] = defaultdict(list)
 
-# Initialize GTO service
+# Initialize Enhanced GTO service
 try:
-    gto_service = GTODecisionService()
-    logger.info("GTO Decision Service initialized successfully")
+    # Use enhanced service for true GTO analysis
+    gto_service = EnhancedGTODecisionService()
+    logger.info("Enhanced GTO Decision Service initialized successfully")
 except Exception as e:
-    logger.error(f"Failed to initialize GTO service: {e}")
-    gto_service = None
+    logger.error(f"Failed to initialize Enhanced GTO Service: {e}")
+    # Fallback to basic service
+    try:
+        gto_service = GTODecisionService()
+        logger.info("Fallback to basic GTO Decision Service")
+    except Exception as e2:
+        logger.error(f"Failed to initialize any GTO Service: {e2}")
+        gto_service = None
 
 # Initialize scraper manager
 scraper_manager = None
