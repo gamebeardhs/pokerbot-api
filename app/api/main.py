@@ -20,6 +20,7 @@ from app.api.models import (
 from app.advisor.gto_service import GTODecisionService
 from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 from app.scraper.scraper_manager import ScraperManager
+from app.scraper.manual_trigger import ManualTriggerService
 from app import __version__
 
 # Configure logging
@@ -72,12 +73,21 @@ except Exception as e:
 
 # Initialize scraper manager
 scraper_manager = None
+manual_trigger_service = None
 if gto_service:
     try:
-        scraper_manager = ScraperManager(gto_service)
-        logger.info("Scraper Manager initialized successfully")
+        # Initialize enhanced scraper manager only if we have enhanced service
+        if isinstance(gto_service, EnhancedGTODecisionService):
+            scraper_manager = ScraperManager(gto_service)
+            logger.info("Scraper Manager initialized successfully")
+            
+            # Initialize manual trigger service
+            manual_trigger_service = ManualTriggerService(gto_service)
+            logger.info("Manual Trigger Service initialized successfully")
+        else:
+            logger.info("Using basic GTO service - some features limited")
     except Exception as e:
-        logger.error(f"Failed to initialize scraper manager: {e}")
+        logger.error(f"Failed to initialize scraper services: {e}")
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
@@ -103,6 +113,9 @@ async def root():
             "health": "/health",
             "decide": "/decide (POST with auth)",
             "ingest": "/ingest (POST with auth)",
+            "manual_analyze": "/manual/analyze (POST with auth) - Manual hand analysis",
+            "manual_status": "/manual/status (GET) - Calibration status",
+            "manual_test": "/manual/test (POST with auth) - Test OCR regions",
             "state": "/state/{table_id}",
             "history": "/state/{table_id}/history",
             "websocket": "/ws/{table_id}",
@@ -305,6 +318,7 @@ async def gto_testing_gui():
             
             <div style="text-align: center; margin-top: 20px;">
                 <button type="submit">🎯 Get Enhanced GTO Decision</button>
+                <button type="button" onclick="manualAnalyze()" style="margin-left: 10px; background-color: #FF6600;">📸 Analyze Current ACR Hand</button>
             </div>
         </form>
         
@@ -666,6 +680,50 @@ async def gto_testing_gui():
                     metricsDiv.innerHTML = '';
                 }
             });
+            
+            // Manual trigger function
+            async function manualAnalyze() {
+                const resultDiv = document.getElementById('results');
+                const gtoDecisionDiv = document.getElementById('gtoDecision');
+                const metricsDiv = document.getElementById('metrics');
+                
+                resultDiv.style.display = 'block';
+                gtoDecisionDiv.innerHTML = '⏳ Taking screenshot and analyzing...';
+                metricsDiv.innerHTML = '';
+                
+                try {
+                    const response = await fetch('/manual/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer test-token-123',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.ok) {
+                        const gtoData = result.gto_decision;
+                        const decision = gtoData.decision;
+                        
+                        gtoDecisionDiv.innerHTML = `🎯 ${decision.action}` + 
+                            (decision.size > 0 ? ` $${decision.size.toFixed(2)}` : '');
+                        
+                        metricsDiv.innerHTML = `
+                            <div class="metric-row"><strong>Confidence:</strong> ${(decision.confidence * 100).toFixed(1)}%</div>
+                            <div class="metric-row"><strong>Analysis Time:</strong> ${result.analysis_time_ms}ms</div>
+                            <div class="metric-row"><strong>Calibrated:</strong> ${result.calibrated ? '✅ Yes' : '❌ No'}</div>
+                            <div class="metric-row"><strong>Reasoning:</strong> ${decision.reasoning}</div>
+                        `;
+                    } else {
+                        gtoDecisionDiv.innerHTML = '❌ Analysis Failed';
+                        metricsDiv.innerHTML = `<div class="error">${result.error}</div>`;
+                    }
+                } catch (error) {
+                    gtoDecisionDiv.innerHTML = '❌ Connection Error';
+                    metricsDiv.innerHTML = `<div class="error">Failed to connect: ${error.message}</div>`;
+                }
+            }
         </script>
     </body>
     </html>
@@ -807,6 +865,95 @@ async def get_state_history(table_id: str, limit: int = 50):
     except Exception as e:
         logger.error(f"History retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=f"History retrieval failed: {str(e)}")
+
+
+# Manual Trigger Endpoints
+@app.post("/manual/analyze")
+async def manual_analyze_hand(token: str = Depends(verify_token)):
+    """
+    Manual hand analysis - take screenshot and get GTO decision.
+    
+    This endpoint:
+    1. Takes a screenshot of the current ACR table
+    2. Extracts table data using calibrated coordinates  
+    3. Runs GTO analysis on the extracted data
+    4. Returns the optimal decision with reasoning
+    """
+    if not manual_trigger_service:
+        raise HTTPException(
+            status_code=503, 
+            detail="Manual trigger service not available - requires Enhanced GTO service"
+        )
+    
+    try:
+        result = await manual_trigger_service.analyze_current_hand()
+        
+        if result["ok"]:
+            logger.info(f"Manual analysis completed in {result['analysis_time_ms']}ms")
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result)
+            
+    except Exception as e:
+        logger.error(f"Manual analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@app.get("/manual/status")
+async def manual_calibration_status():
+    """
+    Get calibration status and available regions.
+    
+    Returns information about:
+    - Whether calibration is loaded
+    - Which regions are available
+    - Calibration file path
+    """
+    if not manual_trigger_service:
+        return {
+            "available": False,
+            "reason": "Manual trigger service not initialized"
+        }
+    
+    try:
+        status = manual_trigger_service.get_calibration_status()
+        return {
+            "available": True,
+            "calibration": status
+        }
+    except Exception as e:
+        logger.error(f"Failed to get calibration status: {e}")
+        return {
+            "available": False,
+            "reason": f"Status check failed: {str(e)}"
+        }
+
+
+@app.post("/manual/test")
+async def manual_test_ocr(token: str = Depends(verify_token)):
+    """
+    Test OCR on all calibrated regions (for debugging).
+    
+    Takes a screenshot and runs OCR on each calibrated region
+    to help debug calibration issues.
+    """
+    if not manual_trigger_service:
+        raise HTTPException(
+            status_code=503,
+            detail="Manual trigger service not available"
+        )
+    
+    try:
+        result = manual_trigger_service.test_ocr_regions()
+        
+        if result["ok"]:
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result)
+            
+    except Exception as e:
+        logger.error(f"OCR test failed: {e}")
+        raise HTTPException(status_code=500, detail=f"OCR test failed: {str(e)}")
 
 
 @app.websocket("/ws/{table_id}")
