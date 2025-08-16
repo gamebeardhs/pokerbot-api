@@ -1,0 +1,261 @@
+Goal
+
+Create a Replit-ready Python 3.11 project that hosts an advisory API using the decision logic from https://github.com/dickreuter/Poker, without any GUI, screen scraping, mouse control, or site-specific automation. I will send table-state JSON from a separate local app; this service will respond with a recommended action (Fold/Call/Bet, plus size when applicable) and a few key metrics.
+
+Hard constraints (Replit environment)
+
+✅ Headless only (no desktop, no PyQt windows, no VirtualBox, no Win32, no screen scraping).
+
+✅ FastAPI + Uvicorn web server.
+
+✅ Pure Python + NumPy/Pandas only as needed for the logic.
+
+❌ Do not import or include: PyQt*, tesseract/tesserocr, pywin32/win32api, VirtualBox APIs, or anything that needs a desktop.
+
+❌ No mouse/keyboard automation.
+
+⚠️ If Keras/TensorFlow is present anywhere in the imported code, make it optional and off by default. On Replit, we will not train models, and we won’t run the card CNN (my local app already knows the cards). If any vestigial TF imports remain, guard them behind if False or lazy imports, or better, remove those code paths.
+
+What to extract from the repo
+
+From dickreuter/Poker, bring in only what’s needed for decision making:
+
+poker/decisionmaker/decisionmaker.py (the Decision class).
+
+poker/decisionmaker/montecarlo_python.py (or a lean wrapper) for equity simulation.
+
+poker/decisionmaker/current_hand_memory.py if required by Decision.
+
+poker/tools/constants.py (only if referenced by the above).
+
+A minimal strategy loader (the original StrategyHandler reads configs; keep only the parts that load strategy parameters and expose a selected_strategy dict). If the original StrategyHandler couples to GUI or Mongo, create a simplified version that loads strategies from local JSON/YAML files in /strategies.
+
+If any of those modules import unwanted dependencies (GUI, Mongo, etc.), refactor them to remove those imports and hard-couple only the needed data/logic. Replace external reads with local file reads.
+
+New project structure
+/app
+  /api
+    main.py                # FastAPI entrypoint (Uvicorn)
+    models.py              # Pydantic schemas for input/output
+  /advisor
+    adapter.py             # TableStateAdapter -> fills fields for Decision
+    decision_service.py    # glue: load strategy, run MC, call Decision
+  /core
+    decisionmaker/         # minimal copy from repo (refactored imports)
+    tools/                 # only constants/helper bits strictly needed
+  /strategies
+    default_mtt.json
+    default_cash6max.json
+  /tests
+    test_decision_smoke.py
+    test_adapter_mapping.py
+requirements.txt
+replit.nix (only if needed)
+README.md
+
+API surface (implement exactly)
+
+GET /health → {"ok": true, "version": "<semver>"}
+
+POST /decide with bearer auth (see env vars below). Body is a table state JSON (schema below). Returns:
+
+{
+  "ok": true,
+  "decision": {"action": "Fold|Check|Call|Bet|BetPlus", "size": 0.24},
+  "metrics": {
+    "equity": 0.53,
+    "min_call": 0.06,
+    "min_bet": 0.12,
+    "pot": 0.38,
+    "players": 4
+  },
+  "strategy": "default_cash6max"
+}
+
+
+POST /ingest (same body/auth) → stores latest state in memory (ring buffer) keyed by table_id, broadcasts via WS.
+
+GET /state/{table_id} → latest stored state (or data:null).
+
+GET /state/{table_id}/history?limit=50 → recent snapshots.
+
+WS /ws/{table_id} → push snapshots to subscribers.
+
+Ingest/decide request schema (Pydantic)
+
+Create TableState with these fields (and validators to lower-case cards):
+
+class Stakes(BaseModel):
+    sb: float
+    bb: float
+    currency: str = "USD"
+
+class Seat(BaseModel):
+    seat: int
+    name: Optional[str] = None
+    stack: Optional[float] = None
+    in_hand: Optional[bool] = None
+    acted: Optional[bool] = None
+    put_in: Optional[float] = None
+    is_hero: Optional[bool] = None
+    position: Optional[str] = None  # UTG/HJ/CO/BTN/SB/BB if caller has it
+
+class TableState(BaseModel):
+    table_id: str
+    hand_id: Optional[str] = None
+    room: Optional[str] = None
+    variant: str = "NLHE"
+    max_seats: int = 6
+    hero_seat: Optional[int] = None
+    stakes: Stakes
+    street: Literal["PREFLOP","FLOP","TURN","RIVER","SHOWDOWN"]
+    board: List[str] = []            # ["7h","2s","2d"] etc.
+    hero_hole: Optional[List[str]]   # ["ah","qs"] etc.
+    pot: float
+    round_pot: Optional[float] = None
+    to_call: Optional[float] = None
+    bet_min: Optional[float] = None
+    seats: List[Seat]
+    action_clock_ms: Optional[int] = None
+    timestamp: Optional[str] = None
+
+    @validator("board", "hero_hole", pre=True)
+    def _lower_cards(cls, v):
+        if v is None: return v
+        return [c.lower() for c in v]
+
+Adapter behavior (/advisor/adapter.py)
+
+Implement TableStateAdapter that:
+
+Accepts a TableState and a strategy object.
+
+Creates a lightweight table context object t with exactly the attributes that Decision and the chosen MC wrapper expect (e.g., t.mycards, t.cardsOnTable, t.totalPotValue, t.round_pot_value, t.minCall, t.minBet, t.assumedPlayers, t.other_active_players, t.playersAhead, t.bigBlind, t.smallBlind, t.other_players with names/stacks/acted flags, t.other_player_has_initiative if/when inferable).
+
+Maps street to the repo’s gameStage values: "PreFlop"|"Flop"|"Turn"|"River".
+
+Handles missing/None gracefully (e.g., to_call, bet_min might be unknown between actions).
+
+Important: The original code uses TableScreenBased fields. We are not importing that; we’re creating a plain object with the same attribute names the decision code reads. If needed, monkey-patch or shim small functions the Decision code references.
+
+Decision glue (/advisor/decision_service.py)
+
+Load selected strategy file (JSON) into a selected_strategy: dict exactly like the original expects (keys such as PreFlopMinCallEquity, FlopCallPower, bigBlind, smallBlind, use_relative_equity, etc.). Provide two sample files in /strategies:
+
+default_cash6max.json
+
+default_mtt.json
+
+Implement:
+
+def compute_decision(state: TableState, strategy_name: str = "default_cash6max") -> dict:
+    # 1) load strategy
+    # 2) adapt state -> table context `t`
+    # 3) run montecarlo wrapper to set t.equity, etc.
+    # 4) d = Decision(t, history_like, strategy_like, game_logger_stub)
+    # 5) d.make_decision(...)
+    # 6) return { "decision": {...}, "metrics": {...}, "strategy": strategy_name }
+
+
+Provide stubs for History, GameLogger, and any minor objects the Decision constructor requires, returning the minimal attributes actually accessed.
+
+FastAPI server (/api/main.py)
+
+Implement endpoints listed above.
+
+Token auth: read INGEST_TOKEN from env. Reject if header Authorization: Bearer <token> is missing or wrong.
+
+Keep a per-table ring buffer in memory (collections.deque(maxlen=300)) for /ingest and the WS feed.
+
+/decide should not write to history unless you want it to; it can just compute and return.
+
+Dependencies (requirements.txt)
+
+Only include what’s necessary:
+
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+pandas
+
+
+If the decision code needs anything else (e.g., scipy), add it. Do not include PyQt, pywin32, tesseract, VirtualBox. Avoid TensorFlow/Keras unless you absolutely can’t decouple; if you must, make it optional and unused by default.
+
+Common pitfalls to avoid (please fix up-front)
+
+Keras 3 breaking changes: If any accidental Keras imports remain, ensure no training is run and remove TensorBoard/embeddings args. We are not loading or saving .h5 here; this service doesn’t need the CNN at all.
+
+Old TensorBoard args like embeddings_layer_names will crash—don’t use TensorBoard.
+
+Do not import matplotlib, seaborn, or any Qt backends (these were for the original GUI).
+
+No MongoDB—replace with local file I/O for strategies. Remove MongoManager references.
+
+Tests (/tests)
+
+Create two quick tests with pytest:
+
+test_adapter_mapping.py
+
+Given a minimal TableState (preflop, known blinds, hero cards), the adapter builds t with the right fields (t.mycards, t.gameStage, t.smallBlind, t.bigBlind, t.totalPotValue, etc.).
+
+test_decision_smoke.py
+
+Load default_cash6max.json, feed a simple TableState (e.g., 6-max preflop, A♠Q♥ at CO, unopened pot, to_call = big blind) and assert the computed decision returns a known action in {"Fold","Check","Call","Bet","BetPlus"} and includes metrics.equity.
+
+Logging
+
+Set up logging with level from env LOG_LEVEL (default INFO).
+
+Log each /decide call with summary (table_id, street, hole cards, action result).
+
+Env vars (document in README.md)
+
+INGEST_TOKEN (required): shared secret bearer token.
+
+DEFAULT_STRATEGY (optional): default strategy filename (e.g., default_cash6max.json).
+
+LOG_LEVEL (optional): INFO|DEBUG|WARNING.
+
+README.md (write)
+
+Brief overview + architecture diagram (text).
+
+How to run locally on Replit.
+
+Example curl:
+
+curl -X POST "$URL/decide" \
+  -H "Authorization: Bearer $INGEST_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "table_id":"test-1",
+    "street":"FLOP",
+    "board":["7h","2s","2d"],
+    "hero_hole":["ah","qs"],
+    "pot":0.38,
+    "to_call":0.06,
+    "bet_min":0.06,
+    "stakes":{"sb":0.01,"bb":0.02,"currency":"USD"},
+    "max_seats":6,
+    "hero_seat":3,
+    "seats":[{"seat":1,"stack":4.13,"in_hand":true},{"seat":3,"stack":3.77,"in_hand":true,"is_hero":true}]
+  }'
+
+
+Note explicitly: advisory only; no automation; no scraping.
+
+Acceptance criteria
+
+Project runs on Replit: uvicorn app.api.main:app --host 0.0.0.0 --port 8000.
+
+GET /health returns {ok:true}.
+
+POST /decide with the example payload returns a JSON decision and metrics within ~1s.
+
+No imports of GUI/scraper/mouse/virtualization modules.
+
+Tests pass: pytest -q.
+
+Build this exactly. If any of the original repo modules resist import due to legacy coupling, copy just the necessary functions/classes into /core/decisionmaker and delete/inline any unwanted dependencies. The final result must be a clean, minimal advisory service with a stable API, ready to accept table-state JSON from my local scraper.
