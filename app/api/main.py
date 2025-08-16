@@ -114,94 +114,170 @@ async def root():
 
 @app.get("/gui", response_class=HTMLResponse)
 async def gto_testing_gui():
-    """Simple GUI for testing GTO decisions."""
+    """Enhanced GUI for testing GTO decisions with all advanced features."""
     html_content = """
     <!DOCTYPE html>
     <html>
     <head>
-        <title>GTO Testing Interface</title>
+        <title>Enhanced GTO Testing Interface</title>
         <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #000000; color: #ffffff; }
+            body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #000000; color: #ffffff; }
             .form-group { margin-bottom: 15px; }
+            .form-section { margin-bottom: 25px; padding: 15px; background-color: #111111; border-radius: 5px; border: 1px solid #333333; }
+            .section-title { font-size: 18px; font-weight: bold; color: #00BFFF; margin-bottom: 15px; }
             label { display: block; margin-bottom: 5px; font-weight: bold; color: #ffffff; }
             input, select, button { padding: 8px; margin-right: 10px; background-color: #333333; color: #ffffff; border: 1px solid #555555; }
-            input[type="text"], input[type="number"], select { width: 120px; }
-            button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+            input[type="text"], input[type="number"], select { width: 80px; }
+            .wide-input { width: 120px; }
+            button { background-color: #4CAF50; color: white; border: none; padding: 12px 25px; cursor: pointer; font-size: 16px; }
             button:hover { background-color: #45a049; }
             .card-input { width: 40px; }
-            .results { margin-top: 20px; padding: 15px; background-color: #222222; border-radius: 5px; border: 1px solid #444444; }
-            .gto-decision { font-size: 20px; font-weight: bold; color: #00BFFF; }
-            .metrics { margin-top: 10px; color: #cccccc; }
+            .results { margin-top: 20px; padding: 20px; background-color: #222222; border-radius: 5px; border: 1px solid #444444; }
+            .gto-decision { font-size: 24px; font-weight: bold; color: #00BFFF; margin-bottom: 15px; }
+            .metrics { margin-top: 15px; color: #cccccc; }
+            .metric-row { margin-bottom: 8px; }
             .error { color: #ff6666; }
             .loading { color: #FFA500; }
-            small { color: #aaaaaa; }
+            small { color: #aaaaaa; display: block; margin-top: 3px; }
             h1 { color: #ffffff; }
+            .seat-config { display: inline-block; margin: 10px; padding: 10px; background-color: #1a1a1a; border-radius: 3px; }
+            .two-column { display: flex; gap: 20px; }
+            .column { flex: 1; }
+            .calculated-field { background-color: #2a2a2a; border: 1px solid #666666; padding: 5px; margin-left: 10px; font-style: italic; }
         </style>
     </head>
     <body>
-        <h1>🃏 GTO Testing Interface</h1>
+        <h1>🃏 Enhanced GTO Testing Interface</h1>
         
         <form id="gtoForm">
-            <div class="form-group">
-                <label>Hero Cards:</label>
-                <input type="text" id="hero1" class="card-input" placeholder="Ah" maxlength="2">
-                <input type="text" id="hero2" class="card-input" placeholder="Kd" maxlength="2">
-                <small>(e.g., Ah, Kd)</small>
+            <div class="two-column">
+                <div class="column">
+                    <div class="form-section">
+                        <div class="section-title">Cards & Board</div>
+                        <div class="form-group">
+                            <label>Hero Cards:</label>
+                            <input type="text" id="hero1" class="card-input" placeholder="Ah" maxlength="2">
+                            <input type="text" id="hero2" class="card-input" placeholder="Kd" maxlength="2">
+                            <small>Format: Ah, Kd, 7s, etc.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Board Cards:</label>
+                            <input type="text" id="board1" class="card-input" placeholder="" maxlength="2">
+                            <input type="text" id="board2" class="card-input" placeholder="" maxlength="2">
+                            <input type="text" id="board3" class="card-input" placeholder="" maxlength="2">
+                            <input type="text" id="board4" class="card-input" placeholder="" maxlength="2">
+                            <input type="text" id="board5" class="card-input" placeholder="" maxlength="2">
+                            <small>Leave empty for preflop</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Street:</label>
+                            <select id="street" class="wide-input">
+                                <option value="PREFLOP">Preflop</option>
+                                <option value="FLOP">Flop</option>
+                                <option value="TURN">Turn</option>
+                                <option value="RIVER">River</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">Betting Action</div>
+                        <div class="form-group">
+                            <label>Pot Size: $</label>
+                            <input type="number" id="pot" value="15.0" step="0.01" min="0">
+                            <label style="display: inline; margin-left: 15px;">To Call: $</label>
+                            <input type="number" id="toCall" value="0.0" step="0.01" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Min Bet: $</label>
+                            <input type="number" id="minBet" value="2.0" step="0.01" min="0">
+                            <span class="calculated-field">SPR: <span id="spr">--</span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">Stakes & Rake</div>
+                        <div class="form-group">
+                            <label>Small Blind: $</label>
+                            <input type="number" id="sb" value="1.0" step="0.01" min="0">
+                            <label style="display: inline; margin-left: 15px;">Big Blind: $</label>
+                            <input type="number" id="bb" value="2.0" step="0.01" min="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Rake Cap: $</label>
+                            <input type="number" id="rakeCap" value="5.0" step="0.01" min="0">
+                            <label style="display: inline; margin-left: 15px;">Rake %:</label>
+                            <input type="number" id="rakePercent" value="5.0" step="0.1" min="0" max="10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="form-section">
+                        <div class="section-title">Table Setup</div>
+                        <div class="form-group">
+                            <label>Number of Players:</label>
+                            <select id="numPlayers" class="wide-input" onchange="updateSeats()">
+                                <option value="2">2 (Heads-up)</option>
+                                <option value="3">3 Players</option>
+                                <option value="4">4 Players</option>
+                                <option value="5">5 Players</option>
+                                <option value="6" selected>6 Players (6-max)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Button Position:</label>
+                            <select id="buttonSeat" class="wide-input">
+                                <option value="1">Seat 1</option>
+                                <option value="2">Seat 2</option>
+                                <option value="3">Seat 3</option>
+                                <option value="4">Seat 4</option>
+                                <option value="5">Seat 5</option>
+                                <option value="6" selected>Seat 6</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Hero Seat:</label>
+                            <select id="heroSeat" class="wide-input">
+                                <option value="1" selected>Seat 1</option>
+                                <option value="2">Seat 2</option>
+                                <option value="3">Seat 3</option>
+                                <option value="4">Seat 4</option>
+                                <option value="5">Seat 5</option>
+                                <option value="6">Seat 6</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">Player Stacks</div>
+                        <div id="seatConfigs">
+                            <!-- Seat configurations will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-title">Strategy</div>
+                        <div class="form-group">
+                            <label>Strategy Type:</label>
+                            <select id="strategy" class="wide-input">
+                                <option value="default_cash6max" selected>Cash Game 6-max</option>
+                                <option value="default_mtt">Tournament</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label>Board Cards:</label>
-                <input type="text" id="board1" class="card-input" placeholder="" maxlength="2">
-                <input type="text" id="board2" class="card-input" placeholder="" maxlength="2">
-                <input type="text" id="board3" class="card-input" placeholder="" maxlength="2">
-                <input type="text" id="board4" class="card-input" placeholder="" maxlength="2">
-                <input type="text" id="board5" class="card-input" placeholder="" maxlength="2">
-                <small>(leave empty for preflop)</small>
+            <div style="text-align: center; margin-top: 20px;">
+                <button type="submit">🎯 Get Enhanced GTO Decision</button>
             </div>
-            
-            <div class="form-group">
-                <label>Street:</label>
-                <select id="street">
-                    <option value="PREFLOP">Preflop</option>
-                    <option value="FLOP">Flop</option>
-                    <option value="TURN">Turn</option>
-                    <option value="RIVER">River</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Pot Size: $</label>
-                <input type="number" id="pot" value="1.5" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label>To Call: $</label>
-                <input type="number" id="toCall" value="0.5" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label>Min Bet: $</label>
-                <input type="number" id="minBet" value="1.0" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label>Stakes - Small Blind: $</label>
-                <input type="number" id="sb" value="0.5" step="0.01" min="0">
-                <label>Big Blind: $</label>
-                <input type="number" id="bb" value="1.0" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label>Hero Stack: $</label>
-                <input type="number" id="heroStack" value="100.0" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label>Number of Opponents:</label>
-                <input type="number" id="opponents" value="1" min="1" max="5">
-            </div>
-            
-            <button type="submit">Get GTO Decision</button>
         </form>
         
         <div id="results" class="results" style="display: none;">
@@ -210,6 +286,72 @@ async def gto_testing_gui():
         </div>
         
         <script>
+            // Position mappings for different table sizes
+            const positionMappings = {
+                2: ['BB', 'BTN'],
+                3: ['BB', 'SB', 'BTN'],
+                4: ['BB', 'SB', 'CO', 'BTN'],
+                5: ['BB', 'SB', 'HJ', 'CO', 'BTN'],
+                6: ['BB', 'SB', 'UTG', 'HJ', 'CO', 'BTN']
+            };
+
+            function updateSeats() {
+                const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                const seatConfigsDiv = document.getElementById('seatConfigs');
+                const buttonSeat = document.getElementById('buttonSeat');
+                const heroSeat = document.getElementById('heroSeat');
+                
+                // Update button and hero seat options
+                buttonSeat.innerHTML = '';
+                heroSeat.innerHTML = '';
+                for (let i = 1; i <= numPlayers; i++) {
+                    buttonSeat.innerHTML += `<option value="${i}">Seat ${i}</option>`;
+                    heroSeat.innerHTML += `<option value="${i}">Seat ${i}</option>`;
+                }
+                buttonSeat.value = numPlayers; // Button defaults to last seat
+                heroSeat.value = 1; // Hero defaults to seat 1
+                
+                // Create seat configurations
+                seatConfigsDiv.innerHTML = '';
+                for (let i = 1; i <= numPlayers; i++) {
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat-config';
+                    seatDiv.innerHTML = `
+                        <label>Seat ${i}:</label><br>
+                        <input type="number" id="stack${i}" value="100" step="0.01" min="0" placeholder="Stack">
+                        <small>$Stack</small>
+                    `;
+                    seatConfigsDiv.appendChild(seatDiv);
+                }
+                updateSPR();
+            }
+
+            function updateSPR() {
+                const pot = parseFloat(document.getElementById('pot').value) || 0;
+                const heroStack = parseFloat(document.getElementById('stack1').value) || 100;
+                const spr = pot > 0 ? (heroStack / pot).toFixed(1) : '--';
+                document.getElementById('spr').textContent = spr;
+            }
+
+            function getPositionForSeat(seatNum, buttonSeat, numPlayers) {
+                const positions = positionMappings[numPlayers];
+                const buttonIndex = buttonSeat - 1;
+                const seatIndex = seatNum - 1;
+                let positionIndex = (seatIndex - buttonIndex + numPlayers) % numPlayers;
+                return positions[positionIndex];
+            }
+
+            // Initialize seats on page load
+            updateSeats();
+
+            // Update SPR when pot or stack changes
+            document.getElementById('pot').addEventListener('input', updateSPR);
+            document.addEventListener('input', function(e) {
+                if (e.target.id.startsWith('stack')) {
+                    updateSPR();
+                }
+            });
+
             document.getElementById('gtoForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -219,7 +361,7 @@ async def gto_testing_gui():
                 
                 // Show loading
                 resultsDiv.style.display = 'block';
-                decisionDiv.innerHTML = '<span class="loading">Computing GTO decision...</span>';
+                decisionDiv.innerHTML = '<span class="loading">🔄 Computing Enhanced GTO Decision...</span>';
                 metricsDiv.innerHTML = '';
                 
                 try {
@@ -236,8 +378,13 @@ async def gto_testing_gui():
                         if (card) boardCards.push(card);
                     }
                     
+                    const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                    const buttonSeat = parseInt(document.getElementById('buttonSeat').value);
+                    const heroSeat = parseInt(document.getElementById('heroSeat').value);
+                    
+                    // Build table state with enhanced fields
                     const tableState = {
-                        table_id: 'gui_test_' + Date.now(),
+                        table_id: 'enhanced_gui_test_' + Date.now(),
                         street: document.getElementById('street').value,
                         board: boardCards,
                         hero_hole: heroCards,
@@ -249,30 +396,43 @@ async def gto_testing_gui():
                             bb: parseFloat(document.getElementById('bb').value),
                             currency: 'USD'
                         },
-                        hero_seat: 1,
-                        max_seats: parseInt(document.getElementById('opponents').value) + 1,
-                        seats: [
-                            {
-                                seat: 1,
-                                name: 'Hero',
-                                stack: parseFloat(document.getElementById('heroStack').value),
-                                in_hand: true,
-                                is_hero: true
-                            }
-                        ]
+                        hero_seat: heroSeat,
+                        max_seats: numPlayers,
+                        button_seat: buttonSeat,
+                        sb_seat: buttonSeat === 1 ? numPlayers : buttonSeat - 1,
+                        bb_seat: buttonSeat === numPlayers ? 1 : (buttonSeat === numPlayers - 1 ? numPlayers : buttonSeat + 1),
+                        rake_cap: parseFloat(document.getElementById('rakeCap').value),
+                        rake_percentage: parseFloat(document.getElementById('rakePercent').value) / 100,
+                        seats: []
                     };
                     
-                    // Add opponent seats
-                    const numOpponents = parseInt(document.getElementById('opponents').value);
-                    for (let i = 0; i < numOpponents; i++) {
+                    // Add all seats with positions and stacks
+                    for (let i = 1; i <= numPlayers; i++) {
+                        const stack = parseFloat(document.getElementById('stack' + i).value);
+                        const position = getPositionForSeat(i, buttonSeat, numPlayers);
+                        
                         tableState.seats.push({
-                            seat: i + 2,
-                            name: 'Opponent' + (i + 1),
-                            stack: 100.0,
+                            seat: i,
+                            name: i === heroSeat ? 'Hero' : `Player${i}`,
+                            stack: stack,
                             in_hand: true,
-                            is_hero: false
+                            is_hero: i === heroSeat,
+                            position: position
                         });
                     }
+                    
+                    // Calculate effective stacks
+                    const heroStack = parseFloat(document.getElementById('stack' + heroSeat).value);
+                    tableState.effective_stacks = {};
+                    for (let i = 1; i <= numPlayers; i++) {
+                        if (i !== heroSeat) {
+                            const oppStack = parseFloat(document.getElementById('stack' + i).value);
+                            tableState.effective_stacks[i] = Math.min(heroStack, oppStack);
+                        }
+                    }
+                    
+                    // Calculate SPR
+                    tableState.spr = heroStack / Math.max(tableState.pot, 0.01);
                     
                     // Make API call
                     const response = await fetch('/decide', {
@@ -290,20 +450,44 @@ async def gto_testing_gui():
                     
                     const result = await response.json();
                     
-                    // Display results
-                    decisionDiv.innerHTML = `🎯 ${result.decision.action} ${result.decision.size > 0 ? '$' + result.decision.size.toFixed(2) : ''}`;
+                    // Display enhanced results
+                    const action = result.decision.action;
+                    const size = result.decision.size;
+                    const sizeDisplay = size > 0 ? ` $${size.toFixed(2)}` : '';
+                    const bbSize = result.decision.size_bb > 0 ? ` (${result.decision.size_bb.toFixed(1)}bb)` : '';
+                    
+                    decisionDiv.innerHTML = `🎯 ${action}${sizeDisplay}${bbSize}`;
+                    
+                    const equity = result.metrics.equity_breakdown;
+                    const metrics = result.metrics;
                     
                     metricsDiv.innerHTML = `
-                        <strong>Metrics:</strong><br>
-                        • Equity: ${(result.metrics.equity * 100).toFixed(1)}%<br>
-                        • Expected Value: $${result.metrics.ev.toFixed(2)}<br>
-                        • Computation Time: ${result.computation_time_ms}ms<br>
-                        • Strategy: ${result.strategy}<br>
-                        • Exploitability: ${(result.metrics.exploitability * 100).toFixed(2)}%
+                        <div class="metric-row"><strong>🃏 Equity Analysis:</strong></div>
+                        <div class="metric-row">• Raw Equity: ${(equity.raw_equity * 100).toFixed(1)}%</div>
+                        <div class="metric-row">• Realized Equity: ${(equity.realize_equity * 100).toFixed(1)}%</div>
+                        <div class="metric-row">• Fold Equity: ${(equity.fold_equity * 100).toFixed(1)}%</div>
+                        <br>
+                        <div class="metric-row"><strong>📊 Position & Stack:</strong></div>
+                        <div class="metric-row">• SPR: ${metrics.spr.toFixed(1)}</div>
+                        <div class="metric-row">• Effective Stack: $${metrics.effective_stack.toFixed(0)}</div>
+                        <div class="metric-row">• Position Advantage: ${metrics.positional_advantage > 0 ? '+' : ''}${(metrics.positional_advantage * 100).toFixed(0)}%</div>
+                        <div class="metric-row">• Initiative: ${metrics.initiative ? 'Yes' : 'No'}</div>
+                        <br>
+                        <div class="metric-row"><strong>🎲 Decision Quality:</strong></div>
+                        <div class="metric-row">• Confidence: ${(result.decision.confidence * 100).toFixed(1)}%</div>
+                        <div class="metric-row">• Frequency: ${(result.decision.frequency * 100).toFixed(1)}%</div>
+                        <div class="metric-row">• Computation: ${result.computation_time_ms}ms</div>
+                        <div class="metric-row">• Strategy: ${result.strategy}</div>
+                        <br>
+                        <div class="metric-row"><strong>⚡ Board & Range:</strong></div>
+                        <div class="metric-row">• Board Favorability: ${(metrics.board_favorability * 100).toFixed(0)}%</div>
+                        <div class="metric-row">• Range Advantage: ${metrics.range_advantage > 0 ? '+' : ''}${(metrics.range_advantage * 100).toFixed(0)}%</div>
+                        <div class="metric-row">• Pot Odds: ${(metrics.pot_odds * 100).toFixed(1)}%</div>
+                        ${result.exploitative_adjustments.length > 0 ? '<br><div class="metric-row"><strong>🔧 Adjustments:</strong></div>' + result.exploitative_adjustments.map(adj => '<div class="metric-row">• ' + adj + '</div>').join('') : ''}
                     `;
                     
                 } catch (error) {
-                    decisionDiv.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
+                    decisionDiv.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
                     metricsDiv.innerHTML = '';
                 }
             });
