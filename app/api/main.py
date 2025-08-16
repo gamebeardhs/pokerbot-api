@@ -365,7 +365,7 @@ async def make_gto_decision(
         logger.info(
             f"Decision computed - Action: {result.decision.action}, "
             f"Size: {result.decision.size:.3f}, "
-            f"Equity: {result.metrics.equity:.3f}, "
+            f"Equity: {result.metrics.equity_breakdown.raw_equity:.3f}, "
             f"Time: {computation_time}ms"
         )
         

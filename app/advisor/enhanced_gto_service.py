@@ -626,7 +626,7 @@ class EnhancedGTODecisionService:
                 decision=decision,
                 metrics=metrics,
                 strategy=strategy_name,
-                computation_time_ms=analysis.get("computation_time_ms"),
+                computation_time_ms=int(analysis.get("computation_time_ms", 0)),
                 exploitative_adjustments=analysis.get("exploitative_adjustments", [])
             )
             
@@ -819,6 +819,7 @@ class EnhancedGTODecisionService:
                 decision=decision,
                 metrics=metrics,
                 strategy=strategy_name,
+                computation_time_ms=0,
                 exploitative_adjustments=["Enhanced fallback with position and board analysis"]
             )
             
@@ -841,4 +842,4 @@ class EnhancedGTODecisionService:
                 board_favorability=0, positional_advantage=0,
                 initiative=False, commitment_threshold=0, reverse_implied_odds=0
             )
-            return GTOResponse(ok=True, decision=decision, metrics=metrics, strategy=strategy_name)
+            return GTOResponse(ok=True, decision=decision, metrics=metrics, strategy=strategy_name, computation_time_ms=0)
