@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Test script for ACR card reading functionality.
+Standalone test script for ACR card reading functionality.
 Tests the new card recognition system on calibrated regions.
+
+Run this script locally to test card reading without the API server.
 """
 
 import json
@@ -9,24 +11,48 @@ import sys
 import time
 import cv2
 import numpy as np
+import os
 from PIL import Image, ImageGrab
-from app.scraper.card_recognition import CardRecognition
-from app.scraper.acr_scraper import ACRScraper
+
+# Add the project root to the path so we can import modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from app.scraper.card_recognition import CardRecognition
+    from app.scraper.acr_scraper import ACRScraper
+except ImportError as e:
+    print(f"❌ Failed to import modules: {e}")
+    print("Make sure you're running this from the project root directory")
+    sys.exit(1)
 
 def test_card_reading():
     """Test card reading functionality."""
-    print("🃏 Testing ACR Card Reading System")
-    print("=" * 50)
+    print("🃏 Testing ACR Card Reading System (Standalone)")
+    print("=" * 55)
     
     # Initialize components
     card_recognizer = CardRecognition()
-    acr_scraper = ACRScraper()
+    
+    # Try to initialize ACR scraper
+    try:
+        acr_scraper = ACRScraper()
+        has_calibration = acr_scraper.calibrated
+    except Exception as e:
+        print(f"⚠️ ACR Scraper initialization failed: {e}")
+        print("Will test card recognition with manual regions...")
+        acr_scraper = None
+        has_calibration = False
     
     # Check if calibration exists
-    if not acr_scraper.calibrated:
+    if not has_calibration:
         print("❌ No calibration found!")
-        print("Run the calibration tool first: python acr_visual_calibrator.py")
-        return False
+        print("Options:")
+        print("1. Run calibration tool: python acr_visual_calibrator.py")
+        print("2. Continue with manual region testing")
+        
+        response = input("\nContinue with manual testing? (y/n): ")
+        if response.lower() != 'y':
+            return False
     
     print(f"✅ Loaded calibration with {len(acr_scraper.ui_regions)} regions")
     
@@ -46,12 +72,29 @@ def test_card_reading():
         # Test card regions
         results = {}
         
-        for region_name in ['hero_cards', 'board_cards']:
-            if region_name in acr_scraper.ui_regions:
+        # Define test regions
+        if has_calibration and acr_scraper and hasattr(acr_scraper, 'ui_regions'):
+            test_regions = {
+                'hero_cards': acr_scraper.ui_regions.get('hero_cards'),
+                'board_cards': acr_scraper.ui_regions.get('board_cards')
+            }
+        else:
+            # Manual test regions (you can adjust these coordinates)
+            print("\n📐 Using manual test regions (adjust coordinates if needed)")
+            w, h = screenshot.size
+            test_regions = {
+                'hero_cards_manual': (w//3, h//2, 2*w//3, 3*h//4),  # Bottom center area
+                'board_cards_manual': (w//4, h//3, 3*w//4, 2*h//3)   # Center area
+            }
+            print(f"Screen size: {w}x{h}")
+            for name, coords in test_regions.items():
+                print(f"  {name}: {coords}")
+        
+        for region_name, coords in test_regions.items():
+            if coords:
                 print(f"\n🔍 Testing {region_name}...")
                 
                 # Extract region
-                coords = acr_scraper.ui_regions[region_name]
                 x1, y1, x2, y2 = coords
                 region_image = screenshot.crop((x1, y1, x2, y2))
                 
@@ -72,9 +115,13 @@ def test_card_reading():
                     print(f"❌ No cards detected in {region_name}")
                     results[region_name] = []
                     
-                # Test using ACR scraper method
-                scraper_cards = acr_scraper._extract_cards_from_region(coords)
-                print(f"🔧 ACR Scraper result: {scraper_cards}")
+                # Test using ACR scraper method if available
+                if acr_scraper and has_calibration:
+                    try:
+                        scraper_cards = acr_scraper._extract_cards_from_region(coords)
+                        print(f"🔧 ACR Scraper result: {scraper_cards}")
+                    except Exception as e:
+                        print(f"⚠️ ACR Scraper test failed: {e}")
                 
         # Summary
         print("\n📊 CARD READING TEST RESULTS")
@@ -142,10 +189,56 @@ def test_individual_card_methods():
     except Exception as e:
         print(f"Method testing failed: {e}")
 
+def test_simple_card_recognition():
+    """Simple standalone card recognition test."""
+    print("\n🧪 Simple Card Recognition Test")
+    print("=" * 40)
+    
+    card_recognizer = CardRecognition()
+    
+    print("📸 Capturing screen for simple test...")
+    time.sleep(2)
+    
+    try:
+        screenshot = ImageGrab.grab()
+        w, h = screenshot.size
+        
+        # Test on different screen regions
+        test_areas = {
+            'center': (w//3, h//3, 2*w//3, 2*h//3),
+            'bottom': (w//4, 2*h//3, 3*w//4, h),
+            'left': (0, h//3, w//3, 2*h//3)
+        }
+        
+        total_found = 0
+        for area_name, coords in test_areas.items():
+            print(f"\n🔍 Testing {area_name} area: {coords}")
+            
+            region = screenshot.crop(coords)
+            region.save(f"test_area_{area_name}.png")
+            
+            cards = card_recognizer.detect_cards_in_region(region, max_cards=5)
+            
+            if cards:
+                print(f"✅ Found {len(cards)} cards:")
+                for card in cards:
+                    print(f"   • {card.rank}{card.suit} (confidence: {card.confidence:.2f})")
+                total_found += len(cards)
+            else:
+                print(f"❌ No cards detected")
+        
+        print(f"\n📊 Total cards found: {total_found}")
+        return total_found > 0
+        
+    except Exception as e:
+        print(f"❌ Simple test failed: {e}")
+        return False
+
+
 def main():
     """Main test function."""
-    print("🎮 ACR Card Reading Test Suite")
-    print("=" * 50)
+    print("🎮 ACR Card Reading Test Suite (Standalone)")
+    print("=" * 55)
     
     try:
         # Test imports
@@ -154,11 +247,33 @@ def main():
         import pytesseract
         print("✅ All dependencies available")
         
-        # Test card reading system
-        success = test_card_reading()
+        print("\nChoose test mode:")
+        print("1. Full test with calibration (requires calibrated regions)")
+        print("2. Simple test (tests card recognition on screen areas)")
+        print("3. Both tests")
         
-        # Test individual methods
-        test_individual_card_methods()
+        choice = input("\nEnter choice (1/2/3): ").strip()
+        
+        success = False
+        
+        if choice in ['1', '3']:
+            # Test with calibration
+            success = test_card_reading()
+        
+        if choice in ['2', '3']:
+            # Simple test
+            simple_success = test_simple_card_recognition()
+            success = success or simple_success
+        
+        if choice not in ['1', '2', '3']:
+            print("Invalid choice, running simple test...")
+            success = test_simple_card_recognition()
+        
+        # Test individual methods if requested
+        if success:
+            test_methods = input("\nTest individual recognition methods? (y/n): ")
+            if test_methods.lower() == 'y':
+                test_individual_card_methods()
         
         if success:
             print("\n🎉 Card reading system is ready!")
