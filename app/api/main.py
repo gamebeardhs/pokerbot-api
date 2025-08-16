@@ -10,6 +10,7 @@ from collections import deque, defaultdict
 from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 import uvicorn
 
 from app.api.models import (
@@ -97,9 +98,210 @@ async def root():
             "state": "/state/{table_id}",
             "history": "/state/{table_id}/history",
             "websocket": "/ws/{table_id}",
+            "gui": "/gui (testing interface)",
             "docs": "/docs"
         }
     }
+
+
+@app.get("/gui", response_class=HTMLResponse)
+async def gto_testing_gui():
+    """Simple GUI for testing GTO decisions."""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>GTO Testing Interface</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .form-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; }
+            input, select, button { padding: 8px; margin-right: 10px; }
+            input[type="text"], input[type="number"], select { width: 120px; }
+            button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+            button:hover { background-color: #45a049; }
+            .card-input { width: 40px; }
+            .results { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
+            .gto-decision { font-size: 20px; font-weight: bold; color: #2196F3; }
+            .metrics { margin-top: 10px; }
+            .error { color: red; }
+            .loading { color: #FF9800; }
+        </style>
+    </head>
+    <body>
+        <h1>🃏 GTO Testing Interface</h1>
+        
+        <form id="gtoForm">
+            <div class="form-group">
+                <label>Hero Cards:</label>
+                <input type="text" id="hero1" class="card-input" placeholder="Ah" maxlength="2">
+                <input type="text" id="hero2" class="card-input" placeholder="Kd" maxlength="2">
+                <small>(e.g., Ah, Kd)</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Board Cards:</label>
+                <input type="text" id="board1" class="card-input" placeholder="" maxlength="2">
+                <input type="text" id="board2" class="card-input" placeholder="" maxlength="2">
+                <input type="text" id="board3" class="card-input" placeholder="" maxlength="2">
+                <input type="text" id="board4" class="card-input" placeholder="" maxlength="2">
+                <input type="text" id="board5" class="card-input" placeholder="" maxlength="2">
+                <small>(leave empty for preflop)</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Street:</label>
+                <select id="street">
+                    <option value="PREFLOP">Preflop</option>
+                    <option value="FLOP">Flop</option>
+                    <option value="TURN">Turn</option>
+                    <option value="RIVER">River</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Pot Size: $</label>
+                <input type="number" id="pot" value="1.5" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>To Call: $</label>
+                <input type="number" id="toCall" value="0.5" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Min Bet: $</label>
+                <input type="number" id="minBet" value="1.0" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Stakes - Small Blind: $</label>
+                <input type="number" id="sb" value="0.5" step="0.01" min="0">
+                <label>Big Blind: $</label>
+                <input type="number" id="bb" value="1.0" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Hero Stack: $</label>
+                <input type="number" id="heroStack" value="100.0" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Number of Opponents:</label>
+                <input type="number" id="opponents" value="1" min="1" max="5">
+            </div>
+            
+            <button type="submit">Get GTO Decision</button>
+        </form>
+        
+        <div id="results" class="results" style="display: none;">
+            <div id="gtoDecision" class="gto-decision"></div>
+            <div id="metrics" class="metrics"></div>
+        </div>
+        
+        <script>
+            document.getElementById('gtoForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const resultsDiv = document.getElementById('results');
+                const decisionDiv = document.getElementById('gtoDecision');
+                const metricsDiv = document.getElementById('metrics');
+                
+                // Show loading
+                resultsDiv.style.display = 'block';
+                decisionDiv.innerHTML = '<span class="loading">Computing GTO decision...</span>';
+                metricsDiv.innerHTML = '';
+                
+                try {
+                    // Collect form data
+                    const heroCards = [];
+                    const hero1 = document.getElementById('hero1').value.trim().toLowerCase();
+                    const hero2 = document.getElementById('hero2').value.trim().toLowerCase();
+                    if (hero1) heroCards.push(hero1);
+                    if (hero2) heroCards.push(hero2);
+                    
+                    const boardCards = [];
+                    for (let i = 1; i <= 5; i++) {
+                        const card = document.getElementById('board' + i).value.trim().toLowerCase();
+                        if (card) boardCards.push(card);
+                    }
+                    
+                    const tableState = {
+                        table_id: 'gui_test_' + Date.now(),
+                        street: document.getElementById('street').value,
+                        board: boardCards,
+                        hero_hole: heroCards,
+                        pot: parseFloat(document.getElementById('pot').value),
+                        to_call: parseFloat(document.getElementById('toCall').value),
+                        bet_min: parseFloat(document.getElementById('minBet').value),
+                        stakes: {
+                            sb: parseFloat(document.getElementById('sb').value),
+                            bb: parseFloat(document.getElementById('bb').value),
+                            currency: 'USD'
+                        },
+                        hero_seat: 1,
+                        max_seats: parseInt(document.getElementById('opponents').value) + 1,
+                        seats: [
+                            {
+                                seat: 1,
+                                name: 'Hero',
+                                stack: parseFloat(document.getElementById('heroStack').value),
+                                in_hand: true,
+                                is_hero: true
+                            }
+                        ]
+                    };
+                    
+                    // Add opponent seats
+                    const numOpponents = parseInt(document.getElementById('opponents').value);
+                    for (let i = 0; i < numOpponents; i++) {
+                        tableState.seats.push({
+                            seat: i + 2,
+                            name: 'Opponent' + (i + 1),
+                            stack: 100.0,
+                            in_hand: true,
+                            is_hero: false
+                        });
+                    }
+                    
+                    // Make API call
+                    const response = await fetch('/decide', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer test-token-123'
+                        },
+                        body: JSON.stringify(tableState)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('API request failed: ' + response.statusText);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Display results
+                    decisionDiv.innerHTML = `🎯 ${result.decision.action} ${result.decision.size > 0 ? '$' + result.decision.size.toFixed(2) : ''}`;
+                    
+                    metricsDiv.innerHTML = `
+                        <strong>Metrics:</strong><br>
+                        • Equity: ${(result.metrics.equity * 100).toFixed(1)}%<br>
+                        • Expected Value: $${result.metrics.ev.toFixed(2)}<br>
+                        • Computation Time: ${result.computation_time_ms}ms<br>
+                        • Strategy: ${result.strategy}<br>
+                        • Exploitability: ${(result.metrics.exploitability * 100).toFixed(2)}%
+                    `;
+                    
+                } catch (error) {
+                    decisionDiv.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
+                    metricsDiv.innerHTML = '';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    return html_content
 
 
 @app.get("/health", response_model=HealthResponse)
