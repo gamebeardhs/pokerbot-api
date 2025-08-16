@@ -73,6 +73,25 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     return credentials.credentials
 
 
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "name": "Poker GTO Advisory Service",
+        "version": __version__,
+        "description": "OpenSpiel CFR-based GTO poker decision service",
+        "endpoints": {
+            "health": "/health",
+            "decide": "/decide (POST with auth)",
+            "ingest": "/ingest (POST with auth)",
+            "state": "/state/{table_id}",
+            "history": "/state/{table_id}/history",
+            "websocket": "/ws/{table_id}",
+            "docs": "/docs"
+        }
+    }
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""

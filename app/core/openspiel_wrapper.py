@@ -46,6 +46,9 @@ class OpenSpielWrapper:
     
     def _initialize_solver(self):
         """Initialize the CFR solver with a poker game."""
+        if not OPENSPIEL_AVAILABLE or pyspiel is None or cfr is None:
+            raise RuntimeError("OpenSpiel not available")
+            
         try:
             # Use Kuhn poker for basic testing, leduc for more complex scenarios
             # In production, you'd use no_limit_holdem but it's computationally intensive
@@ -85,7 +88,8 @@ class OpenSpielWrapper:
             while (iterations_run < max_iterations and 
                    (time.time() - start_time) * 1000 < max_time_ms):
                 
-                solver.evaluate_and_update_policy()
+                if solver is not None:
+                    solver.evaluate_and_update_policy()
                 iterations_run += 1
                 
                 # Check every 100 iterations to avoid excessive time checking
@@ -95,7 +99,7 @@ class OpenSpielWrapper:
                         break
             
             # Get the computed strategy
-            average_policy = solver.average_policy()
+            average_policy = solver.average_policy() if solver is not None else None
             
             # Compute basic metrics
             equity = self._estimate_equity(game_context, average_policy)
