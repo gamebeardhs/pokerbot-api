@@ -1,0 +1,139 @@
+INFO:app.training.neural_trainer:Loaded 5 templates
+🃏 ACR Card Template Extractor
+============================================================
+📊 Starting with 5 existing templates
+
+🎯 Method 1: Extracting from ACR Client
+==================================================
+❌ ACR client not found at: C:\AmericasCardroom\resources\assets\gc\hdpi\kpoker
+   Please install ACR client first or check the path
+
+🌐 Method 2: Downloading Open Source Templates
+==================================================
+📥 Downloading playing-cards-assets...
+📦 Extracting templates...
+🃏 Found 56 card images
+ERROR:app.training.neural_trainer:Failed to add template for Tc: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Td: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Th: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Ts: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 2c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 2d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 2h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 2s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 3c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 3d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 3h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 3s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 4c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 4d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 4h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 4s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 5c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 5d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 5h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 5s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 6c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 6d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 6h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 6s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 7c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 7d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 7h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 7s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 8c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 8d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 8h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 8s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 9c: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 9d: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 9h: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for 9s: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Ac: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Ad: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Ah: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for As: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Jc: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Jd: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Jh: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Js: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Kc: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Kd: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Kh: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Ks: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Qc: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Qd: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Qh: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+ERROR:app.training.neural_trainer:Failed to add template for Qs: operands could not be broadcast together with shapes (323,222,4) (4,1,1,3)
+
+✅ Successfully created 0 templates from open source!
+
+🎨 Method 3: Creating Missing Templates
+==================================================
+📝 Creating templates for 47 missing cards...
+INFO:app.training.neural_trainer:Added template for 2s
+   ✅ Created template: 2s
+INFO:app.training.neural_trainer:Added template for 2h
+   ✅ Created template: 2h
+INFO:app.training.neural_trainer:Added template for 2d
+   ✅ Created template: 2d
+INFO:app.training.neural_trainer:Added template for 2c
+   ✅ Created template: 2c
+INFO:app.training.neural_trainer:Added template for 3s
+   ✅ Created template: 3s
+INFO:app.training.neural_trainer:Added template for 3h
+INFO:app.training.neural_trainer:Added template for 3d
+INFO:app.training.neural_trainer:Added template for 3c
+INFO:app.training.neural_trainer:Added template for 4s
+INFO:app.training.neural_trainer:Added template for 4h
+INFO:app.training.neural_trainer:Added template for 4d
+INFO:app.training.neural_trainer:Added template for 4c
+INFO:app.training.neural_trainer:Added template for 5s
+INFO:app.training.neural_trainer:Added template for 5h
+INFO:app.training.neural_trainer:Added template for 5d
+INFO:app.training.neural_trainer:Added template for 5c
+INFO:app.training.neural_trainer:Added template for 6s
+INFO:app.training.neural_trainer:Added template for 6h
+INFO:app.training.neural_trainer:Added template for 6d
+INFO:app.training.neural_trainer:Added template for 6c
+INFO:app.training.neural_trainer:Added template for 7s
+INFO:app.training.neural_trainer:Added template for 7h
+INFO:app.training.neural_trainer:Added template for 7d
+INFO:app.training.neural_trainer:Added template for 7c
+INFO:app.training.neural_trainer:Added template for 8s
+INFO:app.training.neural_trainer:Added template for 8h
+INFO:app.training.neural_trainer:Added template for 8d
+INFO:app.training.neural_trainer:Added template for 8c
+INFO:app.training.neural_trainer:Added template for 9s
+INFO:app.training.neural_trainer:Added template for 9h
+INFO:app.training.neural_trainer:Added template for 9d
+INFO:app.training.neural_trainer:Added template for 9c
+INFO:app.training.neural_trainer:Added template for Th
+INFO:app.training.neural_trainer:Added template for Td
+INFO:app.training.neural_trainer:Added template for Tc
+INFO:app.training.neural_trainer:Added template for Js
+INFO:app.training.neural_trainer:Added template for Jh
+INFO:app.training.neural_trainer:Added template for Jd
+INFO:app.training.neural_trainer:Added template for Qs
+INFO:app.training.neural_trainer:Added template for Qh
+INFO:app.training.neural_trainer:Added template for Qc
+INFO:app.training.neural_trainer:Added template for Ks
+INFO:app.training.neural_trainer:Added template for Kd
+INFO:app.training.neural_trainer:Added template for Kc
+INFO:app.training.neural_trainer:Added template for Ah
+INFO:app.training.neural_trainer:Added template for Ad
+INFO:app.training.neural_trainer:Added template for Ac
+   ... and 42 more templates
+
+✅ Successfully created 47 missing templates!
+
+============================================================
+📈 EXTRACTION SUMMARY
+============================================================
+Templates before: 5
+Templates after:  52
+Templates created: 47
+Coverage: 52/52 cards (100.0%)
+
+🎉 SUCCESS! All 52 cards now have templates!
+Your enhanced training system is ready for ACR poker recognition!

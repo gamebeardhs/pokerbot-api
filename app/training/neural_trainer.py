@@ -33,6 +33,16 @@ class ColorNormalizer:
         Adjust colors to standard poker card colors.
         Makes red cards more red, black cards more black, etc.
         """
+        # Handle different image formats
+        if len(image.shape) == 4:
+            # RGBA format - convert to RGB
+            if image.shape[3] == 4:
+                image = image[:, :, :, :3]  # Drop alpha channel
+        
+        # Ensure RGB format (H, W, 3)
+        if len(image.shape) != 3 or image.shape[2] != 3:
+            raise ValueError(f"Expected RGB image with shape (H, W, 3), got {image.shape}")
+        
         # Define standard poker colors (red, black, white, background)
         colors = np.array([
             [255, 0, 0],    # Red (hearts/diamonds)
@@ -42,14 +52,28 @@ class ColorNormalizer:
         ])
         
         # Find closest color for each pixel
-        mask = np.isclose(image, colors[:, None, None, :], atol=tolerance).all(-1)
+        # Reshape for broadcasting: image (H,W,3) vs colors (4,1,1,3)
+        image_expanded = image[None, :, :, :]  # (1, H, W, 3)
+        colors_expanded = colors[:, None, None, :]  # (4, 1, 1, 3)
         
-        # Replace with exact colors
-        mask_any = mask.any(0)
-        normalized = np.where(mask_any[..., None], colors[mask.argmax(0)], image)
+        # Calculate distance and find closest color
+        distances = np.abs(image_expanded - colors_expanded).sum(axis=-1)  # (4, H, W)
+        closest_color_idx = np.argmin(distances, axis=0)  # (H, W)
+        
+        # Only apply normalization where colors are close enough
+        min_distances = np.min(distances, axis=0)  # (H, W)
+        close_enough = min_distances < tolerance
+        
+        # Initialize with original image
+        normalized = image.copy()
+        
+        # Apply color normalization where appropriate
+        for i, color in enumerate(colors):
+            mask = (closest_color_idx == i) & close_enough
+            normalized[mask] = color
         
         # Convert green to darker green (table color)
-        green_mask = (normalized == colors[3]).all(-1)
+        green_mask = np.all(normalized == colors[3], axis=-1)
         normalized[green_mask] = [0, 100, 0]
         
         return normalized.astype(np.uint8)
@@ -57,21 +81,34 @@ class ColorNormalizer:
     @staticmethod
     def normalize_card_region(image: Image.Image) -> Image.Image:
         """Normalize a card region for better recognition."""
+        # Convert to RGB if needed (handles RGBA, L, P modes)
+        if image.mode != 'RGB':
+            # For RGBA images, composite over white background
+            if image.mode == 'RGBA':
+                background = Image.new('RGB', image.size, (255, 255, 255))
+                image = Image.alpha_composite(background.convert('RGBA'), image).convert('RGB')
+            else:
+                image = image.convert('RGB')
+        
         # Convert to numpy
         img_array = np.array(image)
         
-        # Apply color normalization
-        normalized = ColorNormalizer.adjust_colors(img_array)
-        
-        # Enhance contrast
-        img = Image.fromarray(normalized)
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(1.5)
-        
-        # Slight sharpening
-        img = img.filter(ImageFilter.UnsharpMask(radius=1, percent=120, threshold=3))
-        
-        return img
+        try:
+            # Apply color normalization
+            normalized = ColorNormalizer.adjust_colors(img_array)
+            
+            # Enhance contrast
+            img = Image.fromarray(normalized)
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(1.5)
+            
+            # Slight sharpening
+            img = img.filter(ImageFilter.UnsharpMask(radius=1, percent=120, threshold=3))
+            
+            return img
+        except Exception as e:
+            logger.warning(f"Color normalization failed: {e}, using original image")
+            return image
 
 class DataAugmentor:
     """Generate augmented training data from base templates."""
