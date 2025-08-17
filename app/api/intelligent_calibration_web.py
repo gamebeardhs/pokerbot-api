@@ -13,7 +13,7 @@ async def intelligent_calibration_ui():
     """Serve the intelligent calibration UI."""
     ui_path = Path("acr_intelligent_calibration_ui.html")
     if ui_path.exists():
-        with open(ui_path, 'r') as f:
+        with open(ui_path, 'r', encoding='utf-8') as f:
             return HTMLResponse(content=f.read())
     else:
         return HTMLResponse(content="""
