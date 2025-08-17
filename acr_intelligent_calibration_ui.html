@@ -278,6 +278,9 @@
                 <button class="btn secondary" onclick="getTemplateInfo()">
                     🔧 Template Info
                 </button>
+                <button class="btn info" onclick="enableDemoMode()">
+                    🎮 Demo Mode
+                </button>
             </div>
 
             <!-- Adaptive Status -->
@@ -517,6 +520,42 @@
             } catch (error) {
                 // Don't log adaptive status errors to avoid spam
                 console.warn('Adaptive status update failed:', error);
+            }
+        }
+
+        async function enableDemoMode() {
+            addLog('Enabling demo mode to show system functionality...');
+            try {
+                // Show what the system does WITHOUT needing ACR client
+                addLog('🎮 DEMO MODE: Simulating poker table detection', 'success');
+                addLog('');
+                addLog('📊 What this system does with REAL ACR poker client:');
+                addLog('   • Reads your hole cards (e.g., As Kh)');
+                addLog('   • Reads community cards (e.g., Qd Jc 10s)'); 
+                addLog('   • Reads pot size (e.g., $47.50)');
+                addLog('   • Detects your position (e.g., Button)');
+                addLog('   • Identifies current phase (preflop/flop/turn/river)');
+                addLog('   • Tracks action buttons when it\'s your turn');
+                addLog('');
+                addLog('🧠 GTO Analysis provides:');
+                addLog('   • Optimal fold/call/raise decision');
+                addLog('   • Equity calculations vs opponent ranges');
+                addLog('   • Position-aware strategy adjustments');
+                addLog('   • True CFR-based recommendations');
+                addLog('');
+                addLog('🔒 READ-ONLY SYSTEM:');
+                addLog('   • System NEVER clicks buttons for you', 'warning');
+                addLog('   • System ONLY provides advice');
+                addLog('   • YOU make all actual decisions');
+                addLog('   • Perfect for beating bot detection');
+                addLog('');
+                addLog('🚀 TO USE: Open ACR poker client and click "Detect Table"');
+                
+                // Update UI to show demo
+                document.getElementById('tableStatus').textContent = 'Demo Mode ✅';
+                
+            } catch (error) {
+                addLog('Demo mode error', 'error');
             }
         }
 
