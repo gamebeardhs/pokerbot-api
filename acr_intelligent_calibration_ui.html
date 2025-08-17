@@ -287,8 +287,11 @@
                 <button class="btn primary" onclick="runComprehensiveDebug()">
                     📋 Full Debug Log
                 </button>
-                <button class="btn info" onclick="testButtonClick()">
+                <button class="btn info" onclick="testButtonClick(); console.log('Button clicked via onclick');" id="testBtn">
                     🧪 Test Click
+                </button>
+                <button class="btn success" onclick="alert('Direct alert test'); console.log('Direct alert clicked');">
+                    ⚡ Alert Test
                 </button>
             </div>
 
@@ -365,7 +368,25 @@
             console.log('Test button clicked!');
             addLog('Button click test - SUCCESS!', 'success');
             alert('Button clicks are working!');
+            return true;
         }
+        
+        // Initialize page and test JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, JavaScript is working');
+            addLog('Page initialized - JavaScript working', 'success');
+            
+            // Test all functions exist
+            const functions = ['testButtonClick', 'detectTable', 'runComprehensiveDebug', 'debugLocalDetection', 'enableDemoMode'];
+            functions.forEach(fn => {
+                if (typeof window[fn] === 'function') {
+                    console.log(`✅ Function ${fn} exists`);
+                } else {
+                    console.error(`❌ Function ${fn} missing`);
+                    addLog(`❌ Missing function: ${fn}`, 'error');
+                }
+            });
+        });
 
         // API calls with debugging
         async function apiCall(endpoint, method = 'GET', data = null) {
