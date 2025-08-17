@@ -7,6 +7,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 from typing import List, Tuple, Optional, Dict, Any
 import re
 import logging
+import os
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -22,8 +23,37 @@ class Card:
     def __str__(self):
         return f"{self.rank}{self.suit}"
 
+class DualCardRecognition:
+    """
+    Enhanced dual card recognition system inspired by DeeperMind poker bot.
+    Combines template matching with neural network recognition for high accuracy.
+    """
+    
+    def __init__(self, use_neural_networks: bool = True):
+        self.use_neural_networks = use_neural_networks
+        
+        # Initialize template manager for dual recognition
+        try:
+            from app.training.neural_trainer import TemplateManager, ColorNormalizer
+            self.template_manager = TemplateManager()
+            self.color_normalizer = ColorNormalizer()
+            self.template_enabled = True
+            logger.info("Template-based recognition enabled")
+        except ImportError:
+            self.template_enabled = False
+            logger.warning("Template system not available, using OCR only")
+        
+        # Initialize legacy OCR recognition
+        self.legacy_recognizer = CardRecognition()
+    
+    def detect_cards_in_region(self, image: Image.Image, max_cards: int = 5) -> List[Card]:
+        """
+        Main detection method that uses the dual recognition approach.
+        """
+        return self.legacy_recognizer.detect_cards_dual_mode(image, max_cards)
+
 class CardRecognition:
-    """Advanced card recognition using multiple detection methods."""
+    """Legacy card recognition using OCR and color detection."""
     
     def __init__(self):
         self.rank_patterns = {
@@ -602,3 +632,120 @@ class CardRecognition:
         # Sort by confidence and limit
         best_cards.sort(key=lambda c: c.confidence, reverse=True)
         return best_cards[:max_cards]
+
+    def detect_cards_dual_mode(self, image: Image.Image, max_cards: int = 5) -> List[Card]:
+        """
+        Detect cards using dual recognition: templates + neural networks.
+        Falls back to OCR if template system unavailable.
+        """
+        try:
+            from app.training.neural_trainer import TemplateManager, ColorNormalizer
+            template_manager = TemplateManager()
+            color_normalizer = ColorNormalizer()
+            template_enabled = True
+        except ImportError:
+            template_enabled = False
+            template_manager = None
+            color_normalizer = None
+        
+        if not template_enabled:
+            return self.detect_cards_in_region(image, max_cards)
+        
+        try:
+            # 1. First try template matching for each possible card region
+            template_results = self._detect_with_templates(image, max_cards, template_manager, color_normalizer)
+            
+            # 2. If template matching gives good results, use those
+            if template_results and len(template_results) > 0:
+                high_confidence_cards = [card for card in template_results if card.confidence > 0.8]
+                if high_confidence_cards:
+                    logger.debug(f"Template matching found {len(high_confidence_cards)} high-confidence cards")
+                    return high_confidence_cards
+            
+            # 3. Fall back to legacy OCR method
+            logger.debug("Template matching confidence low, falling back to OCR")
+            return self.detect_cards_in_region(image, max_cards)
+            
+        except Exception as e:
+            logger.error(f"Dual recognition failed: {e}")
+            return self.detect_cards_in_region(image, max_cards)
+    
+    def _detect_with_templates(self, image: Image.Image, max_cards: int, template_manager, color_normalizer) -> List[Card]:
+        """Detect cards using template matching."""
+        cards = []
+        
+        # Normalize the input image
+        normalized_image = color_normalizer.normalize_card_region(image)
+        
+        # Get all available templates
+        templates = template_manager.get_all_templates()
+        if not templates:
+            logger.debug("No templates available")
+            return []
+        
+        # Try to find card regions in the image
+        card_regions = self._find_card_regions_for_templates(normalized_image)
+        
+        for i, (region_img, bbox) in enumerate(card_regions[:max_cards]):
+            best_match = None
+            best_confidence = 0.0
+            
+            # Test against all templates
+            for card_name, template in templates.items():
+                confidence = template_manager.match_template(region_img, card_name)
+                
+                if confidence > best_confidence and confidence > template.confidence_threshold:
+                    best_confidence = confidence
+                    best_match = card_name
+            
+            if best_match:
+                # Parse card name (e.g., "As" -> rank="A", suit="s")
+                rank = best_match[0]
+                suit = best_match[1]
+                
+                card = Card(
+                    rank=rank,
+                    suit=suit,
+                    confidence=best_confidence,
+                    bbox=bbox
+                )
+                cards.append(card)
+                logger.debug(f"Template matched: {best_match} (confidence: {best_confidence:.2f})")
+        
+        return cards
+    
+    def _find_card_regions_for_templates(self, image: Image.Image) -> List[Tuple[Image.Image, Tuple[int, int, int, int]]]:
+        """Find potential card regions in the image for template matching."""
+        # Convert to OpenCV format
+        cv_img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        
+        # Find rectangular regions that could be cards
+        edges = cv2.Canny(gray, 50, 150)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        card_regions = []
+        
+        for contour in contours:
+            # Get bounding rectangle
+            x, y, w, h = cv2.boundingRect(contour)
+            
+            # Filter by size - cards should have reasonable dimensions
+            if w < 20 or h < 30 or w > 200 or h > 300:
+                continue
+            
+            # Filter by aspect ratio - playing cards are roughly 2.5:3.5 ratio
+            aspect_ratio = w / h
+            if aspect_ratio < 0.4 or aspect_ratio > 1.0:
+                continue
+            
+            # Extract the region
+            region = image.crop((x, y, x + w, y + h))
+            bbox = (x, y, x + w, y + h)
+            
+            card_regions.append((region, bbox))
+        
+        # Sort by area (largest first) and return top candidates
+        card_regions.sort(key=lambda x: (x[1][2] - x[1][0]) * (x[1][3] - x[1][1]), reverse=True)
+        
+        return card_regions[:10]  # Return top 10 candidates

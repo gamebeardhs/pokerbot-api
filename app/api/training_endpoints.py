@@ -11,6 +11,7 @@ from PIL import Image
 import logging
 
 from app.training.card_trainer import CardTrainer, InteractiveTrainer, ManualLabeler
+from app.training.neural_trainer import NeuralCardTrainer, TemplateManager, ColorNormalizer
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,8 @@ logger = logging.getLogger(__name__)
 card_trainer = CardTrainer()
 interactive_trainer = InteractiveTrainer(card_trainer)
 manual_labeler = ManualLabeler(card_trainer)
+neural_trainer = NeuralCardTrainer()
+template_manager = TemplateManager()
 
 router = APIRouter(prefix="/training", tags=["training"])
 
@@ -34,6 +37,14 @@ class CorrectionRequest(BaseModel):
 class ManualLabelRequest(BaseModel):
     image_base64: str
     cards: List[str]
+
+class TemplateRequest(BaseModel):
+    image_base64: str
+    card: str
+    confidence: float = 0.8
+
+class GenerateDatasetRequest(BaseModel):
+    variants_per_card: int = 100
 
 class TrainingStatsResponse(BaseModel):
     total_examples: int
@@ -209,6 +220,97 @@ async def clear_training_data() -> Dict[str, Any]:
         logger.error(f"Failed to clear training data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/add-template")
+async def add_card_template(request: TemplateRequest) -> Dict[str, Any]:
+    """Add a card template for neural network training."""
+    try:
+        # Convert base64 to image
+        image = base64_to_image(request.image_base64)
+        
+        # Normalize the image
+        normalized_image = ColorNormalizer.normalize_card_region(image)
+        
+        # Add template
+        success = neural_trainer.add_card_template(request.card, normalized_image)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to add template")
+        
+        return {
+            "success": True,
+            "card": request.card,
+            "message": f"Template added for {request.card}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to add template: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-dataset")
+async def generate_training_dataset(request: GenerateDatasetRequest) -> Dict[str, Any]:
+    """Generate augmented training dataset from templates."""
+    try:
+        # Generate dataset
+        dataset = neural_trainer.generate_training_dataset(request.variants_per_card)
+        
+        if not dataset['images']:
+            raise HTTPException(status_code=400, detail="No templates available for dataset generation")
+        
+        # Save dataset
+        output_dir = "training_data/generated_dataset"
+        neural_trainer.save_training_dataset(dataset, output_dir)
+        
+        return {
+            "success": True,
+            "total_images": len(dataset['images']),
+            "unique_cards": len(set(dataset['card_names'])),
+            "output_directory": output_dir,
+            "message": f"Generated {len(dataset['images'])} training examples"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to generate dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/template-stats")
+async def get_template_stats() -> Dict[str, Any]:
+    """Get statistics about available templates."""
+    try:
+        stats = neural_trainer.get_training_stats()
+        return {
+            "success": True,
+            "stats": stats
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get template stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/match-template")
+async def match_template(
+    image_base64: str = Form(...),
+    card: str = Form(...)
+) -> Dict[str, Any]:
+    """Test template matching for a card."""
+    try:
+        # Convert base64 to image
+        image_data = base64.b64decode(image_base64.split(',')[1] if ',' in image_base64 else image_base64)
+        image = Image.open(io.BytesIO(image_data))
+        
+        # Match against template
+        confidence = template_manager.match_template(image, card)
+        
+        return {
+            "success": True,
+            "card": card,
+            "confidence": confidence,
+            "match": confidence > 0.7
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to match template: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/health")
 async def training_health_check() -> Dict[str, Any]:
     """Health check for training system."""
@@ -216,5 +318,7 @@ async def training_health_check() -> Dict[str, Any]:
         "status": "healthy",
         "trainer_ready": True,
         "interactive_trainer_ready": True,
-        "manual_labeler_ready": True
+        "manual_labeler_ready": True,
+        "neural_trainer_ready": True,
+        "template_manager_ready": True
     }

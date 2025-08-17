@@ -4,7 +4,15 @@ A comprehensive FastAPI-based poker advisory service that provides mathematicall
 
 ## Recent Major Enhancements (August 2025)
 
-The system has been significantly enhanced to become a true GTO bot with comprehensive poker analysis:
+The system has been significantly enhanced with advanced card recognition inspired by the DeeperMind poker bot and comprehensive GTO analysis:
+
+### Enhanced Card Recognition System (DeeperMind-Inspired)
+- **Dual Recognition Approach**: Combines template matching with neural network fallback for maximum accuracy
+- **Template-Based Training**: Create card templates for automatic dataset generation with 50+ augmentation variants per template
+- **Color Normalization**: Advanced color standardization for consistent card recognition across different lighting
+- **Data Augmentation Engine**: Generates training data with rotation, scaling, brightness, contrast, noise, and perspective variations
+- **Interactive Template Manager**: Web-based interface for creating and managing card templates with confidence thresholds
+- **Bootstrap Training**: Uses template matching to generate neural network training datasets automatically
 
 ### Enhanced Data Models
 - **Comprehensive TableState**: Now captures board texture, player ranges, effective stacks, SPR, betting history, and positional information

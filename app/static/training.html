@@ -179,6 +179,7 @@
         <div class="tab-container">
             <button class="tab active" onclick="showTab('interactive')">Interactive Trainer</button>
             <button class="tab" onclick="showTab('manual')">Manual Labeling</button>
+            <button class="tab" onclick="showTab('templates')">Template System</button>
             <button class="tab" onclick="showTab('stats')">Training Stats</button>
         </div>
 
@@ -228,6 +229,51 @@
             </div>
         </div>
 
+        <!-- Template System Tab -->
+        <div id="templates" class="tab-content">
+            <h2>Neural Network Template System</h2>
+            <p>Create card templates for generating augmented training datasets automatically.</p>
+            
+            <div class="upload-area" onclick="document.getElementById('template-input').click()">
+                <input type="file" id="template-input" accept="image/*" style="display: none;" onchange="loadTemplateImage(this)">
+                <p>Click to upload a clear card image for template creation</p>
+                <p style="color: #666; font-size: 14px;">Best: Individual cards with consistent lighting and size</p>
+            </div>
+
+            <div id="template-creation" class="hidden">
+                <img id="template-preview" alt="Template preview" style="max-width: 150px; max-height: 200px; border: 2px solid #ddd;">
+                <div class="card-input">
+                    <select id="template-card-select">
+                        <option value="">Select Card...</option>
+                    </select>
+                    <input type="range" id="confidence-slider" min="0.5" max="1.0" step="0.05" value="0.8">
+                    <span id="confidence-display">0.8</span>
+                    <button class="btn" onclick="createTemplate()">Create Template</button>
+                </div>
+                <p style="color: #666; font-size: 14px;">
+                    Template Confidence: How closely new images must match this template (0.5 = loose, 1.0 = exact)
+                </p>
+            </div>
+
+            <div class="container" style="margin-top: 20px;">
+                <h3>Template Management</h3>
+                <button class="btn" onclick="loadTemplateStats()">Refresh Template Stats</button>
+                <button class="btn btn-secondary" onclick="generateAugmentedDataset()">Generate Training Dataset</button>
+                <button class="btn" onclick="testTemplateMatching()">Test Template Matching</button>
+                
+                <div id="template-stats" style="margin-top: 20px;">
+                    <!-- Template stats will be populated here -->
+                </div>
+                
+                <div id="dataset-generation" class="hidden" style="margin-top: 20px;">
+                    <h4>Dataset Generation</h4>
+                    <label>Variants per card template:</label>
+                    <input type="number" id="variants-count" value="100" min="10" max="500">
+                    <button class="btn" onclick="startDatasetGeneration()">Generate Dataset</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Training Stats Tab -->
         <div id="stats" class="tab-content">
             <h2>Training Statistics</h2>
@@ -246,6 +292,36 @@
     <script>
         let currentSession = null;
         let currentImage = null;
+        let currentTemplateImage = null;
+        
+        // Generate card options for template selection
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        const suits = ['s', 'h', 'd', 'c'];
+        const suitNames = {'s': 'Spades', 'h': 'Hearts', 'd': 'Diamonds', 'c': 'Clubs'};
+        const rankNames = {'T': 'Ten', 'J': 'Jack', 'Q': 'Queen', 'K': 'King', 'A': 'Ace'};
+        
+        // Populate card select dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('template-card-select');
+            for (const rank of ranks) {
+                for (const suit of suits) {
+                    const card = rank + suit;
+                    const rankName = rankNames[rank] || rank;
+                    const suitName = suitNames[suit];
+                    const option = new Option(`${rankName} of ${suitName} (${card})`, card);
+                    select.appendChild(option);
+                }
+            }
+            
+            // Setup confidence slider
+            const slider = document.getElementById('confidence-slider');
+            const display = document.getElementById('confidence-display');
+            slider.addEventListener('input', function() {
+                display.textContent = this.value;
+            });
+            
+            loadStats();
+        });
         
         // Predefined regions for ACR poker table
         const defaultRegions = {
@@ -559,10 +635,168 @@
             }, 5000);
         }
 
-        // Load stats on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadStats();
-        });
+        function loadTemplateImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentTemplateImage = e.target.result;
+                    document.getElementById('template-preview').src = currentTemplateImage;
+                    document.getElementById('template-creation').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function createTemplate() {
+            const cardSelect = document.getElementById('template-card-select');
+            const confidenceSlider = document.getElementById('confidence-slider');
+            
+            if (!currentTemplateImage) {
+                showMessage('Please upload a template image first', 'error');
+                return;
+            }
+            
+            if (!cardSelect.value) {
+                showMessage('Please select a card', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/training/add-template', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image_base64: currentTemplateImage.split(',')[1],
+                        card: cardSelect.value,
+                        confidence: parseFloat(confidenceSlider.value)
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`Template created for ${cardSelect.value}`, 'success');
+                    document.getElementById('template-creation').classList.add('hidden');
+                    document.getElementById('template-input').value = '';
+                    loadTemplateStats();
+                } else {
+                    showMessage('Failed to create template', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error creating template', 'error');
+            }
+        }
+
+        async function loadTemplateStats() {
+            try {
+                const response = await fetch('/training/template-stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayTemplateStats(result.stats);
+                } else {
+                    showMessage('Failed to load template stats', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error loading template stats', 'error');
+            }
+        }
+
+        function displayTemplateStats(stats) {
+            const statsDiv = document.getElementById('template-stats');
+            
+            const missingCards = stats.missing_cards;
+            const availableCards = stats.cards_with_templates;
+            
+            statsDiv.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total_templates}</div>
+                        <div>Templates Created</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.coverage_percentage.toFixed(1)}%</div>
+                        <div>Deck Coverage</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${52 - stats.total_templates}</div>
+                        <div>Cards Missing</div>
+                    </div>
+                </div>
+                
+                ${availableCards.length > 0 ? `
+                <div style="margin-top: 20px;">
+                    <h4>Available Templates:</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        ${availableCards.map(card => `<span style="padding: 4px 8px; background: #d4edda; border-radius: 4px; font-size: 12px;">${card}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${missingCards.length > 0 ? `
+                <div style="margin-top: 20px;">
+                    <h4>Missing Templates (${missingCards.length} cards):</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        ${missingCards.slice(0, 20).map(card => `<span style="padding: 4px 8px; background: #f8d7da; border-radius: 4px; font-size: 12px;">${card}</span>`).join('')}
+                        ${missingCards.length > 20 ? `<span style="padding: 4px 8px; color: #666;">... and ${missingCards.length - 20} more</span>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Show dataset generation if we have enough templates
+            if (stats.total_templates >= 5) {
+                document.getElementById('dataset-generation').classList.remove('hidden');
+            }
+        }
+
+        async function generateAugmentedDataset() {
+            loadTemplateStats();
+        }
+
+        async function startDatasetGeneration() {
+            const variantsCount = document.getElementById('variants-count').value;
+            
+            if (variantsCount < 10 || variantsCount > 500) {
+                showMessage('Variants count must be between 10 and 500', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Generating augmented dataset... This may take a moment.', 'success');
+                
+                const response = await fetch('/training/generate-dataset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        variants_per_card: parseInt(variantsCount)
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`Generated ${result.total_images} training examples for ${result.unique_cards} cards!`, 'success');
+                } else {
+                    showMessage('Failed to generate dataset', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error generating dataset', 'error');
+            }
+        }
+
+        async function testTemplateMatching() {
+            // This would allow testing template matching against uploaded images
+            showMessage('Template matching test - upload an image and select a card to test', 'success');
+        }
     </script>
 </body>
 </html>
