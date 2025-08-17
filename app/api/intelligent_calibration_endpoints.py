@@ -16,6 +16,14 @@ router = APIRouter()
 # Global calibrator instance
 intelligent_calibrator = IntelligentACRCalibrator()
 
+@router.get("/auto-calibrate")
+async def get_calibration_page():
+    """GET endpoint for calibration page."""
+    return {
+        "message": "Use POST to /calibration/auto-calibrate to run calibration",
+        "instructions": "Or visit /calibration/ui for web interface"
+    }
+
 @router.post("/auto-calibrate")
 async def auto_calibrate_acr_table() -> Dict[str, Any]:
     """Fast auto-calibration with timeout protection - no hanging."""
