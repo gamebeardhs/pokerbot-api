@@ -117,6 +117,87 @@ async def debug_local_detection() -> Dict[str, Any]:
             "explanation": "Local debugging requires direct desktop access"
         }
 
+@router.get("/comprehensive-debug")
+async def run_comprehensive_debug() -> Dict[str, Any]:
+    """Run comprehensive debug analysis and create detailed log."""
+    try:
+        import subprocess
+        import json
+        
+        # Execute comprehensive debug script
+        result = subprocess.run(
+            ['python', 'comprehensive_debug.py'], 
+            capture_output=True, 
+            text=True,
+            timeout=60  # 60 second timeout
+        )
+        
+        if result.returncode != 0:
+            return {
+                "debug_success": False,
+                "error": result.stderr,
+                "stdout": result.stdout,
+                "explanation": "Comprehensive debug script failed"
+            }
+        
+        # Parse output for key information
+        lines = result.stdout.strip().split('\n')
+        
+        # Extract key information from output
+        working_methods = []
+        failed_methods = []
+        detection_result = None
+        log_file = None
+        recommendations = []
+        
+        for line in lines:
+            if "PIL grab result:" in line or "PyAutoGUI result:" in line:
+                # Extract method info (simplified parsing)
+                if "success: True" in line:
+                    working_methods.append({
+                        "method": "Screenshot method",
+                        "resolution": "detected",
+                        "is_black": "is_black: True" in line
+                    })
+            elif "Complete debug log saved to:" in line:
+                log_file = line.split(":")[-1].strip()
+            elif "Table detected:" in line:
+                detection_result = {"table_detected": "True" in line, "confidence": 0}
+        
+        return {
+            "debug_success": True,
+            "comprehensive_debug": True,
+            "full_output": result.stdout,
+            "working_methods": working_methods,
+            "failed_methods": failed_methods,
+            "detection_result": detection_result,
+            "log_file": log_file,
+            "recommendations": [
+                "Check the debug log file for complete details",
+                "Review all generated debug_*.png files",
+                "Try running as administrator if black screens detected"
+            ],
+            "files_created": [
+                "debug_pil_grab.png",
+                "debug_pil_all_screens.png", 
+                "debug_system_screenshot.png",
+                "Various debug mask files"
+            ]
+        }
+        
+    except subprocess.TimeoutExpired:
+        return {
+            "debug_success": False,
+            "error": "Debug analysis timed out after 60 seconds",
+            "explanation": "Comprehensive debug took too long to complete"
+        }
+    except Exception as e:
+        return {
+            "debug_success": False,
+            "error": str(e),
+            "explanation": "Comprehensive debug analysis failed"
+        }
+
 @router.get("/detect-table")
 async def detect_acr_table() -> Dict[str, Any]:
     """Detect if ACR poker table is currently open and active."""

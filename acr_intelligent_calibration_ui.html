@@ -284,6 +284,9 @@
                 <button class="btn secondary" onclick="debugLocalDetection()">
                     🔧 Debug Local
                 </button>
+                <button class="btn primary" onclick="runComprehensiveDebug()">
+                    📋 Full Debug Log
+                </button>
             </div>
 
             <!-- Adaptive Status -->
@@ -598,6 +601,57 @@
                 
             } catch (error) {
                 addLog('Debug request failed', 'error');
+            }
+        }
+
+        async function runComprehensiveDebug() {
+            addLog('Running comprehensive debug analysis...', 'info');
+            addLog('This will test all screenshot methods and system detection', 'info');
+            
+            try {
+                const result = await apiCall('/comprehensive-debug');
+                
+                if (result.debug_success) {
+                    addLog('✅ Comprehensive debug completed!', 'success');
+                    addLog('📋 Results Summary:', 'info');
+                    
+                    if (result.working_methods && result.working_methods.length > 0) {
+                        addLog(`✅ Working screenshot methods: ${result.working_methods.length}`, 'success');
+                        result.working_methods.forEach(method => {
+                            addLog(`   • ${method.method}: ${method.resolution}`, 'info');
+                            if (method.is_black) {
+                                addLog(`     ⚠️ Captures black screen - permissions issue`, 'warning');
+                            }
+                        });
+                    }
+                    
+                    if (result.failed_methods && result.failed_methods.length > 0) {
+                        addLog(`❌ Failed methods: ${result.failed_methods.length}`, 'warning');
+                    }
+                    
+                    if (result.detection_result) {
+                        const detection = result.detection_result;
+                        addLog(`🎯 Table detection: ${detection.table_detected ? 'SUCCESS' : 'FAILED'}`, 
+                               detection.table_detected ? 'success' : 'warning');
+                        addLog(`   Confidence: ${(detection.confidence * 100).toFixed(1)}%`, 'info');
+                    }
+                    
+                    if (result.log_file) {
+                        addLog(`📄 Full debug log saved: ${result.log_file}`, 'success');
+                        addLog('Share this file to show exactly what\'s happening', 'success');
+                    }
+                    
+                    if (result.recommendations && result.recommendations.length > 0) {
+                        addLog('💡 Recommendations:', 'info');
+                        result.recommendations.forEach(rec => addLog(`   • ${rec}`, 'info'));
+                    }
+                    
+                } else {
+                    addLog(`❌ Debug failed: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                addLog('Comprehensive debug request failed', 'error');
             }
         }
 
