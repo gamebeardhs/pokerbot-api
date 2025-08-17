@@ -1,0 +1,77 @@
+[2025-08-17 20:56:31.937] INFO: ================================================================================
+[2025-08-17 20:56:31.942] INFO: COMPREHENSIVE SYSTEM DEBUG LOG
+[2025-08-17 20:56:31.942] INFO: ================================================================================
+[2025-08-17 20:56:31.955] INFO: Platform: Linux-6.2.16-x86_64-with-glibc2.40
+[2025-08-17 20:56:31.955] INFO: Python version: 3.11.13 (main, Jun  3 2025, 18:38:25) [GCC 14.3.0]
+[2025-08-17 20:56:31.955] INFO: Working directory: /home/runner/workspace
+[2025-08-17 20:56:31.955] INFO: Script path: /home/runner/workspace/comprehensive_debug.py
+[2025-08-17 20:56:31.955] INFO: Environment DISPLAY: :0
+[2025-08-17 20:56:31.955] INFO: Environment DISPLAY_CAPTURE_METHOD: Not set
+[2025-08-17 20:56:31.955] INFO: Environment PATH: /nix/store/m9rqkx8s9a45wivak202kiw7p11xp6n5-libwebp-1.5.0/bin:/nix/store/8xj3g825qwj894bxafa8h98scxxyvxps-libdeflate-1.23/bin:/nix/store/igfbwifcgda365wl2ldzhrvgp72w19c4-unzip-6.0/bin:/nix/store/i2c4lj0hirk7i27xgib08zy0rdrkfi70-libpng-apng-1.6.46-dev/bin:/nix/store/lpspyskfibz1b27c4914p2qipgpm1rva-tk-8.6.15/bin:/nix/store/glmlgiwv29vn9jaskk42byy0w6szph1c-libwebp-1.5.0/bin:/nix/store/cmv326slnswzsjm2sqgbz16hzzqvkfjy-xz-5.8.1-bin/bin:/nix/store/w9qijf113qkgqcv54ydhbjh0rlslysbr-freetype-2.13.3-dev/bin:/nix/store/jl5pd089fd6ciars6gpsg48hh2h97nqd-git-with-svn-2.49.0/bin:/nix/store/28z6bx9sg0lsr7wra22pbjsk6fzfphy4-bzip2-1.0.8-bin/bin:/nix/store/1m84a2hb8h8qmfd5qdbkq17rz5ga3dqk-openjpeg-2.5.2/bin:/nix/store/zgfr10jz12gpfxn5n4mlblxxknv8f19v-libtiff-4.7.0-bin/bin:/nix/store/llqrkvzn5f08iwlq4xqy5av5mppgp7yp-brotli-1.1.0/bin:/nix/store/wbv7b4dc17n1azxan5m5mm07fifai44a-zstd-1.5.7/bin:/nix/store/v14yhii5s8vdrlqg3kklzqa92pxdqi4c-tesseract-5.5.0/bin:/nix/store/ddap6dm3fjdm0zmw4m3rls73a0gml3xd-zstd-1.5.7-bin/bin:/nix/store/h27r22vwxb5vcafqdyl4kwzxh48bdjx4-lcms2-2.17-bin/bin:/nix/store/bqppwwi9g8nzbk0b6hq6fwkqnwd06y63-tcl-8.6.15/bin:/nix/store/lrrj9h7h1ifbdv82rrbddxracm5jjxwx-libjpeg-turbo-3.0.4-bin/bin:/nix/store/i8ls8rz7c56ipdqwkr3c1lcpr30kh77m-fontconfig-2.16.0-bin/bin:/home/runner/workspace/.pythonlibs/bin:/nix/store/2lcqw1d28vklbk8ikiwad28iq2smwndv-python-wrapped-0.1.0/bin:/nix/store/2qx6jrl9h5hwpsry3ilbiihgmrnrvp50-pip-wrapper/bin:/nix/store/mx06wb8qp5z14na666bwnm1f2mxxwzj0-poetry-wrapper/bin:/nix/store/w4ml96z06nzljipl8hjlfvwg4pkxknyx-uv-0.5.11/bin:/nix/store/z11r6xq2v724w6fnp4hzm0ckb4phqfw6-pid1/bin:/nix/store/1yj5z39xwiram4s0dm1i2ldpw4cbmwa6-replit-runtime-path/bin:/home/runner/.nix-profile/bin:/home/runner/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+[2025-08-17 20:56:32.122] INFO: Tkinter screen size: 800x600
+[2025-08-17 20:56:32.125] INFO: Testing screenshot capture methods...
+[2025-08-17 20:56:32.125] INFO: Testing PIL ImageGrab.grab()...
+[2025-08-17 20:56:32.151] INFO: PIL grab result: {'method': 'PIL ImageGrab.grab()', 'success': True, 'resolution': '800x600', 'channels': 3, 'total_pixels': np.uint64(0), 'is_black': np.True_, 'min_value': np.uint8(0), 'max_value': np.uint8(0), 'mean_value': np.float64(0.0)}
+[2025-08-17 20:56:32.159] INFO: Saved debug_pil_grab.png
+[2025-08-17 20:56:32.165] INFO: PIL all_screens result: {'method': 'PIL ImageGrab.grab(all_screens=True)', 'success': True, 'resolution': '800x600', 'channels': 3, 'total_pixels': np.uint64(0), 'is_black': np.True_}
+[2025-08-17 20:56:32.172] INFO: Saved debug_pil_all_screens.png
+[2025-08-17 20:56:32.172] WARNING: PyAutoGUI not installed
+[2025-08-17 20:56:32.172] INFO: Testing main system detection...
+[2025-08-17 20:56:32.184] INFO: IntelligentACRCalibrator initialized
+[2025-08-17 20:56:32.208] INFO: System screenshot shape: (600, 800, 3)
+[2025-08-17 20:56:32.257] INFO: System detection result: {
+  "table_detected": false,
+  "confidence": 0.0,
+  "screenshot_shape": [
+    600,
+    800,
+    3
+  ],
+  "features": {
+    "buttons": 0,
+    "text_regions": 0,
+    "card_regions": 0,
+    "circular_elements": 0
+  },
+  "indicators": {
+    "acr_logo": false,
+    "table_felt": false,
+    "card_positions": [],
+    "ui_elements": []
+  }
+}
+[2025-08-17 20:56:32.271] INFO: Saved debug_system_screenshot.png
+[2025-08-17 20:56:32.272] INFO: Testing color detection on debug_pil_grab.png...
+[2025-08-17 20:56:32.281] INFO: Green detection Standard: 0.00% (0/480000 pixels)
+[2025-08-17 20:56:32.284] INFO: Green detection Dark: 0.00% (0/480000 pixels)
+[2025-08-17 20:56:32.286] INFO: Green detection Light: 0.00% (0/480000 pixels)
+[2025-08-17 20:56:32.289] INFO: Green detection Wide: 0.00% (0/480000 pixels)
+[2025-08-17 20:56:32.291] INFO: ================================================================================
+[2025-08-17 20:56:32.291] INFO: DEBUG SUMMARY AND RECOMMENDATIONS
+[2025-08-17 20:56:32.291] INFO: ================================================================================
+[2025-08-17 20:56:32.291] INFO: WORKING SCREENSHOT METHODS:
+[2025-08-17 20:56:32.291] INFO:   - PIL ImageGrab.grab(): 800x600
+[2025-08-17 20:56:32.291] INFO:     WARNING: Captures black screen - permissions issue
+[2025-08-17 20:56:32.291] INFO:   - PIL ImageGrab.grab(all_screens=True): 800x600
+[2025-08-17 20:56:32.291] INFO:     WARNING: Captures black screen - permissions issue
+[2025-08-17 20:56:32.291] INFO: MAIN SYSTEM DETECTION:
+[2025-08-17 20:56:32.291] INFO:   - Table detected: False
+[2025-08-17 20:56:32.291] INFO:   - Confidence: 0.0
+[2025-08-17 20:56:32.291] INFO:   - Features found: {'buttons': 0, 'text_regions': 0, 'card_regions': 0, 'circular_elements': 0}
+[2025-08-17 20:56:32.292] INFO: RECOMMENDATIONS:
+[2025-08-17 20:56:32.292] INFO:   1. BLACK SCREEN DETECTED - Try these fixes:
+[2025-08-17 20:56:32.292] INFO:      - Run Command Prompt as Administrator
+[2025-08-17 20:56:32.292] INFO:      - Change Windows display scale to 100%
+[2025-08-17 20:56:32.292] INFO:      - Enable screen recording permissions for Python
+[2025-08-17 20:56:32.293] INFO:      - Install PyAutoGUI: pip install pyautogui
+[2025-08-17 20:56:32.293] INFO: Complete debug log saved to: debug_log_20250817_205631.txt
+[2025-08-17 20:56:32.293] INFO: Files created for inspection:
+[2025-08-17 20:56:32.294] INFO:   - debug_screenshot.png
+[2025-08-17 20:56:32.294] INFO:   - debug_annotated.png
+[2025-08-17 20:56:32.294] INFO:   - debug_pil_grab.png
+[2025-08-17 20:56:32.294] INFO:   - debug_pil_all_screens.png
+[2025-08-17 20:56:32.294] INFO:   - debug_system_screenshot.png
+[2025-08-17 20:56:32.294] INFO:   - debug_green_mask_standard.png
+[2025-08-17 20:56:32.295] INFO:   - debug_green_mask_dark.png
+[2025-08-17 20:56:32.295] INFO:   - debug_green_mask_light.png
+[2025-08-17 20:56:32.295] INFO:   - debug_green_mask_wide.png

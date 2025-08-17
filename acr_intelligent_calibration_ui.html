@@ -287,6 +287,9 @@
                 <button class="btn primary" onclick="runComprehensiveDebug()">
                     📋 Full Debug Log
                 </button>
+                <button class="btn info" onclick="testButtonClick()">
+                    🧪 Test Click
+                </button>
             </div>
 
             <!-- Adaptive Status -->
@@ -356,10 +359,20 @@
         function clearLog() {
             document.getElementById('logContainer').innerHTML = '';
         }
+        
+        // Test function to verify button clicks
+        function testButtonClick() {
+            console.log('Test button clicked!');
+            addLog('Button click test - SUCCESS!', 'success');
+            alert('Button clicks are working!');
+        }
 
-        // API calls
+        // API calls with debugging
         async function apiCall(endpoint, method = 'GET', data = null) {
             try {
+                console.log(`Making API call: ${method} ${endpoint}`);
+                addLog(`API: ${method} ${endpoint}`, 'info');
+                
                 const options = {
                     method: method,
                     headers: {
@@ -369,10 +382,13 @@
                 
                 if (data) {
                     options.body = JSON.stringify(data);
+                    console.log('Request data:', data);
                 }
                 
                 const response = await fetch(`${API_BASE}/calibration${endpoint}`, options);
                 const result = await response.json();
+                
+                console.log(`Response from ${endpoint}:`, result);
                 
                 if (!response.ok) {
                     throw new Error(result.detail || 'API call failed');
@@ -380,6 +396,7 @@
                 
                 return result;
             } catch (error) {
+                console.error(`API Error for ${endpoint}:`, error);
                 addLog(`API Error: ${error.message}`, 'error');
                 throw error;
             }
@@ -605,10 +622,12 @@
         }
 
         async function runComprehensiveDebug() {
+            console.log('runComprehensiveDebug function called');
             addLog('Running comprehensive debug analysis...', 'info');
             addLog('This will test all screenshot methods and system detection', 'info');
             
             try {
+                console.log('About to call comprehensive-debug endpoint');
                 const result = await apiCall('/comprehensive-debug');
                 
                 if (result.debug_success) {
