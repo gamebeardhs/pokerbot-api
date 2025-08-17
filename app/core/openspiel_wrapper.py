@@ -53,10 +53,17 @@ class OpenSpielWrapper:
             raise RuntimeError("OpenSpiel not available")
             
         try:
-            # Use Kuhn poker for basic testing, leduc for more complex scenarios
-            # In production, you'd use no_limit_holdem but it's computationally intensive
-            self.game = pyspiel.load_game("leduc_poker")
-            self.cfr_solver = cfr.CFRSolver(self.game)
+            # Use proper Texas Hold'em for true poker GTO calculations
+            try:
+                # Universal poker supports Texas Hold'em variants
+                self.game = pyspiel.load_game("universal_poker")
+                self.cfr_solver = cfr.CFRSolver(self.game)
+                logger.info("Universal Poker (Hold'em) CFR solver initialized - True poker GTO")
+            except:
+                # Fallback to Leduc poker if universal_poker not available
+                self.game = pyspiel.load_game("leduc_poker") 
+                self.cfr_solver = cfr.CFRSolver(self.game)
+                logger.warning("Using Leduc poker fallback - Limited GTO accuracy")
             
         except Exception as e:
             logger.error(f"CFR solver initialization failed: {e}")

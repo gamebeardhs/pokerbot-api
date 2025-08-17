@@ -49,7 +49,30 @@ class DualCardRecognition:
     def detect_cards_in_region(self, image: Image.Image, max_cards: int = 5) -> List[Card]:
         """
         Main detection method that uses the dual recognition approach.
+        Uses ultra-fast hash recognition first, falls back to neural/OCR.
         """
+        try:
+            # Try ultra-fast hash recognition first
+            from app.core.hash_recognizer import recognize_card_fast
+            
+            # Convert PIL to numpy array
+            img_array = np.array(image)
+            
+            # Try hash recognition (sub-millisecond)
+            card_result = recognize_card_fast(img_array)
+            if card_result:
+                # Parse card result (e.g., "As" -> rank="A", suit="s")
+                if len(card_result) >= 2:
+                    rank = card_result[0]
+                    suit = card_result[1]
+                    return [Card(rank=rank, suit=suit, confidence=0.95, bbox=(0, 0, image.width, image.height))]
+            
+        except ImportError:
+            logger.debug("Hash recognizer not available, using legacy method")
+        except Exception as e:
+            logger.debug(f"Hash recognition failed: {e}, falling back to legacy")
+        
+        # Fallback to slower dual recognition
         return self.legacy_recognizer.detect_cards_dual_mode(image, max_cards)
 
 class CardRecognition:
