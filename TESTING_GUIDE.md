@@ -76,31 +76,33 @@ curl http://localhost:5000/training/stats
 curl http://localhost:5000/
 ```
 
-### 4. **Create Your Own Templates**
+### 4. **Extract All 52 ACR Card Templates Automatically**
 
-**Method 1: Use the interactive interface**
+**Method 1: Extract from ACR Client (BEST)**
+```bash
+python extract_acr_templates.py
+```
+This automatically finds and extracts all card images from your ACR installation at:
+`C:\AmericasCardroom\resources\assets\gc\hdpi\kpoker`
+
+**Method 2: Download Open Source Templates**
+```bash
+python extract_acr_templates.py
+# Falls back to downloading from GitHub if ACR not found
+```
+
+**Method 3: Create individual templates manually**
 ```bash
 python test_yourself.py
-# Choose option 6 to create new templates
+# Choose option 6 to create new templates one by one
 ```
 
-**Method 2: Direct script**
-```bash
-python create_test_template.py
-# This creates 5 example templates automatically
-```
-
-**Method 3: Manual creation**
+**Method 4: Create all missing templates**
 ```bash
 python -c "
-from app.training.neural_trainer import TemplateManager
-from create_test_template import create_card_template
-
-tm = TemplateManager()
-# Create a new card (e.g., 9 of Hearts)
-card_img = create_card_template('9', 'h')
-success = tm.add_template('9h', card_img, 0.7)
-print(f'Template created: {success}')
+from extract_acr_templates import ACRTemplateExtractor
+extractor = ACRTemplateExtractor()
+extractor.create_all_missing_templates()
 "
 ```
 
