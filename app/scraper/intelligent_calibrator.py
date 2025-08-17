@@ -29,36 +29,58 @@ class CircuitState(Enum):
     HALF_OPEN = "half_open"  # Testing recovery
 
 def timeout_protection(timeout_seconds: int = 30):
-    """Decorator to add timeout protection to calibration methods."""
+    """Decorator to add timeout protection to calibration methods with Windows compatibility."""
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            try:
-                import signal
-                def timeout_handler(signum, frame):
-                    raise TimeoutError(f"Operation timed out after {timeout_seconds} seconds")
+            import platform
+            
+            # Windows-compatible timeout using threading
+            if platform.system() == "Windows":
+                import threading
+                result = [None]
+                exception = [None]
                 
-                # Set timeout alarm
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(timeout_seconds)
-                
-                try:
-                    result = func(*args, **kwargs)
-                    return result
-                finally:
-                    signal.alarm(0)  # Clear alarm
-                    
-            except Exception as e:
-                logger.error(f"Timeout protection failed: {e}")
-                # Fallback for Windows (no signal support)
-                start_time = time.time()
-                while time.time() - start_time < timeout_seconds:
+                def target():
                     try:
-                        return func(*args, **kwargs)
-                    except Exception as inner_e:
-                        logger.warning(f"Timeout fallback error: {inner_e}")
-                        time.sleep(0.1)
-                raise TimeoutError(f"Operation failed after {timeout_seconds} seconds")
+                        result[0] = func(*args, **kwargs)
+                    except Exception as e:
+                        exception[0] = e
+                
+                thread = threading.Thread(target=target)
+                thread.daemon = True
+                thread.start()
+                thread.join(timeout_seconds)
+                
+                if thread.is_alive():
+                    logger.warning(f"Operation timed out after {timeout_seconds}s")
+                    return {"success": False, "error": "timeout", "message": "Operation timed out"}
+                
+                if exception[0]:
+                    raise exception[0]
+                
+                return result[0]
+            
+            else:
+                # Unix-like systems can use signal
+                try:
+                    import signal
+                    def timeout_handler(signum, frame):
+                        raise TimeoutError(f"Operation timed out after {timeout_seconds} seconds")
+                    
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(timeout_seconds)
+                    
+                    try:
+                        result = func(*args, **kwargs)
+                        return result
+                    finally:
+                        signal.alarm(0)
+                        
+                except Exception as e:
+                    logger.error(f"Signal timeout failed: {e}")
+                    return func(*args, **kwargs)
+                    
         return wrapper
     return decorator
 
@@ -665,7 +687,19 @@ class IntelligentACRCalibrator:
         regions = {}
         
         gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-        features = table_info["features"]
+        
+        # Safely extract features with fallback
+        if isinstance(table_info, dict) and "features" in table_info:
+            features = table_info["features"]
+        else:
+            # Create default features structure if missing
+            features = {
+                "card_regions": [],
+                "buttons": [],
+                "text_regions": [],
+                "circular_elements": []
+            }
+            logger.warning("Missing features in table_info, using defaults")
         
         # Hero cards (bottom center)
         hero_cards = self.find_hero_card_regions(features["card_regions"])
