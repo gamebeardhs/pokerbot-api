@@ -545,19 +545,53 @@ class IntelligentACRCalibrator:
         
         return passed_tests / total_tests if total_tests > 0 else 0.0
     
-    def capture_screen(self) -> np.ndarray:
-        """Capture current screen with enhanced detection."""
+    def capture_screen(self, monitor_index: int = None) -> np.ndarray:
+        """Capture screen with multi-monitor support."""
         try:
             from PIL import ImageGrab
-            screenshot = ImageGrab.grab()
+            import tkinter as tk
+            
+            if monitor_index is not None:
+                # Capture specific monitor
+                root = tk.Tk()
+                monitors = []
+                
+                # Get all monitor boundaries
+                for i in range(root.winfo_screenwidth()):
+                    try:
+                        monitor_info = root.winfo_screen()
+                        monitors.append({
+                            'left': 0, 'top': 0,
+                            'width': root.winfo_screenwidth(),
+                            'height': root.winfo_screenheight()
+                        })
+                        break
+                    except:
+                        pass
+                root.destroy()
+                
+                if monitor_index < len(monitors):
+                    monitor = monitors[monitor_index]
+                    screenshot = ImageGrab.grab(bbox=(
+                        monitor['left'], monitor['top'],
+                        monitor['left'] + monitor['width'],
+                        monitor['top'] + monitor['height']
+                    ))
+                else:
+                    # Fallback to primary monitor
+                    screenshot = ImageGrab.grab()
+            else:
+                # Capture all monitors (default behavior)
+                screenshot = ImageGrab.grab()
+            
             screenshot_np = np.array(screenshot)
             bgr_image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
             
             logger.info(f"Screenshot captured: {bgr_image.shape[1]}x{bgr_image.shape[0]} pixels")
             return bgr_image
+            
         except Exception as e:
             logger.error(f"Screenshot capture failed: {e}")
-            # Create a larger dummy image if capture fails
             return np.zeros((1080, 1920, 3), dtype=np.uint8)
     
     def save_calibration(self, result: CalibrationResult):

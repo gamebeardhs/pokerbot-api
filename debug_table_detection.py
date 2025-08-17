@@ -11,8 +11,8 @@ from pathlib import Path
 
 def debug_screen_capture():
     """Debug screen capture and ACR detection."""
-    print("🔍 Debugging ACR Table Detection")
-    print("=" * 50)
+    print("🔍 Debugging ACR Table Detection (Multi-Monitor)")
+    print("=" * 60)
     
     try:
         # Capture full screen
@@ -21,7 +21,15 @@ def debug_screen_capture():
         screenshot_np = np.array(screenshot)
         bgr_image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
         
-        print(f"✅ Screenshot captured: {bgr_image.shape[1]}x{bgr_image.shape[0]} pixels")
+        width, height = bgr_image.shape[1], bgr_image.shape[0]
+        print(f"✅ Screenshot captured: {width}x{height} pixels")
+        
+        # Detect multi-monitor setup
+        if width > 2000:  # Likely multi-monitor
+            estimated_monitors = width // 1920 if width % 1920 < 500 else (width // 1920) + 1
+            print(f"📺 Multi-monitor detected: ~{estimated_monitors} monitors ({width/estimated_monitors:.0f}x{height} each)")
+        else:
+            print(f"📺 Single monitor setup: {width}x{height}")
         
         # Save debug screenshot
         debug_path = "debug_screenshot.png"
