@@ -85,11 +85,15 @@ class IntelligentACRCalibrator:
         if screenshot is None:
             screenshot = self.capture_screen()
         
-        # Convert to grayscale for analysis
-        gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+        # Keep original color image for better analysis
+        if len(screenshot.shape) == 3:
+            gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = screenshot
+            screenshot = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         
-        # ACR-specific detection patterns
-        acr_indicators = self.find_acr_indicators(gray)
+        # ACR-specific detection patterns (pass color image)
+        acr_indicators = self.find_acr_indicators(screenshot)
         
         # Look for poker table patterns
         table_features = self.detect_table_features(gray)
@@ -111,7 +115,7 @@ class IntelligentACRCalibrator:
         
         return table_info["detected"], table_info
     
-    def find_acr_indicators(self, gray_image: np.ndarray) -> Dict:
+    def find_acr_indicators(self, color_image: np.ndarray) -> Dict:
         """Find ACR-specific visual indicators."""
         indicators = {
             "acr_logo": False,
@@ -120,16 +124,35 @@ class IntelligentACRCalibrator:
             "ui_elements": []
         }
         
-        # Look for green felt color pattern (ACR tables)
-        hsv = cv2.cvtColor(cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR), cv2.COLOR_BGR2HSV)
+        # Use the original color image for HSV analysis
+        if len(color_image.shape) == 3:
+            bgr_for_hsv = color_image
+        else:
+            bgr_for_hsv = cv2.cvtColor(color_image, cv2.COLOR_GRAY2BGR)
+            
+        # Convert to HSV for better color detection
+        hsv = cv2.cvtColor(bgr_for_hsv, cv2.COLOR_BGR2HSV)
         
-        # Green felt detection
-        green_lower = np.array([35, 40, 40])
-        green_upper = np.array([85, 255, 255])
-        green_mask = cv2.inRange(hsv, green_lower, green_upper)
+        # Expanded green detection for ACR tables (multiple green ranges)
+        green_masks = []
+        
+        # Standard poker felt green
+        green_lower1 = np.array([30, 30, 30])
+        green_upper1 = np.array([90, 255, 255])
+        green_masks.append(cv2.inRange(hsv, green_lower1, green_upper1))
+        
+        # Darker green felt
+        green_lower2 = np.array([25, 20, 20])
+        green_upper2 = np.array([95, 200, 200])
+        green_masks.append(cv2.inRange(hsv, green_lower2, green_upper2))
+        
+        # Combine all green masks
+        green_mask = green_masks[0]
+        for mask in green_masks[1:]:
+            green_mask = cv2.bitwise_or(green_mask, mask)
         
         green_area = np.sum(green_mask > 0)
-        total_area = gray_image.shape[0] * gray_image.shape[1]
+        total_area = color_image.shape[0] * color_image.shape[1]
         
         green_percentage = (green_area / total_area) * 100
         logger.info(f"Green area analysis: {green_percentage:.1f}% of desktop")
@@ -138,8 +161,12 @@ class IntelligentACRCalibrator:
             indicators["table_felt"] = True
             logger.info("Poker table felt detected")
         
-        # Look for card-like rectangular shapes
-        indicators["card_positions"] = self.find_card_regions(gray_image)
+        # Look for card-like rectangular shapes (convert to grayscale if needed)
+        if len(color_image.shape) == 3:
+            gray_for_cards = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_for_cards = color_image
+        indicators["card_positions"] = self.find_card_regions(gray_for_cards)
         
         return indicators
     
@@ -554,45 +581,51 @@ class IntelligentACRCalibrator:
         return passed_tests / total_tests if total_tests > 0 else 0.0
     
     def capture_screen(self, monitor_index: int = None) -> np.ndarray:
-        """Capture screen with multi-monitor support."""
+        """Capture screen with Windows permission handling."""
         try:
             from PIL import ImageGrab
-            import tkinter as tk
+            import os
             
-            if monitor_index is not None:
-                # Capture specific monitor
-                root = tk.Tk()
-                monitors = []
-                
-                # Get all monitor boundaries
-                for i in range(root.winfo_screenwidth()):
-                    try:
-                        monitor_info = root.winfo_screen()
-                        monitors.append({
-                            'left': 0, 'top': 0,
-                            'width': root.winfo_screenwidth(),
-                            'height': root.winfo_screenheight()
-                        })
-                        break
-                    except:
-                        pass
-                root.destroy()
-                
-                if monitor_index < len(monitors):
-                    monitor = monitors[monitor_index]
-                    screenshot = ImageGrab.grab(bbox=(
-                        monitor['left'], monitor['top'],
-                        monitor['left'] + monitor['width'],
-                        monitor['top'] + monitor['height']
-                    ))
-                else:
-                    # Fallback to primary monitor
-                    screenshot = ImageGrab.grab()
-            else:
-                # Capture all monitors (default behavior)
+            # Try multiple capture methods for Windows compatibility
+            screenshot = None
+            
+            # Method 1: Standard PIL capture
+            try:
                 screenshot = ImageGrab.grab()
+                logger.info("Using PIL ImageGrab.grab()")
+            except Exception as e1:
+                logger.warning(f"PIL grab failed: {e1}")
+            
+            # Method 2: Alternative capture if available  
+            if screenshot is None or np.array(screenshot).sum() == 0:
+                try:
+                    import pyautogui
+                    screenshot = pyautogui.screenshot()
+                    logger.info("Using PyAutoGUI screenshot")
+                except ImportError:
+                    logger.warning("PyAutoGUI not available")
+                except Exception as e2:
+                    logger.warning(f"PyAutoGUI failed: {e2}")
+            
+            # Method 3: PIL with explicit all monitors
+            if screenshot is None or np.array(screenshot).sum() == 0:
+                try:
+                    screenshot = ImageGrab.grab(all_screens=True)
+                    logger.info("Using PIL all_screens=True")
+                except Exception as e3:
+                    logger.warning(f"PIL all_screens failed: {e3}")
+            
+            if screenshot is None:
+                logger.error("All screenshot methods failed")
+                return np.zeros((1080, 1920, 3), dtype=np.uint8)
             
             screenshot_np = np.array(screenshot)
+            
+            # Check if we got a blank/black screenshot
+            if screenshot_np.sum() == 0:
+                logger.warning("Screenshot is completely black - possible permissions issue")
+                logger.warning("Try running as administrator or check Windows display settings")
+            
             bgr_image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
             
             logger.info(f"Screenshot captured: {bgr_image.shape[1]}x{bgr_image.shape[0]} pixels")

@@ -39,11 +39,33 @@ def debug_screen_capture():
         # Convert to grayscale for analysis
         gray = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
         
-        # Look for green colors (poker table felt)
+        # Look for green colors (poker table felt) - expanded detection
         hsv = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2HSV)
-        green_lower = np.array([35, 40, 40])
-        green_upper = np.array([85, 255, 255])
-        green_mask = cv2.inRange(hsv, green_lower, green_upper)
+        
+        # Multiple green ranges for better detection
+        green_masks = []
+        
+        # Standard green felt
+        green_lower1 = np.array([30, 30, 30])
+        green_upper1 = np.array([90, 255, 255])
+        green_masks.append(cv2.inRange(hsv, green_lower1, green_upper1))
+        
+        # Darker green felt
+        green_lower2 = np.array([25, 20, 20])
+        green_upper2 = np.array([95, 200, 200])
+        green_masks.append(cv2.inRange(hsv, green_lower2, green_upper2))
+        
+        # Light green felt
+        green_lower3 = np.array([35, 50, 50])
+        green_upper3 = np.array([85, 255, 255])
+        green_masks.append(cv2.inRange(hsv, green_lower3, green_upper3))
+        
+        # Combine all green detections
+        green_mask = green_masks[0]
+        for mask in green_masks[1:]:
+            green_mask = cv2.bitwise_or(green_mask, mask)
+            
+        print(f"Green detection ranges tested: {len(green_masks)}")
         
         green_area = np.sum(green_mask > 0)
         total_area = gray.shape[0] * gray.shape[1]

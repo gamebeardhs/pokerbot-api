@@ -71,7 +71,7 @@ async def debug_local_detection() -> Dict[str, Any]:
         
         # Execute debug script
         result = subprocess.run(
-            ['python', 'debug_table_detection.py'], 
+            ['python', 'test_screenshot.py'], 
             capture_output=True, 
             text=True
         )
