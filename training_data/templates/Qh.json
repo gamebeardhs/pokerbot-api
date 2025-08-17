@@ -1,8 +1,10 @@
 {
   "card": "Qh",
-  "created": "2025-08-17 17:04:03",
-  "source": "deckofcardsapi.com",
-  "url": "https://deckofcardsapi.com/static/img/QH.png",
   "rank": "Q",
-  "suit": "h"
+  "suit": "h",
+  "suit_name": "hearts",
+  "background_color": "red",
+  "created": "2025-08-17T17:12:08.487693",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
 }

@@ -1,8 +1,10 @@
 {
   "card": "4s",
-  "created": "2025-08-17 17:03:58",
-  "source": "deckofcardsapi.com",
-  "url": "https://deckofcardsapi.com/static/img/4S.png",
   "rank": "4",
-  "suit": "s"
+  "suit": "s",
+  "suit_name": "spades",
+  "background_color": "black",
+  "created": "2025-08-17T17:12:08.212027",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
 }

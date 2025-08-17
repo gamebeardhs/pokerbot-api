@@ -1,1 +1,10 @@
-{"card": "Kh", "confidence_threshold": 0.7, "created_at": "2025-08-17T08:32:52.148598"}
+{
+  "card": "Kh",
+  "rank": "K",
+  "suit": "h",
+  "suit_name": "hearts",
+  "background_color": "red",
+  "created": "2025-08-17T17:12:08.515289",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
+}

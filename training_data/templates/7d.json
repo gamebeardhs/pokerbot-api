@@ -1,8 +1,10 @@
 {
   "card": "7d",
-  "created": "2025-08-17 17:04:05",
-  "source": "deckofcardsapi.com",
-  "url": "https://deckofcardsapi.com/static/img/7D.png",
   "rank": "7",
-  "suit": "d"
+  "suit": "d",
+  "suit_name": "diamonds",
+  "background_color": "blue",
+  "created": "2025-08-17T17:12:08.341650",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
 }

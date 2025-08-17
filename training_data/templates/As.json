@@ -1,1 +1,10 @@
-{"card": "As", "confidence_threshold": 0.7, "created_at": "2025-08-17T08:32:52.106256"}
+{
+  "card": "As",
+  "rank": "A",
+  "suit": "s",
+  "suit_name": "spades",
+  "background_color": "black",
+  "created": "2025-08-17T17:12:08.120793",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
+}

@@ -1,8 +1,10 @@
 {
   "card": "3c",
-  "created": "2025-08-17 17:04:07",
-  "source": "deckofcardsapi.com",
-  "url": "https://deckofcardsapi.com/static/img/3C.png",
   "rank": "3",
-  "suit": "c"
+  "suit": "c",
+  "suit_name": "clubs",
+  "background_color": "green",
+  "created": "2025-08-17T17:12:08.206975",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
 }

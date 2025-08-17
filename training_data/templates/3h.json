@@ -1,8 +1,10 @@
 {
   "card": "3h",
-  "created": "2025-08-17 17:04:00",
-  "source": "deckofcardsapi.com",
-  "url": "https://deckofcardsapi.com/static/img/3H.png",
   "rank": "3",
-  "suit": "h"
+  "suit": "h",
+  "suit_name": "hearts",
+  "background_color": "red",
+  "created": "2025-08-17T17:12:08.191143",
+  "source": "colored_template_generator",
+  "format": "user_specified_colors"
 }
