@@ -602,13 +602,20 @@ class IntelligentACRCalibrator:
             success_rate=accuracy
         )
         
-        # Cache successful calibration
-        if accuracy >= self.min_accuracy:
+        # Adaptive accuracy feedback
+        if accuracy >= 0.95:
             self._cache_calibration(result)
             self.save_calibration(result)
-            logger.info(f"✅ Auto-calibration successful: {accuracy:.1%} accuracy")
+            logger.info(f"✅ Excellent calibration: {accuracy:.1%} accuracy")
+        elif accuracy >= 0.60:
+            self._cache_calibration(result)
+            self.save_calibration(result)
+            logger.info(f"✅ Good calibration: {accuracy:.1%} accuracy (sufficient for operation)")
+        elif accuracy >= 0.20:
+            # Partial calibration - still useful
+            logger.info(f"⚠️ Partial calibration: {accuracy:.1%} accuracy (manual mode available)")
         else:
-            logger.warning(f"❌ Auto-calibration below target: {accuracy:.1%} < {self.min_accuracy:.1%}")
+            logger.warning(f"❌ Calibration failed: {accuracy:.1%} accuracy")
         
         return result
     
