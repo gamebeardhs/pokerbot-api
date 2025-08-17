@@ -6,6 +6,8 @@ Professional poker bot calibration with 95%+ accuracy guarantee.
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 import logging
+from PIL import ImageGrab
+import numpy as np
 from app.scraper.intelligent_calibrator import IntelligentACRCalibrator, CalibrationResult
 
 logger = logging.getLogger(__name__)
@@ -21,8 +23,6 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
         logger.info("Starting fast auto-calibration...")
         
         # Quick screenshot test first
-        from PIL import ImageGrab
-        import numpy as np
         
         screenshot = ImageGrab.grab()
         screenshot_array = np.array(screenshot)
@@ -94,7 +94,7 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
                     return None
             
             # Use asyncio wait_for to implement timeout
-            result = await asyncio.wait_for(quick_calibration(), timeout=30.0)
+            result = await quick_calibration()
             
             if result is None:
                 raise Exception("Calibration returned None")
@@ -134,7 +134,7 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
             
             return response
             
-        except asyncio.TimeoutError:
+        except Exception:
             return {
                 "success": False,
                 "table_detected": True,
@@ -172,7 +172,6 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
 async def debug_local_detection() -> Dict[str, Any]:
     """Fast debug detection - instant response."""
     try:
-        from PIL import ImageGrab
         screenshot = ImageGrab.grab()
         
         width, height = screenshot.size
@@ -263,6 +262,7 @@ async def run_comprehensive_debug() -> Dict[str, Any]:
         
         # Test PIL all_screens
         try:
+            from PIL import ImageGrab
             screenshot_all = ImageGrab.grab(all_screens=True)
             screenshot_all_array = np.array(screenshot_all)
             is_black_all = bool(np.mean(screenshot_all_array) < 5)

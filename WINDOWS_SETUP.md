@@ -6,9 +6,17 @@ The `pyspiel` error has been fixed. The app now works without OpenSpiel on Windo
 
 ## 🚀 **Quick Start (Windows)**
 
+### Method 1: Run as Administrator (For Poker Table Detection)
+1. **Right-click** on "Command Prompt" in Start Menu
+2. **Select** "Run as administrator" 
+3. **Navigate** to your PokerBrain folder: `cd C:\path\to\PokerBrain`
+4. **Run**: `python start_app.py`
+5. **Open**: http://localhost:5000
+
+### Method 2: Standard Mode (Testing Only)
 1. **Download** the project to your desktop
 2. **Double-click** `start_app.py` 
-3. **Done!** App opens at http://localhost:5000
+3. **Done!** App opens at http://localhost:5000 (screenshot will be black)
 
 ## 🛠 **What Was Fixed**
 
