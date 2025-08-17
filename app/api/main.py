@@ -62,6 +62,10 @@ app.include_router(calibration_router, prefix="/calibration", tags=["intelligent
 from app.api.intelligent_calibration_web import router as calibration_web_router
 app.include_router(calibration_web_router, prefix="/calibration", tags=["calibration-ui"])
 
+# Include automated advisory system
+from app.api.auto_advisory_endpoints import router as auto_advisory_router
+app.include_router(auto_advisory_router, prefix="/auto", tags=["automated-advisory"])
+
 # Mount static files
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
