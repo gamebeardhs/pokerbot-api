@@ -1,10 +1,7 @@
 {
   "card": "9s",
-  "rank": "9",
-  "suit": "s",
-  "suit_name": "spades",
-  "background_color": "black",
-  "created": "2025-08-17T17:50:40.691213",
-  "source": "exact_user_format_replica",
-  "format": "matches_user_5card_example"
+  "created": "2025-08-17T19:04:17.966251",
+  "source": "real_acr_templates",
+  "original_file": "attached_assets/ACR card templates/9s.PNG",
+  "format": "authentic_acr_card"
 }

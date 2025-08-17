@@ -250,23 +250,48 @@ async def add_card_template(request: TemplateRequest) -> Dict[str, Any]:
 async def generate_training_dataset(request: GenerateDatasetRequest) -> Dict[str, Any]:
     """Generate augmented training dataset from templates."""
     try:
-        # Generate dataset
-        dataset = neural_trainer.generate_training_dataset(request.variants_per_card)
+        # Check if advanced angle training requested
+        use_advanced = getattr(request, 'advanced_training', False)
         
-        if not dataset['images']:
-            raise HTTPException(status_code=400, detail="No templates available for dataset generation")
-        
-        # Save dataset
-        output_dir = "training_data/generated_dataset"
-        neural_trainer.save_training_dataset(dataset, output_dir)
-        
-        return {
-            "success": True,
-            "total_images": len(dataset['images']),
-            "unique_cards": len(set(dataset['card_names'])),
-            "output_directory": output_dir,
-            "message": f"Generated {len(dataset['images'])} training examples"
-        }
+        if use_advanced:
+            # Import advanced angle trainer
+            from app.training.advanced_angle_trainer import AdvancedAngleTrainer
+            angle_trainer = AdvancedAngleTrainer()
+            
+            # Generate advanced dataset with angled cards
+            total_generated = angle_trainer.generate_poker_training_set(
+                templates_dir="training_data/templates",
+                output_dir="training_data/advanced_dataset",
+                variants_per_card=request.variants_per_card
+            )
+            
+            return {
+                "success": True,
+                "total_images": total_generated,
+                "unique_cards": 52,
+                "output_directory": "training_data/advanced_dataset",
+                "training_type": "advanced_angle_training",
+                "features": ["rotation", "perspective", "scaling", "lighting", "noise"],
+                "message": f"Generated {total_generated} advanced training examples with angled cards"
+            }
+        else:
+            # Use standard training
+            dataset = neural_trainer.generate_training_dataset(request.variants_per_card)
+            
+            if not dataset['images']:
+                raise HTTPException(status_code=400, detail="No templates available for dataset generation")
+            
+            # Save dataset
+            output_dir = "training_data/generated_dataset"
+            neural_trainer.save_training_dataset(dataset, output_dir)
+            
+            return {
+                "success": True,
+                "total_images": len(dataset['images']),
+                "unique_cards": len(set(dataset['card_names'])),
+                "output_directory": output_dir,
+                "message": f"Generated {len(dataset['images'])} training examples"
+            }
         
     except Exception as e:
         logger.error(f"Failed to generate dataset: {e}")

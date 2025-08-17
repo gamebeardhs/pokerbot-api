@@ -1,10 +1,7 @@
 {
   "card": "Ad",
-  "rank": "A",
-  "suit": "d",
-  "suit_name": "diamonds",
-  "background_color": "blue",
-  "created": "2025-08-17T17:50:40.504360",
-  "source": "exact_user_format_replica",
-  "format": "matches_user_5card_example"
+  "created": "2025-08-17T19:04:17.980064",
+  "source": "real_acr_templates",
+  "original_file": "attached_assets/ACR card templates/Ad.PNG",
+  "format": "authentic_acr_card"
 }

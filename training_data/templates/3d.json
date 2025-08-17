@@ -1,10 +1,7 @@
 {
   "card": "3d",
-  "rank": "3",
-  "suit": "d",
-  "suit_name": "diamonds",
-  "background_color": "blue",
-  "created": "2025-08-17T17:50:40.552091",
-  "source": "exact_user_format_replica",
-  "format": "matches_user_5card_example"
+  "created": "2025-08-17T19:04:17.880562",
+  "source": "real_acr_templates",
+  "original_file": "attached_assets/ACR card templates/3d.PNG",
+  "format": "authentic_acr_card"
 }

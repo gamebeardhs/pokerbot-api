@@ -1,10 +1,7 @@
 {
   "card": "6c",
-  "rank": "6",
-  "suit": "c",
-  "suit_name": "clubs",
-  "background_color": "green",
-  "created": "2025-08-17T17:50:40.632431",
-  "source": "exact_user_format_replica",
-  "format": "matches_user_5card_example"
+  "created": "2025-08-17T19:04:17.923281",
+  "source": "real_acr_templates",
+  "original_file": "attached_assets/ACR card templates/6c.PNG",
+  "format": "authentic_acr_card"
 }

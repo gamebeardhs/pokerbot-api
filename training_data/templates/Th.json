@@ -1,10 +1,7 @@
 {
   "card": "Th",
-  "rank": "T",
-  "suit": "h",
-  "suit_name": "hearts",
-  "background_color": "red",
-  "created": "2025-08-17T17:50:40.719578",
-  "source": "exact_user_format_replica",
-  "format": "matches_user_5card_example"
+  "created": "2025-08-17T19:04:18.042782",
+  "source": "real_acr_templates",
+  "original_file": "attached_assets/ACR card templates/Th.PNG",
+  "format": "authentic_acr_card"
 }
