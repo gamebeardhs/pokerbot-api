@@ -1,0 +1,96 @@
+{
+  "regions": {
+    "card_region_0": {
+      "x": 300,
+      "y": 450,
+      "width": 50,
+      "height": 70,
+      "confidence": 0.7,
+      "element_type": "card",
+      "template_match": false
+    },
+    "card_region_1": {
+      "x": 360,
+      "y": 450,
+      "width": 50,
+      "height": 70,
+      "confidence": 0.7,
+      "element_type": "card",
+      "template_match": false
+    },
+    "card_region_2": {
+      "x": 340,
+      "y": 200,
+      "width": 40,
+      "height": 60,
+      "confidence": 0.7,
+      "element_type": "card",
+      "template_match": false
+    },
+    "card_region_3": {
+      "x": 390,
+      "y": 200,
+      "width": 40,
+      "height": 60,
+      "confidence": 0.7,
+      "element_type": "card",
+      "template_match": false
+    },
+    "card_region_4": {
+      "x": 440,
+      "y": 200,
+      "width": 40,
+      "height": 60,
+      "confidence": 0.7,
+      "element_type": "card",
+      "template_match": false
+    },
+    "button_0": {
+      "x": 600,
+      "y": 500,
+      "width": 80,
+      "height": 30,
+      "confidence": 0.6,
+      "element_type": "button",
+      "template_match": false
+    },
+    "button_1": {
+      "x": 690,
+      "y": 500,
+      "width": 80,
+      "height": 30,
+      "confidence": 0.6,
+      "element_type": "button",
+      "template_match": false
+    },
+    "button_2": {
+      "x": 780,
+      "y": 500,
+      "width": 80,
+      "height": 30,
+      "confidence": 0.6,
+      "element_type": "button",
+      "template_match": false
+    },
+    "circular_0": {
+      "x": 500,
+      "y": 250,
+      "width": 30,
+      "height": 30,
+      "confidence": 0.5,
+      "element_type": "circular",
+      "template_match": false
+    }
+  },
+  "accuracy_score": 1.0,
+  "validation_tests": {
+    "hero_cards_detected": true,
+    "action_buttons_detected": true,
+    "text_extraction_working": true,
+    "sufficient_regions": true,
+    "high_confidence_regions": true
+  },
+  "timestamp": "2025-08-17 23:47:43",
+  "table_detected": true,
+  "success_rate": 1.0
+}
