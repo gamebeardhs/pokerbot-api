@@ -281,6 +281,9 @@
                 <button class="btn info" onclick="enableDemoMode()">
                     🎮 Demo Mode
                 </button>
+                <button class="btn secondary" onclick="debugLocalDetection()">
+                    🔧 Debug Local
+                </button>
             </div>
 
             <!-- Adaptive Status -->
@@ -556,6 +559,45 @@
                 
             } catch (error) {
                 addLog('Demo mode error', 'error');
+            }
+        }
+
+        async function debugLocalDetection() {
+            addLog('Running local detection debug...', 'info');
+            try {
+                const result = await apiCall('/local-debug');
+                
+                if (result.debug_success) {
+                    addLog('✅ Debug completed successfully', 'success');
+                    addLog('📊 Results:', 'info');
+                    
+                    if (result.debug_data.screenshot_size) {
+                        addLog(`   Screenshot: ${result.debug_data.screenshot_size}`, 'info');
+                        addLog(`   Green area: ${result.debug_data.green_percentage.toFixed(1)}%`, 'info');
+                        addLog(`   Card regions: ${result.debug_data.card_candidates}`, 'info');
+                        addLog(`   Button regions: ${result.debug_data.button_candidates}`, 'info');
+                    }
+                    
+                    if (result.debug_data.likely_table) {
+                        addLog('🎯 POKER TABLE DETECTED!', 'success');
+                        addLog('💡 Try "Detect Table" again - it should work now', 'success');
+                    } else {
+                        addLog('❌ No poker table detected', 'warning');
+                        addLog('💡 Solutions:', 'warning');
+                        result.next_steps.forEach(step => addLog(`   • ${step}`, 'warning'));
+                    }
+                    
+                    if (result.files_created) {
+                        addLog('📁 Debug files created:', 'info');
+                        result.files_created.forEach(file => addLog(`   • ${file}`, 'info'));
+                    }
+                } else {
+                    addLog(`❌ Debug failed: ${result.error}`, 'error');
+                    addLog(`📋 ${result.explanation}`, 'warning');
+                }
+                
+            } catch (error) {
+                addLog('Debug request failed', 'error');
             }
         }
 

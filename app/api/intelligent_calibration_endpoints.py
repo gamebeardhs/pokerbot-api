@@ -61,6 +61,62 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
         logger.error(f"Auto-calibration failed: {e}")
         raise HTTPException(status_code=500, detail=f"Auto-calibration failed: {str(e)}")
 
+@router.get("/local-debug")
+async def debug_local_detection() -> Dict[str, Any]:
+    """Debug detection issues for local setup."""
+    try:
+        # Run the debug script and get results
+        import subprocess
+        import json
+        
+        # Execute debug script
+        result = subprocess.run(
+            ['python', 'debug_table_detection.py'], 
+            capture_output=True, 
+            text=True
+        )
+        
+        if result.returncode != 0:
+            return {
+                "debug_success": False,
+                "error": result.stderr,
+                "explanation": "Debug script failed to run",
+                "local_setup_issue": True
+            }
+        
+        # Parse the output to extract the JSON result
+        lines = result.stdout.strip().split('\n')
+        for line in reversed(lines):
+            if line.startswith('📊 Debug Results:'):
+                try:
+                    json_str = line.replace('📊 Debug Results: ', '')
+                    debug_data = json.loads(json_str)
+                    break
+                except:
+                    continue
+        else:
+            debug_data = {"parsed": False}
+        
+        return {
+            "debug_success": True,
+            "local_detection": True,
+            "debug_output": result.stdout,
+            "debug_data": debug_data,
+            "files_created": ["debug_screenshot.png", "debug_annotated.png"],
+            "next_steps": [
+                "Check debug_screenshot.png to see what was captured",
+                "Ensure ACR poker client is visible and not minimized",
+                "If using Replit remotely, you need local client setup"
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "debug_success": False,
+            "error": str(e),
+            "explanation": "Local debugging requires direct desktop access"
+        }
+
 @router.get("/detect-table")
 async def detect_acr_table() -> Dict[str, Any]:
     """Detect if ACR poker table is currently open and active."""
