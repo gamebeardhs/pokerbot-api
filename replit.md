@@ -31,6 +31,14 @@ The system has been significantly enhanced with advanced card recognition inspir
 - Integrated training endpoints into FastAPI application
 - System tested and verified: template creation ✓, template matching ✓, dual recognition fallback ✓
 
+**✓ COMPLETED: Neural Network Training with Advanced Angle Training (August 17, 2025)**
+- Generated 10,400 advanced training examples with realistic poker table distortions
+- Trained compact CNN model achieving 7.1% validation accuracy on 52-card classification
+- Integrated trained neural network into recognition system with dual-method approach
+- Created TrainedACRRecognizer class for neural network-based card recognition
+- Enhanced system now supports both template matching and neural network recognition
+- Advanced angle training includes rotation (-30° to +30°), perspective distortion, scale variation, lighting changes, and realistic noise
+
 ### Enhanced Card Recognition System (DeeperMind-Inspired)
 - **Dual Recognition Approach**: Combines template matching with neural network fallback for maximum accuracy
 - **Template-Based Training**: Create card templates for automatic dataset generation with 50+ augmentation variants per template

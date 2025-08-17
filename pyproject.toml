@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.116.1",
+    "joblib>=1.5.1",
     "numpy>=2.3.2",
     "open-spiel>=1.6",
     "opencv-python>=4.11.0.86",
@@ -16,6 +17,8 @@ dependencies = [
     "pytest>=8.4.1",
     "python-multipart>=0.0.20",
     "requests>=2.32.4",
+    "scikit-learn>=1.7.1",
+    "tensorflow>=2.20.0",
     "trafilatura>=2.0.0",
     "uvicorn[standard]>=0.35.0",
     "websockets>=15.0.1",
