@@ -164,6 +164,96 @@ async def manual_calibrate_region(region_data: Dict[str, Any]) -> Dict[str, Any]
         logger.error(f"Manual calibration failed: {e}")
         raise HTTPException(status_code=500, detail=f"Manual calibration failed: {str(e)}")
 
+@router.post("/start-adaptive")
+async def start_adaptive_calibration() -> Dict[str, Any]:
+    """Start continuous adaptive calibration for all poker phases."""
+    try:
+        from app.scraper.adaptive_calibrator import start_adaptive_calibration
+        
+        success = start_adaptive_calibration()
+        
+        if success:
+            return {
+                "success": True,
+                "message": "🔄 Adaptive calibration started - automatically adjusts to poker phases",
+                "features": [
+                    "Continuous monitoring every 500ms",
+                    "Automatic phase detection (preflop, flop, turn, river)",
+                    "Dynamic element tracking (cards, buttons, bets)",
+                    "Auto-recalibration when accuracy drops",
+                    "Handles all poker table states"
+                ],
+                "monitoring": "System now adapts to: hole cards visibility, action buttons, community cards, betting phases"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "❌ Failed to start adaptive calibration - ensure ACR table is detected first",
+                "recommendation": "Run /detect-table first to ensure table is visible"
+            }
+            
+    except Exception as e:
+        logger.error(f"Failed to start adaptive calibration: {e}")
+        raise HTTPException(status_code=500, detail=f"Adaptive calibration failed: {str(e)}")
+
+@router.post("/stop-adaptive")
+async def stop_adaptive_calibration() -> Dict[str, Any]:
+    """Stop continuous adaptive calibration."""
+    try:
+        from app.scraper.adaptive_calibrator import stop_adaptive_calibration
+        
+        stop_adaptive_calibration()
+        
+        return {
+            "success": True,
+            "message": "⏹️ Adaptive calibration stopped",
+            "status": "System returned to manual calibration mode"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to stop adaptive calibration: {e}")
+        raise HTTPException(status_code=500, detail=f"Stop adaptive failed: {str(e)}")
+
+@router.get("/adaptive-status")
+async def get_adaptive_calibration_status() -> Dict[str, Any]:
+    """Get current adaptive calibration status and phase detection."""
+    try:
+        from app.scraper.adaptive_calibrator import get_adaptive_status
+        
+        status = get_adaptive_status()
+        
+        current_phase = status.get("current_phase", {})
+        overall_health = status.get("overall_health", 0.0)
+        
+        # Count regions by status
+        regions = status.get("regions", {})
+        healthy_regions = sum(1 for r in regions.values() if r.get("confidence", 0) > 0.7)
+        total_regions = len(regions)
+        
+        return {
+            "success": True,
+            "adaptive_running": status.get("is_running", False),
+            "current_phase": {
+                "game_phase": current_phase.get("phase", "unknown"),
+                "hero_in_hand": current_phase.get("hero_in_hand", False),
+                "hero_turn": current_phase.get("hero_turn", False),
+                "community_cards": current_phase.get("community_cards_count", 0),
+                "betting_active": current_phase.get("betting_round_active", False)
+            },
+            "system_health": {
+                "overall_score": f"{overall_health:.1%}",
+                "healthy_regions": f"{healthy_regions}/{total_regions}",
+                "status": "Excellent" if overall_health > 0.9 else "Good" if overall_health > 0.7 else "Fair" if overall_health > 0.5 else "Poor"
+            },
+            "visible_elements": list(current_phase.get("visible_elements", [])),
+            "region_details": regions,
+            "message": f"🔄 Adaptive calibration {'running' if status.get('is_running') else 'stopped'} - {overall_health:.1%} health"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get adaptive status: {e}")
+        raise HTTPException(status_code=500, detail=f"Adaptive status failed: {str(e)}")
+
 @router.get("/calibration-templates")
 async def get_calibration_templates() -> Dict[str, Any]:
     """Get available calibration templates and reference data."""
@@ -183,6 +273,12 @@ async def get_calibration_templates() -> Dict[str, Any]:
                 "required_regions": ["hero_cards", "action_buttons", "pot", "community_cards"],
                 "validation_tests": 5,
                 "confidence_threshold": 0.7
+            },
+            "adaptive_features": {
+                "continuous_monitoring": "Every 500ms",
+                "phase_detection": ["preflop", "flop", "turn", "river", "showdown", "between_hands"],
+                "dynamic_elements": ["hole_cards", "community_cards", "action_buttons", "bets", "pot"],
+                "auto_recalibration": "When accuracy drops below threshold"
             },
             "message": f"✅ {templates_info['total_templates']} templates loaded and ready"
         }

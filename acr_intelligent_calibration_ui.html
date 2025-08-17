@@ -269,12 +269,39 @@
                 <button class="btn success" onclick="autoCalibrate()">
                     🎯 Auto-Calibrate (95% Target)
                 </button>
+                <button class="btn warning" id="adaptiveBtn" onclick="toggleAdaptive()">
+                    🔄 Start Adaptive Mode
+                </button>
                 <button class="btn secondary" onclick="getCalibrationStatus()">
                     📋 Check Status
                 </button>
                 <button class="btn secondary" onclick="getTemplateInfo()">
                     🔧 Template Info
                 </button>
+            </div>
+
+            <!-- Adaptive Status -->
+            <div class="section" id="adaptiveSection" class="hidden">
+                <h2><span class="icon">🔄</span>Adaptive Calibration Status</h2>
+                <div class="status-panel">
+                    <div class="status-card">
+                        <h3>Game Phase</h3>
+                        <div class="status-value" id="gamePhase">Unknown</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>System Health</h3>
+                        <div class="status-value" id="systemHealth">0%</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Hero Status</h3>
+                        <div class="status-value" id="heroStatus">Waiting</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Visible Elements</h3>
+                        <div class="status-value" id="visibleCount">0</div>
+                    </div>
+                </div>
+                <div id="adaptiveDetails" style="margin-top: 15px; font-size: 0.9em; color: #4a5568;"></div>
             </div>
 
             <!-- Calibration Progress -->
@@ -349,6 +376,10 @@
             }
         }
 
+        // Global state
+        let adaptiveRunning = false;
+        let adaptiveStatusInterval = null;
+
         // Status functions
         async function detectTable() {
             addLog('Detecting ACR table...');
@@ -368,6 +399,124 @@
                 return result.table_detected;
             } catch (error) {
                 document.getElementById('tableStatus').textContent = 'Error ❌';
+            }
+        }
+
+        async function toggleAdaptive() {
+            if (!adaptiveRunning) {
+                await startAdaptiveMode();
+            } else {
+                await stopAdaptiveMode();
+            }
+        }
+
+        async function startAdaptiveMode() {
+            addLog('Starting adaptive calibration mode...');
+            try {
+                const result = await apiCall('/start-adaptive', 'POST');
+                
+                if (result.success) {
+                    adaptiveRunning = true;
+                    document.getElementById('adaptiveBtn').textContent = '⏹️ Stop Adaptive Mode';
+                    document.getElementById('adaptiveBtn').className = 'btn secondary';
+                    document.getElementById('adaptiveSection').classList.remove('hidden');
+                    
+                    addLog(result.message, 'success');
+                    result.features.forEach(feature => addLog(`  • ${feature}`));
+                    
+                    // Start status monitoring
+                    startAdaptiveStatusMonitoring();
+                } else {
+                    addLog(result.message, 'warning');
+                    if (result.recommendation) {
+                        addLog(`Recommendation: ${result.recommendation}`, 'warning');
+                    }
+                }
+            } catch (error) {
+                addLog('Failed to start adaptive mode', 'error');
+            }
+        }
+
+        async function stopAdaptiveMode() {
+            addLog('Stopping adaptive calibration mode...');
+            try {
+                const result = await apiCall('/stop-adaptive', 'POST');
+                
+                adaptiveRunning = false;
+                document.getElementById('adaptiveBtn').textContent = '🔄 Start Adaptive Mode';
+                document.getElementById('adaptiveBtn').className = 'btn warning';
+                document.getElementById('adaptiveSection').classList.add('hidden');
+                
+                // Stop status monitoring
+                if (adaptiveStatusInterval) {
+                    clearInterval(adaptiveStatusInterval);
+                    adaptiveStatusInterval = null;
+                }
+                
+                addLog(result.message, 'success');
+            } catch (error) {
+                addLog('Failed to stop adaptive mode', 'error');
+            }
+        }
+
+        function startAdaptiveStatusMonitoring() {
+            // Update adaptive status every 2 seconds
+            adaptiveStatusInterval = setInterval(updateAdaptiveStatus, 2000);
+            updateAdaptiveStatus(); // Initial update
+        }
+
+        async function updateAdaptiveStatus() {
+            try {
+                const result = await apiCall('/adaptive-status');
+                
+                if (!result.adaptive_running) {
+                    // Adaptive mode stopped externally
+                    adaptiveRunning = false;
+                    document.getElementById('adaptiveBtn').textContent = '🔄 Start Adaptive Mode';
+                    document.getElementById('adaptiveBtn').className = 'btn warning';
+                    document.getElementById('adaptiveSection').classList.add('hidden');
+                    if (adaptiveStatusInterval) {
+                        clearInterval(adaptiveStatusInterval);
+                        adaptiveStatusInterval = null;
+                    }
+                    return;
+                }
+                
+                // Update phase info
+                const phase = result.current_phase;
+                document.getElementById('gamePhase').textContent = 
+                    `${phase.game_phase} (${phase.community_cards} cards)`;
+                
+                // Update system health
+                const health = result.system_health;
+                document.getElementById('systemHealth').textContent = health.overall_score;
+                
+                // Update hero status
+                let heroStatus = 'Waiting';
+                if (phase.hero_in_hand && phase.hero_turn) {
+                    heroStatus = 'Your Turn 🎯';
+                } else if (phase.hero_in_hand) {
+                    heroStatus = 'In Hand ♠️';
+                } else {
+                    heroStatus = 'Folded/Waiting';
+                }
+                document.getElementById('heroStatus').textContent = heroStatus;
+                
+                // Update visible elements count
+                document.getElementById('visibleCount').textContent = 
+                    result.visible_elements.length;
+                
+                // Update details
+                const details = [
+                    `Visible: ${result.visible_elements.join(', ')}`,
+                    `Regions: ${health.healthy_regions}`,
+                    `Status: ${health.status}`
+                ];
+                document.getElementById('adaptiveDetails').textContent = details.join(' • ');
+                
+            } catch (error) {
+                // Don't log adaptive status errors to avoid spam
+                console.warn('Adaptive status update failed:', error);
             }
         }
 
