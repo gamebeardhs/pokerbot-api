@@ -97,8 +97,12 @@ class IntelligentACRCalibrator:
         # Calculate confidence
         detection_confidence = self.calculate_detection_confidence(acr_indicators, table_features)
         
+        # Log detection results for debugging
+        logger.info(f"Detection confidence: {detection_confidence:.3f}")
+        logger.info(f"Table features found: cards={len(table_features.get('card_regions', []))}, buttons={len(table_features.get('buttons', []))}")
+        
         table_info = {
-            "detected": detection_confidence > 0.3,  # Lowered threshold for better detection
+            "detected": detection_confidence > 0.2,  # Further lowered threshold
             "confidence": detection_confidence,
             "features": table_features,
             "indicators": acr_indicators,

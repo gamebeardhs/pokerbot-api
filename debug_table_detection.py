@@ -11,30 +11,30 @@ from pathlib import Path
 
 def debug_screen_capture():
     """Debug screen capture and ACR detection."""
-    print("🔍 Debugging ACR Table Detection (Multi-Monitor)")
+    print("Debugging ACR Table Detection (Multi-Monitor)")
     print("=" * 60)
     
     try:
         # Capture full screen
-        print("📸 Capturing screenshot...")
+        print("Capturing screenshot...")
         screenshot = ImageGrab.grab()
         screenshot_np = np.array(screenshot)
         bgr_image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
         
         width, height = bgr_image.shape[1], bgr_image.shape[0]
-        print(f"✅ Screenshot captured: {width}x{height} pixels")
+        print(f"Screenshot captured: {width}x{height} pixels")
         
         # Detect multi-monitor setup
         if width > 2000:  # Likely multi-monitor
             estimated_monitors = width // 1920 if width % 1920 < 500 else (width // 1920) + 1
-            print(f"📺 Multi-monitor detected: ~{estimated_monitors} monitors ({width/estimated_monitors:.0f}x{height} each)")
+            print(f"Multi-monitor detected: ~{estimated_monitors} monitors ({width/estimated_monitors:.0f}x{height} each)")
         else:
-            print(f"📺 Single monitor setup: {width}x{height}")
+            print(f"Single monitor setup: {width}x{height}")
         
         # Save debug screenshot
         debug_path = "debug_screenshot.png"
         cv2.imwrite(debug_path, bgr_image)
-        print(f"💾 Debug screenshot saved: {debug_path}")
+        print(f"Debug screenshot saved: {debug_path}")
         
         # Convert to grayscale for analysis
         gray = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
@@ -49,12 +49,12 @@ def debug_screen_capture():
         total_area = gray.shape[0] * gray.shape[1]
         green_percentage = (green_area / total_area) * 100
         
-        print(f"🟢 Green area analysis: {green_percentage:.1f}% of screen")
+        print(f"Green area analysis: {green_percentage:.1f}% of screen")
         
         if green_percentage > 5:
-            print("✅ Significant green area detected - likely poker table")
+            print("Significant green area detected - likely poker table")
         else:
-            print("❌ No significant green area - ACR table may not be visible")
+            print("No significant green area - ACR table may not be visible")
         
         # Look for rectangular shapes (cards, buttons)
         edges = cv2.Canny(gray, 50, 150)
@@ -77,8 +77,8 @@ def debug_screen_capture():
             if 80 < w < 200 and 25 < h < 60:
                 rectangles.append((x, y, w, h))
         
-        print(f"🃏 Card-like regions found: {len(card_candidates)}")
-        print(f"🔲 Button-like regions found: {len(rectangles)}")
+        print(f"Card-like regions found: {len(card_candidates)}")
+        print(f"Button-like regions found: {len(rectangles)}")
         
         # Create annotated image
         debug_annotated = bgr_image.copy()
