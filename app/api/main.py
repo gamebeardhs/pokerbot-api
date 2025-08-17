@@ -10,7 +10,8 @@ from collections import deque, defaultdict
 from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from app.api.models import (
@@ -21,6 +22,7 @@ from app.advisor.gto_service import GTODecisionService
 from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 from app.scraper.scraper_manager import ScraperManager
 from app.scraper.manual_trigger import ManualTriggerService
+from app.api.training_endpoints import router as training_router
 from app import __version__
 
 # Configure logging
@@ -48,6 +50,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include training endpoints
+app.include_router(training_router)
+
+# Mount static files
+import os
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Security
 security = HTTPBearer()
@@ -120,6 +131,7 @@ async def root():
             "history": "/state/{table_id}/history",
             "websocket": "/ws/{table_id}",
             "gui": "/gui (testing interface)",
+            "training": "/training-interface (card recognition trainer)",
             "docs": "/docs"
         }
     }
@@ -729,6 +741,22 @@ async def gto_testing_gui():
     </html>
     """
     return html_content
+
+
+@app.get("/training-interface", response_class=HTMLResponse)
+async def training_interface():
+    """Card recognition training interface."""
+    try:
+        static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+        training_file = os.path.join(static_dir, "training.html")
+        with open(training_file, "r") as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Failed to serve training interface: {e}")
+        return HTMLResponse(
+            content="<h1>Training Interface Unavailable</h1><p>Please check server configuration.</p>",
+            status_code=500
+        )
 
 
 @app.get("/health", response_model=HealthResponse)
