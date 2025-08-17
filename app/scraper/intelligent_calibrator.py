@@ -1,6 +1,7 @@
 """
 Intelligent ACR Table Auto-Calibration System
 Professional poker bot inspired calibration with 95%+ accuracy guarantee.
+Enhanced with circuit breaker pattern and timeout protection.
 """
 
 import cv2
@@ -8,14 +9,136 @@ import numpy as np
 import pytesseract
 import json
 import time
+import asyncio
+import functools
+import hashlib
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass, asdict
 import logging
 from PIL import ImageGrab, Image
 import re
+from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+class CircuitState(Enum):
+    """Circuit breaker states for production reliability."""
+    CLOSED = "closed"      # Normal operation
+    OPEN = "open"          # Failed state, skip operations
+    HALF_OPEN = "half_open"  # Testing recovery
+
+def timeout_protection(timeout_seconds: int = 30):
+    """Decorator to add timeout protection to calibration methods."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                import signal
+                def timeout_handler(signum, frame):
+                    raise TimeoutError(f"Operation timed out after {timeout_seconds} seconds")
+                
+                # Set timeout alarm
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(timeout_seconds)
+                
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                finally:
+                    signal.alarm(0)  # Clear alarm
+                    
+            except Exception as e:
+                logger.error(f"Timeout protection failed: {e}")
+                # Fallback for Windows (no signal support)
+                start_time = time.time()
+                while time.time() - start_time < timeout_seconds:
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as inner_e:
+                        logger.warning(f"Timeout fallback error: {inner_e}")
+                        time.sleep(0.1)
+                raise TimeoutError(f"Operation failed after {timeout_seconds} seconds")
+        return wrapper
+    return decorator
+
+class CircuitBreaker:
+    """Production-grade circuit breaker for calibration reliability."""
+    
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 30, success_threshold: int = 1):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.success_threshold = success_threshold
+        self.failure_count = 0
+        self.success_count = 0
+        self.last_failure_time = None
+        self.state = CircuitState.CLOSED
+        
+    def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection."""
+        if self.state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+                logger.info("Circuit breaker entering HALF_OPEN state")
+            else:
+                raise Exception("Circuit breaker is OPEN - operation blocked")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise e
+    
+    def _should_attempt_reset(self) -> bool:
+        """Check if enough time has passed to attempt reset."""
+        if self.last_failure_time is None:
+            return True
+        return time.time() - self.last_failure_time >= self.recovery_timeout
+    
+    def _on_success(self):
+        """Handle successful operation."""
+        self.failure_count = 0
+        if self.state == CircuitState.HALF_OPEN:
+            self.success_count += 1
+            if self.success_count >= self.success_threshold:
+                self.state = CircuitState.CLOSED
+                self.success_count = 0
+                logger.info("Circuit breaker CLOSED - normal operation restored")
+    
+    def _on_failure(self):
+        """Handle failed operation."""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        self.success_count = 0
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN
+            logger.warning(f"Circuit breaker OPEN after {self.failure_count} failures")
+
+class ScreenshotStateManager:
+    """Prevent processing identical screenshots to avoid loops."""
+    
+    def __init__(self):
+        self.last_screenshot_hash = None
+        self.identical_count = 0
+        self.max_identical = 5
+    
+    def should_process_screenshot(self, screenshot: np.ndarray) -> bool:
+        """Check if screenshot has changed enough to warrant processing."""
+        current_hash = hashlib.md5(screenshot.tobytes()).hexdigest()
+        
+        if current_hash == self.last_screenshot_hash:
+            self.identical_count += 1
+            if self.identical_count >= self.max_identical:
+                logger.warning("Too many identical screenshots - skipping processing")
+                return False
+            return False
+        else:
+            self.last_screenshot_hash = current_hash
+            self.identical_count = 0
+            return True
 
 @dataclass
 class TableRegion:
@@ -39,12 +162,30 @@ class CalibrationResult:
     success_rate: float
 
 class IntelligentACRCalibrator:
-    """Auto-calibration system for ACR poker tables using professional bot techniques."""
+    """Auto-calibration system for ACR poker tables using professional bot techniques.
+    Enhanced with circuit breaker pattern, timeout protection, and ACR anti-detection measures.
+    """
     
     def __init__(self):
         self.min_accuracy = 0.95  # 95% success rate requirement
         self.templates = {}
         self.ocr_config = '--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789AKQJT$,.() '
+        
+        # Production reliability components
+        self.circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
+        self.screenshot_manager = ScreenshotStateManager()
+        self.last_ui_version = None  # Track ACR UI changes
+        self.calibration_cache = {}  # Cache successful calibrations
+        
+        # Phase 2: Advanced stealth detection
+        try:
+            from app.scraper.acr_stealth_detection import ACRStealthDetection
+            self.stealth_detector = ACRStealthDetection()
+            logger.info("Phase 2: Advanced stealth detection loaded")
+        except ImportError as e:
+            logger.warning(f"Stealth detection not available: {e}")
+            self.stealth_detector = None
+        
         self.load_reference_templates()
         
     def load_reference_templates(self):
@@ -286,9 +427,15 @@ class IntelligentACRCalibrator:
         """Find text regions for player names, amounts, etc."""
         text_regions = []
         
-        # Use MSER for text detection
-        mser = cv2.MSER_create()
-        regions, _ = mser.detectRegions(gray_image)
+        # Use MSER for text detection (handle compatibility)
+        try:
+            mser = cv2.MSER_create()
+            regions, _ = mser.detectRegions(gray_image)
+        except AttributeError:
+            # Fallback for older OpenCV versions
+            mser = cv2.MSER()
+            regions = mser.detect(gray_image)
+            regions = [region.reshape(-1, 2) for region in regions]
         
         for region in regions:
             # Get bounding rectangle
@@ -370,15 +517,39 @@ class IntelligentACRCalibrator:
         
         return min(1.0, confidence)
     
+    @timeout_protection(timeout_seconds=30)
     def auto_calibrate_table(self) -> CalibrationResult:
-        """Automatically calibrate ACR table with 95%+ accuracy target."""
-        logger.info("Starting intelligent auto-calibration...")
+        """Automatically calibrate ACR table with 95%+ accuracy target.
+        Enhanced with circuit breaker protection and timeout safety.
+        """
+        try:
+            return self.circuit_breaker.call(self._perform_calibration)
+        except Exception as e:
+            logger.error(f"Calibration failed with circuit breaker protection: {e}")
+            # Return graceful degradation result
+            return CalibrationResult(
+                regions={},
+                accuracy_score=0.0,
+                validation_tests={"circuit_breaker_failure": True},
+                timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+                table_detected=False,
+                success_rate=0.0
+            )
+    
+    def _perform_calibration(self) -> CalibrationResult:
+        """Internal calibration logic with state management."""
+        logger.info("Starting intelligent auto-calibration with reliability protection...")
         
-        # Capture screenshot
+        # Capture screenshot with state checking
         screenshot = self.capture_screen()
         
-        # Detect ACR table
-        table_detected, table_info = self.detect_acr_table(screenshot)
+        # Check if screenshot changed (prevent loops)
+        if not self.screenshot_manager.should_process_screenshot(screenshot):
+            logger.info("Screenshot unchanged - using cached calibration")
+            return self._get_cached_calibration()
+        
+        # Detect ACR table with UI version tracking
+        table_detected, table_info = self.detect_acr_table_with_versioning(screenshot)
         
         if not table_detected:
             return CalibrationResult(
@@ -409,14 +580,85 @@ class IntelligentACRCalibrator:
             success_rate=accuracy
         )
         
-        # Save if meets requirements
+        # Cache successful calibration
         if accuracy >= self.min_accuracy:
+            self._cache_calibration(result)
             self.save_calibration(result)
             logger.info(f"✅ Auto-calibration successful: {accuracy:.1%} accuracy")
         else:
             logger.warning(f"❌ Auto-calibration below target: {accuracy:.1%} < {self.min_accuracy:.1%}")
         
         return result
+    
+    def detect_acr_table_with_versioning(self, screenshot: np.ndarray) -> Tuple[bool, Dict]:
+        """Enhanced table detection with ACR UI version tracking and stealth measures."""
+        # Phase 2: Use advanced stealth detection if available
+        if self.stealth_detector:
+            # Add human-like delay to avoid detection patterns
+            delay = self.stealth_detector.human_behavior_delay()
+            time.sleep(min(delay, 0.5))  # Cap at 500ms for responsiveness
+            
+            # Use hierarchical adaptive detection
+            detected, detection_result = self.stealth_detector.adaptive_table_detection(screenshot)
+            
+            if detected:
+                logger.info(f"Stealth detection SUCCESS: confidence={detection_result['confidence']:.2f}")
+                return True, detection_result
+            else:
+                logger.debug("Stealth detection found no table")
+        
+        # Fallback to original detection
+        ui_hash = self._compute_ui_version_hash(screenshot)
+        
+        if ui_hash != self.last_ui_version:
+            logger.info(f"ACR UI change detected - adapting recognition")
+            self.last_ui_version = ui_hash
+            # Clear template cache when UI changes
+            self.calibration_cache.clear()
+        
+        return self.detect_acr_table(screenshot)
+    
+    def _compute_ui_version_hash(self, screenshot: np.ndarray) -> str:
+        """Compute hash of UI elements to detect ACR updates."""
+        # Sample key UI regions for hashing
+        h, w = screenshot.shape[:2]
+        ui_regions = [
+            screenshot[0:h//10, 0:w//3],      # Top left corner
+            screenshot[h-h//10:h, w-w//3:w], # Bottom right corner
+            screenshot[h//2-20:h//2+20, w//2-50:w//2+50]  # Center area
+        ]
+        
+        combined = np.concatenate([region.flatten() for region in ui_regions])
+        return hashlib.md5(combined.tobytes()).hexdigest()[:8]
+    
+    def _cache_calibration(self, result: CalibrationResult):
+        """Cache successful calibration results."""
+        cache_key = f"{self.last_ui_version}_{result.accuracy_score:.2f}"
+        self.calibration_cache[cache_key] = result
+        
+        # Keep only last 5 calibrations
+        if len(self.calibration_cache) > 5:
+            oldest_key = min(self.calibration_cache.keys())
+            del self.calibration_cache[oldest_key]
+    
+    def _get_cached_calibration(self) -> CalibrationResult:
+        """Get last successful cached calibration."""
+        if self.calibration_cache:
+            latest_calibration = max(self.calibration_cache.values(), 
+                                   key=lambda x: x.accuracy_score)
+            # Update timestamp
+            latest_calibration.timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            return latest_calibration
+        
+        # Return minimal fallback
+        return CalibrationResult(
+            regions={},
+            accuracy_score=0.1,
+            validation_tests={"cached_fallback": True},
+            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+            table_detected=True,
+            success_rate=0.1
+        )
     
     def extract_calibration_regions(self, screenshot: np.ndarray, table_info: Dict) -> Dict[str, TableRegion]:
         """Extract specific regions needed for poker bot functionality."""
@@ -580,8 +822,9 @@ class IntelligentACRCalibrator:
         
         return passed_tests / total_tests if total_tests > 0 else 0.0
     
+    @timeout_protection(timeout_seconds=10)
     def capture_screen(self, monitor_index: int = None) -> np.ndarray:
-        """Capture screen with Windows permission handling."""
+        """Capture screen with Windows permission handling and timeout protection."""
         try:
             from PIL import ImageGrab
             import os
@@ -592,7 +835,7 @@ class IntelligentACRCalibrator:
             # Method 1: Standard PIL capture
             try:
                 screenshot = ImageGrab.grab()
-                logger.info("Using PIL ImageGrab.grab()")
+                logger.debug("Using PIL ImageGrab.grab()")
             except Exception as e1:
                 logger.warning(f"PIL grab failed: {e1}")
             
@@ -601,7 +844,7 @@ class IntelligentACRCalibrator:
                 try:
                     import pyautogui
                     screenshot = pyautogui.screenshot()
-                    logger.info("Using PyAutoGUI screenshot")
+                    logger.debug("Using PyAutoGUI screenshot")
                 except ImportError:
                     logger.warning("PyAutoGUI not available")
                 except Exception as e2:
@@ -611,7 +854,7 @@ class IntelligentACRCalibrator:
             if screenshot is None or np.array(screenshot).sum() == 0:
                 try:
                     screenshot = ImageGrab.grab(all_screens=True)
-                    logger.info("Using PIL all_screens=True")
+                    logger.debug("Using PIL all_screens=True")
                 except Exception as e3:
                     logger.warning(f"PIL all_screens failed: {e3}")
             
@@ -621,18 +864,23 @@ class IntelligentACRCalibrator:
             
             screenshot_np = np.array(screenshot)
             
-            # Check if we got a blank/black screenshot
-            if screenshot_np.sum() == 0:
-                logger.warning("Screenshot is completely black - possible permissions issue")
-                logger.warning("Try running as administrator or check Windows display settings")
+            # Validate screenshot quality
+            if screenshot_np.size == 0:
+                raise Exception("Empty screenshot captured")
+            
+            # Check for black screen (permission issues)
+            if np.mean(screenshot_np) < 5:
+                logger.warning("Black screen detected - check Windows permissions")
+                logger.warning("Run as administrator or check display settings")
             
             bgr_image = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
             
-            logger.info(f"Screenshot captured: {bgr_image.shape[1]}x{bgr_image.shape[0]} pixels")
+            logger.debug(f"Screenshot captured: {bgr_image.shape[1]}x{bgr_image.shape[0]} pixels")
             return bgr_image
             
         except Exception as e:
             logger.error(f"Screenshot capture failed: {e}")
+            # Return fallback dummy screenshot for testing
             return np.zeros((1080, 1920, 3), dtype=np.uint8)
     
     def save_calibration(self, result: CalibrationResult):

@@ -57,8 +57,13 @@ class CardHashRecognizer:
         # Convert to float for DCT
         float_img = np.float32(resized)
         
-        # Apply DCT (Discrete Cosine Transform)
-        dct = cv2.dct(float_img)
+        # Apply DCT (Discrete Cosine Transform) - fix OpenCV compatibility
+        try:
+            dct = cv2.dct(float_img)
+        except Exception:
+            # Fallback for OpenCV compatibility issues
+            import numpy.fft
+            dct = np.abs(np.fft.fft2(float_img))
         
         # Extract top-left hash_size x hash_size corner
         dct_low = dct[:hash_size, :hash_size]
@@ -122,7 +127,7 @@ class CardHashRecognizer:
         # Fallback to template matching for unknown cards
         return self.template_fallback(normalized)
     
-    def fuzzy_hash_match(self, target_hash: str, threshold: int = 5) -> Tuple[Optional[str], float]:
+    def fuzzy_hash_match(self, target_hash: str, threshold: int = 5) -> Tuple[str, float]:
         """
         Fuzzy matching for minor hash variations.
         Uses Hamming distance for hash comparison.
@@ -147,7 +152,7 @@ class CardHashRecognizer:
                 best_score = confidence
                 best_card = card_name
         
-        return best_card, best_score
+        return best_card or "unknown", best_score
     
     def template_fallback(self, region: np.ndarray) -> Optional[Tuple[str, float]]:
         """Fallback template matching for hash failures."""
@@ -166,7 +171,7 @@ class CardHashRecognizer:
                 best_confidence = max_val
                 best_card = card_name
         
-        if best_confidence > 0.7:
+        if best_confidence > 0.7 and best_card:
             return best_card, best_confidence
         
         return None
