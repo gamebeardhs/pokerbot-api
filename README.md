@@ -1,19 +1,36 @@
-# Poker GTO Advisory Service
+# 🃏 Poker GTO Advisory Service
 
-A FastAPI-based poker advisory service providing mathematically optimal GTO decisions using OpenSpiel's Counterfactual Regret Minimization (CFR) algorithms.
+A Windows-compatible poker advisory system with card recognition and GTO analysis.
 
-## Overview
+## 🚀 Quick Start
 
-This service provides real-time Game Theory Optimal (GTO) poker decision recommendations through a RESTful API. It uses OpenSpiel's CFR solver to compute Nash equilibrium strategies for Texas Hold'em poker scenarios.
+```bash
+python start_app.py
+```
 
-### Key Features
+Visit http://localhost:5000/gui for poker analysis!
 
-- **True GTO Analysis**: Uses OpenSpiel CFR algorithms for mathematically optimal decisions
-- **Fast Response Times**: Optimized for <1 second decision computation
-- **Real-time Updates**: WebSocket support for live table state streaming  
-- **Strategy Caching**: Pre-computed solutions for common poker situations
-- **Bearer Token Security**: API authentication for production use
-- **Comprehensive Metrics**: Equity, EV, and exploitability measurements
+## ✨ Features
 
-## Architecture
+- **GTO Analysis**: Mathematical poker advice for any hand
+- **52-Card Recognition**: Complete template system for all cards  
+- **ACR Live Analysis**: Screenshot and analyze current hands
+- **Windows Compatible**: No complex dependencies required
 
+## 📖 Full Guide
+
+See `COMPLETE_USER_GUIDE.md` for detailed instructions.
+
+## 🌐 Main Interfaces
+
+- **http://localhost:5000/gui** - Interactive poker analysis
+- **http://localhost:5000/training-interface** - Card recognition trainer
+- **http://localhost:5000/docs** - API documentation
+
+## 🛠 Requirements
+
+- Python 3.8+
+- Auto-installs: FastAPI, Pillow, NumPy, OpenCV
+- Optional: OpenSpiel (for advanced GTO)
+
+Built for poker study and analysis.

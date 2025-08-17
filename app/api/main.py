@@ -120,20 +120,15 @@ async def root():
         "name": "Poker GTO Advisory Service",
         "version": __version__,
         "description": "OpenSpiel CFR-based GTO poker decision service",
-        "endpoints": {
-            "health": "/health",
-            "decide": "/decide (POST with auth)",
-            "ingest": "/ingest (POST with auth)",
-            "manual_analyze": "/manual/analyze (POST with auth) - Manual hand analysis",
-            "manual_status": "/manual/status (GET) - Calibration status",
-            "manual_test": "/manual/test (POST with auth) - Test OCR regions",
-            "state": "/state/{table_id}",
-            "history": "/state/{table_id}/history",
-            "websocket": "/ws/{table_id}",
-            "gui": "/gui (testing interface)",
-            "training": "/training-interface (card recognition trainer)",
-            "docs": "/docs"
-        }
+        "quick_start": "Visit /gui for poker analysis or /training-interface for card recognition",
+        "main_endpoints": {
+            "gui": "/gui - Interactive poker analysis interface",  
+            "training": "/training-interface - Card recognition trainer",
+            "manual_analyze": "/manual/analyze (POST with auth) - Live ACR hand analysis",
+            "health": "/health - System status",
+            "docs": "/docs - API documentation"
+        },
+        "guide": "See COMPLETE_USER_GUIDE.md for step-by-step instructions"
     }
 
 
@@ -329,8 +324,8 @@ async def gto_testing_gui():
             </div>
             
             <div style="text-align: center; margin-top: 20px;">
-                <button type="submit">🎯 Get Enhanced GTO Decision</button>
-                <button type="button" onclick="manualAnalyze()" style="margin-left: 10px; background-color: #FF6600;">📸 Analyze Current ACR Hand</button>
+                <button type="submit">🎯 Get GTO Decision</button>
+                <button type="button" onclick="manualAnalyze()" style="margin-left: 10px; background-color: #FF6600;">📸 Analyze ACR Hand</button>
             </div>
         </form>
         
