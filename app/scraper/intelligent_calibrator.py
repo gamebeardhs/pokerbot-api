@@ -127,8 +127,12 @@ class IntelligentACRCalibrator:
         green_area = np.sum(green_mask > 0)
         total_area = gray_image.shape[0] * gray_image.shape[1]
         
-        if green_area / total_area > 0.1:  # At least 10% green (table felt)
+        green_percentage = (green_area / total_area) * 100
+        logger.info(f"Green area analysis: {green_percentage:.1f}% of desktop")
+        
+        if green_percentage > 5.0:  # Lowered from 10% for better detection
             indicators["table_felt"] = True
+            logger.info("Poker table felt detected")
         
         # Look for card-like rectangular shapes
         indicators["card_positions"] = self.find_card_regions(gray_image)
