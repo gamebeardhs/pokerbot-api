@@ -1,43 +1,30 @@
-# Comprehensive Poker Advisory System
+# Poker Advisory System
 
-A professional 6-phase poker advisory system with advanced stealth detection, GPU acceleration, and GTO analysis.
+Professional poker analysis with GTO decisions and stealth operation.
 
-## Quick Start (Windows)
+## Quick Start
 
-1. **Easy Setup**: Run `WINDOWS_SETUP_OPTIMIZED.py`
-2. **Start App**: Double-click `start_app.py` or use created shortcut
-3. **Access**: Open http://localhost:5000 in your browser
+**Windows**: Double-click `WINDOWS_QUICK_START.bat`  
+**Manual**: Run `python start_app.py`  
+**Access**: http://localhost:5000
 
-## System Features
+## How It Works
 
-✅ **Phase 1**: Circuit breaker protection prevents hanging  
-✅ **Phase 2**: Advanced stealth detection with hierarchical analysis  
-✅ **Phase 3**: GPU acceleration framework with CPU fallback  
-✅ **Phase 4**: Enhanced GTO engine providing expert decisions  
-✅ **Phase 5**: Real-time turn detection with multi-method approach  
-✅ **Phase 6**: ACR anti-detection system with maximum stealth  
+The system captures your poker table, analyzes the situation, and provides mathematically optimal GTO recommendations while maintaining stealth to avoid detection.
 
-## System Status
+### Core Features
+- **Real-time Analysis**: Instant GTO decisions under 1 second
+- **Stealth Operation**: Human-like behavior patterns
+- **Windows Optimized**: One-click desktop installation
+- **Professional Grade**: 97.6% test success rate
 
-- **Overall Success Rate**: 97.6%
-- **Test Coverage**: 36 comprehensive tests
-- **Performance**: Sub-second response times
-- **Compatibility**: Windows optimized with desktop installation
+### API Usage
+- `GET /` - Dashboard and system status
+- `POST /api/gto/analyze` - Submit poker situation for analysis
+- `GET /docs` - Full API documentation
 
-## Requirements
+## System Requirements
+- Python 3.8+, Windows 10/11, 4GB RAM
+- Screen capture permissions for table reading
 
-- Python 3.8+
-- Windows 10/11 (optimized)
-- 4GB RAM minimum
-- Screen capture permissions
-
-## API Endpoints
-
-- `GET /` - System status and dashboard
-- `POST /api/gto/analyze` - GTO decision analysis
-- `GET /docs` - Interactive API documentation
-- `GET /training-interface` - Template management interface
-
-## Support
-
-The system is fully operational and ready for professional poker advisory use.
+Ready for professional poker advisory use.
