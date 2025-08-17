@@ -54,6 +54,14 @@ app.add_middleware(
 # Include training endpoints
 app.include_router(training_router)
 
+# Include intelligent calibration endpoints
+from app.api.intelligent_calibration_endpoints import router as calibration_router
+app.include_router(calibration_router, prefix="/calibration", tags=["intelligent-calibration"])
+
+# Include intelligent calibration web UI
+from app.api.intelligent_calibration_web import router as calibration_web_router
+app.include_router(calibration_web_router, prefix="/calibration", tags=["calibration-ui"])
+
 # Mount static files
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

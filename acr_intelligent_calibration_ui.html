@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACR Intelligent Calibration System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+        }
+
+        .section h2 .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .btn.warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-card h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .log-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .log-entry.success {
+            color: #48bb78;
+        }
+
+        .log-entry.warning {
+            color: #ed8936;
+        }
+
+        .log-entry.error {
+            color: #f56565;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .calibration-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .region-card {
+            background: #f0f4f7;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .region-card.high-confidence {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .region-card.medium-confidence {
+            border-color: #ed8936;
+            background: #fffaf0;
+        }
+
+        .region-card.low-confidence {
+            border-color: #f56565;
+            background: #fffafa;
+        }
+
+        .region-name {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .region-details {
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 ACR Intelligent Calibration</h1>
+            <div class="subtitle">Professional poker bot calibration with 95%+ accuracy guarantee</div>
+        </div>
+
+        <div class="main-card">
+            <!-- Status Section -->
+            <div class="section">
+                <h2><span class="icon">📊</span>System Status</h2>
+                <div class="status-panel">
+                    <div class="status-card">
+                        <h3>Table Detection</h3>
+                        <div class="status-value" id="tableStatus">Checking...</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Calibration Status</h3>
+                        <div class="status-value" id="calibrationStatus">Not Calibrated</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Accuracy Score</h3>
+                        <div class="status-value" id="accuracyScore">0%</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Templates Loaded</h3>
+                        <div class="status-value" id="templatesLoaded">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section">
+                <h2><span class="icon">⚡</span>Quick Actions</h2>
+                <button class="btn" onclick="detectTable()">
+                    🔍 Detect ACR Table
+                </button>
+                <button class="btn success" onclick="autoCalibrate()">
+                    🎯 Auto-Calibrate (95% Target)
+                </button>
+                <button class="btn secondary" onclick="getCalibrationStatus()">
+                    📋 Check Status
+                </button>
+                <button class="btn secondary" onclick="getTemplateInfo()">
+                    🔧 Template Info
+                </button>
+            </div>
+
+            <!-- Calibration Progress -->
+            <div class="section" id="progressSection" class="hidden">
+                <h2><span class="icon">⏳</span>Calibration Progress</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">Ready to calibrate...</div>
+            </div>
+
+            <!-- Results -->
+            <div class="section" id="resultsSection" class="hidden">
+                <h2><span class="icon">✅</span>Calibration Results</h2>
+                <div id="calibrationResults"></div>
+            </div>
+        </div>
+
+        <!-- Log Panel -->
+        <div class="main-card">
+            <div class="section">
+                <h2><span class="icon">📝</span>System Log</h2>
+                <div class="log-container" id="logContainer"></div>
+                <button class="btn secondary" onclick="clearLog()">Clear Log</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        
+        // Log management
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+
+        // API calls
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}/calibration${endpoint}`, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || 'API call failed');
+                }
+                
+                return result;
+            } catch (error) {
+                addLog(`API Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Status functions
+        async function detectTable() {
+            addLog('Detecting ACR table...');
+            try {
+                const result = await apiCall('/detect-table');
+                
+                document.getElementById('tableStatus').textContent = 
+                    result.table_detected ? 'Detected ✅' : 'Not Found ❌';
+                
+                addLog(`Table detection: ${result.message}`, 
+                       result.table_detected ? 'success' : 'warning');
+                
+                if (result.features_found) {
+                    addLog(`Features found: ${JSON.stringify(result.features_found)}`);
+                }
+                
+                return result.table_detected;
+            } catch (error) {
+                document.getElementById('tableStatus').textContent = 'Error ❌';
+            }
+        }
+
+        async function autoCalibrate() {
+            addLog('Starting auto-calibration with 95% accuracy target...');
+            
+            // Show progress section
+            document.getElementById('progressSection').classList.remove('hidden');
+            updateProgress(10, 'Detecting table...');
+            
+            try {
+                const result = await apiCall('/auto-calibrate', 'POST');
+                
+                updateProgress(100, 'Calibration complete!');
+                
+                // Update status
+                document.getElementById('calibrationStatus').textContent = 
+                    result.success ? 'Calibrated ✅' : 'Failed ❌';
+                document.getElementById('accuracyScore').textContent = 
+                    `${(result.success_rate * 100).toFixed(1)}%`;
+                
+                // Log results
+                addLog(result.message, result.success ? 'success' : 'warning');
+                addLog(`Accuracy: ${(result.success_rate * 100).toFixed(1)}%`);
+                addLog(`Regions found: ${result.regions_found}`);
+                
+                // Show results
+                displayCalibrationResults(result);
+                
+                if (result.success) {
+                    addLog('🎯 Auto-calibration successful! System ready for poker bot operation.', 'success');
+                } else {
+                    addLog('⚠️ Calibration below target. Check recommendations.', 'warning');
+                    if (result.recommendations) {
+                        result.recommendations.forEach(rec => addLog(`  • ${rec}`, 'warning'));
+                    }
+                }
+                
+            } catch (error) {
+                updateProgress(0, 'Calibration failed');
+                document.getElementById('calibrationStatus').textContent = 'Error ❌';
+                addLog('Auto-calibration failed', 'error');
+            }
+        }
+
+        async function getCalibrationStatus() {
+            addLog('Checking calibration status...');
+            try {
+                const result = await apiCall('/calibration-status');
+                
+                document.getElementById('calibrationStatus').textContent = 
+                    result.calibrated ? 'Calibrated ✅' : 'Not Calibrated ❌';
+                document.getElementById('accuracyScore').textContent = 
+                    `${(result.accuracy_score * 100).toFixed(1)}%`;
+                
+                addLog(result.message, result.meets_requirements ? 'success' : 'warning');
+                if (result.last_calibration) {
+                    addLog(`Last calibration: ${result.last_calibration}`);
+                }
+                
+            } catch (error) {
+                addLog('Failed to get calibration status', 'error');
+            }
+        }
+
+        async function getTemplateInfo() {
+            addLog('Getting template information...');
+            try {
+                const result = await apiCall('/calibration-templates');
+                
+                document.getElementById('templatesLoaded').textContent = 
+                    result.templates.total_templates;
+                
+                addLog(result.message, 'success');
+                addLog(`Card templates: ${result.templates.card_templates}`);
+                addLog(`UI templates: ${result.templates.ui_templates}`);
+                
+            } catch (error) {
+                addLog('Failed to get template info', 'error');
+            }
+        }
+
+        function updateProgress(percentage, text) {
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function displayCalibrationResults(result) {
+            if (!result.regions) return;
+            
+            document.getElementById('resultsSection').classList.remove('hidden');
+            const resultsContainer = document.getElementById('calibrationResults');
+            
+            resultsContainer.innerHTML = '<div class="calibration-results"></div>';
+            const grid = resultsContainer.querySelector('.calibration-results');
+            
+            Object.entries(result.regions).forEach(([name, region]) => {
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                
+                // Set confidence class
+                if (region.confidence > 0.8) {
+                    card.classList.add('high-confidence');
+                } else if (region.confidence > 0.5) {
+                    card.classList.add('medium-confidence');
+                } else {
+                    card.classList.add('low-confidence');
+                }
+                
+                card.innerHTML = `
+                    <div class="region-name">${name}</div>
+                    <div class="region-details">
+                        Position: ${region.x}, ${region.y}<br>
+                        Size: ${region.width}×${region.height}<br>
+                        Confidence: ${(region.confidence * 100).toFixed(1)}%<br>
+                        Type: ${region.type}
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            addLog('ACR Intelligent Calibration System initialized', 'success');
+            addLog('🎯 Professional poker bot calibration with 95%+ accuracy guarantee');
+            
+            // Get initial status
+            await getTemplateInfo();
+            await detectTable();
+            await getCalibrationStatus();
+        });
+    </script>
+</body>
+</html>
