@@ -25,8 +25,12 @@ def check_python():
         return False
 
 def install_dependencies():
-    """Install required dependencies."""
+    """Install required dependencies with Windows optimization."""
     print("📦 Checking dependencies...")
+    
+    # Windows-optimized installation order
+    if os.name == 'nt':  # Windows
+        return install_windows_dependencies()
     
     # Try minimal requirements first, then full
     requirements_files = ["requirements_minimal.txt", "requirements_local.txt"]
@@ -77,14 +81,70 @@ def install_dependencies():
             
             return True  # Continue even if some packages fail
 
+def install_windows_dependencies():
+    """Windows-optimized dependency installation."""
+    print("🪟 Installing Windows-optimized dependencies...")
+    
+    # Critical packages in dependency order for Windows
+    windows_packages = [
+        "setuptools>=65.0.0",
+        "wheel>=0.37.0", 
+        "numpy>=1.21.0",  # Must be first for OpenCV
+        "fastapi>=0.100.0",
+        "uvicorn[standard]>=0.23.0",
+        "pydantic>=2.0.0",
+        "python-multipart>=0.0.6",
+        "Pillow>=9.0.0",
+        "opencv-python>=4.7.0.72",
+        "pandas>=1.5.0",
+        "requests>=2.28.0"
+    ]
+    
+    success_count = 0
+    for package in windows_packages:
+        try:
+            print(f"📦 Installing {package}...")
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install", 
+                "--upgrade", "--prefer-binary", package
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0:
+                print(f"✅ {package}")
+                success_count += 1
+            else:
+                print(f"⚠️ {package} (skipped)")
+        except:
+            print(f"❌ {package} (failed)")
+    
+    # Optional: tesseract if available
+    try:
+        subprocess.run(["tesseract", "--version"], capture_output=True, check=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", "pytesseract"], 
+                     capture_output=True, check=True)
+        print("✅ pytesseract (tesseract found)")
+    except:
+        print("⚠️ pytesseract skipped (install Tesseract manually if needed)")
+    
+    return success_count > len(windows_packages) * 0.7
+
 def start_server():
-    """Start the FastAPI server."""
+    """Start the FastAPI server with Windows optimizations."""
     print("🚀 Starting Poker Advisory App...")
     
     try:
         # Set default environment variables
         os.environ.setdefault("INGEST_TOKEN", "demo-token-123")
         os.environ.setdefault("LOG_LEVEL", "INFO")
+        
+        # Windows-specific optimizations
+        if os.name == 'nt':
+            os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
+            os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+            # Set Tesseract path if available
+            tesseract_path = r"C:\Program Files\Tesseract-OCR\tessdata"
+            if os.path.exists(tesseract_path):
+                os.environ["TESSDATA_PREFIX"] = tesseract_path
         
         # Ensure we're in the right directory
         script_dir = Path(__file__).parent

@@ -2,7 +2,7 @@
 
 A comprehensive FastAPI-based poker advisory service that provides mathematically optimal Game Theory Optimal (GTO) decisions using advanced poker analysis. The system implements a complete 6-phase professional poker bot with circuit breaker protection, stealth detection, GPU acceleration, enhanced GTO analysis, turn detection, and anti-detection measures. All phases work seamlessly together providing expert-level poker decisions while maintaining maximum stealth and avoiding detection. The system has been comprehensively tested with 97.6% success rate and is ready for professional poker advisory use.
 
-**WINDOWS COMPATIBILITY ACHIEVED**: The system is now fully compatible with Windows desktop installation without requiring OpenSpiel, making it accessible for all users while maintaining full functionality through mathematical approximations.
+**WINDOWS OPTIMIZATION COMPLETED**: The system is now fully optimized for Windows desktop with specialized setup scripts, dependency management, performance optimizations, and one-click startup. Includes Windows-specific installations, firewall configuration, and desktop shortcuts for seamless operation.
 
 ## Recent Major Enhancements (August 2025)
 
@@ -56,6 +56,13 @@ The system has been significantly enhanced with advanced card recognition inspir
 - Validated circuit breaker protection, stealth detection, GPU acceleration
 - Confirmed GTO engine performance, turn detection accuracy, anti-detection measures
 - System validated for professional poker advisory use with full integration
+
+**✓ COMPLETED: Windows Optimization & Cleanup (August 17, 2025)**
+- Created Windows-specific setup script with dependency management and performance optimization
+- Enhanced start_app.py with Windows-optimized package installation and environment configuration
+- Implemented comprehensive cleanup removing 25+ old/unused files and directories
+- Added Windows batch file for one-click startup and automatic setup
+- System now optimized for local Windows desktop installation with minimal setup required
 
 **✓ COMPLETED: Windows Desktop Compatibility (August 17, 2025)**
 - Made OpenSpiel dependency optional with graceful fallback system
