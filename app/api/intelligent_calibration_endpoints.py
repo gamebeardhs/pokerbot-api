@@ -423,3 +423,29 @@ async def get_calibration_templates() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get template info: {e}")
         raise HTTPException(status_code=500, detail=f"Template info failed: {str(e)}")
+
+@router.post("/demo-mode") 
+async def enable_demo_mode() -> Dict[str, Any]:
+    """Enable demo mode with simulated poker scenarios."""
+    try:
+        return {
+            "success": True,
+            "demo_enabled": True,
+            "message": "🎮 Demo mode activated - simulating poker scenarios",
+            "scenarios": [
+                "Preflop decision with pocket aces",
+                "Flop betting with top pair", 
+                "Turn bluff opportunity",
+                "River value bet sizing",
+                "Tournament bubble play"
+            ],
+            "demo_features": {
+                "simulated_hands": True,
+                "gto_recommendations": True,
+                "learning_mode": True,
+                "practice_scenarios": True
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to enable demo mode: {e}")
+        raise HTTPException(status_code=500, detail=f"Demo mode failed: {str(e)}")
