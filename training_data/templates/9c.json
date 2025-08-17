@@ -4,7 +4,7 @@
   "suit": "c",
   "suit_name": "clubs",
   "background_color": "green",
-  "created": "2025-08-17T17:12:08.391053",
-  "source": "colored_template_generator",
-  "format": "user_specified_colors"
+  "created": "2025-08-17T17:50:40.709416",
+  "source": "exact_user_format_replica",
+  "format": "matches_user_5card_example"
 }
