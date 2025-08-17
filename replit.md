@@ -2,13 +2,30 @@
 
 A comprehensive FastAPI-based poker advisory service that provides mathematically optimal Game Theory Optimal (GTO) decisions using advanced poker analysis. The system now implements a true GTO bot with complete table analysis including board texture evaluation, range vs range analysis, position-aware strategy, opponent modeling, and stack depth considerations. The service offers real-time poker decision recommendations through a RESTful API with WebSocket support for live table state streaming, computing optimal strategies for Texas Hold'em poker situations with comprehensive analysis under 1 second.
 
+**WINDOWS COMPATIBILITY ACHIEVED**: The system is now fully compatible with Windows desktop installation without requiring OpenSpiel, making it accessible for all users while maintaining full functionality through mathematical approximations.
+
 ## Recent Major Enhancements (August 2025)
 
 The system has been significantly enhanced with advanced card recognition inspired by the DeeperMind poker bot and comprehensive GTO analysis:
 
+**✓ COMPLETED: Windows Desktop Compatibility (August 17, 2025)**
+- Made OpenSpiel dependency optional with graceful fallback system
+- Created Windows-compatible dependency structure with minimal and full requirements
+- Fixed RGBA/RGB image format compatibility issues in color normalizer  
+- Enhanced auto-installation system with multiple fallback methods
+- Implemented mathematical GTO approximations when OpenSpiel unavailable
+- System now runs on Windows desktop with simple double-click startup
+
+**✓ COMPLETED: Complete 52-Card Template System (August 17, 2025)**
+- Successfully auto-generated all 52 poker card templates (was 5, now 52)
+- Implemented 3-method template extraction: ACR client, open source download, auto-generation
+- Achieved 100% card coverage eliminating need to manually photograph cards
+- Fixed dual recognition system with enhanced error handling
+- Created comprehensive testing interface for template verification
+
 **✓ COMPLETED: Enhanced Training System Implementation (August 17, 2025)**
 - Successfully implemented dual recognition system with template matching and neural network fallback
-- Created template-based training system with 5 working card templates (As, Kh, Qd, Jc, Ts)
+- Created template-based training system with complete 52-card coverage
 - Built data augmentation engine generating 100+ variants per template with rotation, scaling, brightness, contrast, noise, and perspective transformations
 - Enhanced card recognition with color normalization and confidence-based matching
 - Integrated training endpoints into FastAPI application

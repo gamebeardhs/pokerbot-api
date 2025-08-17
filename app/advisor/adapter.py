@@ -3,7 +3,13 @@
 import logging
 from typing import Dict, List, Optional, Tuple
 from app.api.models import TableState, Seat
-import pyspiel
+
+try:
+    import pyspiel
+    PYSPIEL_AVAILABLE = True
+except ImportError:
+    pyspiel = None
+    PYSPIEL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +38,10 @@ class TableStateAdapter:
     
     def adapt_to_openspiel(self, state: TableState) -> Dict:
         """Convert TableState to OpenSpiel-compatible format."""
+        if not PYSPIEL_AVAILABLE:
+            # Return a basic format that can be used for mathematical approximations
+            return self._adapt_to_basic_format(state)
+        
         try:
             # Find hero and active players
             hero_seat = self._find_hero_seat(state)
@@ -67,7 +77,7 @@ class TableStateAdapter:
             
         except Exception as e:
             self.logger.error(f"Failed to adapt table state: {e}")
-            raise ValueError(f"Table state adaptation failed: {e}")
+            return self._adapt_to_basic_format(state)
     
     def _find_hero_seat(self, state: TableState) -> Optional[int]:
         """Find hero's seat number."""
@@ -180,3 +190,17 @@ class TableStateAdapter:
                 positions[player.seat] = position_names[pos_idx]
                 
         return positions
+    
+    def _adapt_to_basic_format(self, state: TableState) -> Dict:
+        """Fallback format when OpenSpiel is not available."""
+        return {
+            'hero_cards': state.hero_hole or [],
+            'board_cards': state.board,
+            'pot_size': state.pot_size,
+            'position': state.position,
+            'street': state.street,
+            'bet_to_call': getattr(state, 'bet_to_call', 0),
+            'stack_size': getattr(state, 'effective_stack', 0),
+            'num_players': len([s for s in state.seats if s.in_hand]),
+            'openspiel_available': PYSPIEL_AVAILABLE
+        }

@@ -1,28 +1,42 @@
 # Core FastAPI dependencies
-fastapi>=0.104.1
-uvicorn[standard]>=0.24.0
-pydantic>=2.5.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
 python-multipart>=0.0.6
 
 # Image processing and computer vision
-Pillow>=10.1.0
-opencv-python>=4.8.1.78
-numpy>=1.24.0
+Pillow>=9.0.0
+opencv-python>=4.7.0.72
+numpy>=1.21.0
 pytesseract>=0.3.10
 
 # Data processing
-pandas>=2.1.0
-
-# Optional: Advanced poker analysis (install if available)
-# open-spiel>=1.3.0  # Uncomment if you want full GTO analysis
+pandas>=1.5.0
 
 # Web scraping and HTTP requests (for template downloads)
-requests>=2.31.0
+requests>=2.28.0
 trafilatura>=1.6.0
 
-# Development and testing (optional)
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
+# Note: ImageEnhance is part of Pillow, Wand is optional for advanced image processing
+# Wand>=0.6.10  # Commented out as it requires ImageMagick system installation
 
-# Playwright for advanced web scraping (optional)
-playwright>=1.40.0
+# Development and testing (optional for end users)
+# pytest>=7.0.0
+# pytest-asyncio>=0.20.0
+
+# Advanced web automation (optional)
+# playwright>=1.30.0
+
+# OPTIONAL: OpenSpiel for true GTO analysis
+# This is difficult to install on Windows, so it's made optional
+# Install manually if you want advanced CFR-based GTO calculations:
+# 
+# For Windows users:
+# 1. Install Visual Studio Build Tools
+# 2. pip install --upgrade setuptools wheel
+# 3. pip install open-spiel
+# 
+# For Linux/Mac users:
+# pip install open-spiel
+#
+# The app works without OpenSpiel using mathematical approximations

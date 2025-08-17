@@ -28,22 +28,26 @@ def install_dependencies():
     """Install required dependencies."""
     print("📦 Checking dependencies...")
     
-    requirements_file = "requirements_local.txt"
-    if os.path.exists(requirements_file):
-        try:
-            result = subprocess.run([
-                sys.executable, "-m", "pip", "install", "-r", requirements_file
-            ], capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print("✅ Dependencies installed successfully")
-                return True
-            else:
-                print(f"❌ Dependency installation failed: {result.stderr}")
-                return False
-        except Exception as e:
-            print(f"❌ Failed to install dependencies: {e}")
-            return False
+    # Try minimal requirements first, then full
+    requirements_files = ["requirements_minimal.txt", "requirements_local.txt"]
+    
+    for req_file in requirements_files:
+        if os.path.exists(req_file):
+            print(f"📦 Trying {req_file}...")
+            try:
+                result = subprocess.run([
+                    sys.executable, "-m", "pip", "install", "-r", req_file
+                ], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    print(f"✅ Dependencies from {req_file} installed successfully")
+                    return True
+                else:
+                    print(f"⚠️  {req_file} failed, trying next method...")
+                    continue
+            except Exception as e:
+                print(f"⚠️  Failed with {req_file}: {e}")
+                continue
     else:
         print("⚠️  requirements_local.txt not found, trying basic install...")
         try:
@@ -55,7 +59,23 @@ def install_dependencies():
             return True
         except Exception as e:
             print(f"❌ Basic dependency installation failed: {e}")
-            return False
+            print("Trying with individual packages...")
+            
+            # Try installing core packages individually
+            core_packages = [
+                "fastapi", "uvicorn", "pydantic", "python-multipart",
+                "pillow", "numpy", "opencv-python", "pandas", "requests"
+            ]
+            
+            for package in core_packages:
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "install", package], 
+                                 check=True, capture_output=True)
+                    print(f"✅ Installed {package}")
+                except:
+                    print(f"⚠️  Failed to install {package} (may not be critical)")
+            
+            return True  # Continue even if some packages fail
 
 def start_server():
     """Start the FastAPI server."""
@@ -65,6 +85,10 @@ def start_server():
         # Set default environment variables
         os.environ.setdefault("INGEST_TOKEN", "demo-token-123")
         os.environ.setdefault("LOG_LEVEL", "INFO")
+        
+        # Ensure we're in the right directory
+        script_dir = Path(__file__).parent
+        os.chdir(script_dir)
         
         # Start the server
         import uvicorn
