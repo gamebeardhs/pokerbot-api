@@ -290,30 +290,39 @@ async def get_table_data():
         # Get the latest table state from the calibrator
         table_state = auto_advisory.calibrator.get_latest_table_state()
         
-        # FIXED: Provide demo data when ACR not available for training interface
-        if table_state and "error" in table_state:
-            demo_data = {
-                "hero_cards": ["As", "Kh"],
-                "board": ["Qd", "Jc", "9s"],
-                "pot_size": 125,
-                "your_stack": 2400,
-                "position": "Button",
-                "betting_round": "Flop",
-                "players": [
-                    {"name": "Player1", "stack": 1800, "last_action": "Check"},
-                    {"name": "Player2", "stack": 3200, "last_action": "Bet $50"}
-                ],
-                "regions": {
-                    "hero_card_1": [100, 200, 150, 250],
-                    "hero_card_2": [160, 200, 210, 250],
-                    "board_card_1": [300, 150, 350, 200],
-                    "board_card_2": [360, 150, 410, 200],
-                    "board_card_3": [420, 150, 470, 200]
-                },
-                "demo_mode": True,
-                "message": "Demo data - Connect ACR for live detection"
-            }
-            return JSONResponse(content=demo_data)
+        # FIXED: Provide demo data ONLY when ACR not available for training interface
+        if table_state and "error" in table_state and auto_advisory.calibrator:
+            # Check if this is truly no ACR (Replit environment) vs calibration issue
+            screenshot_status = auto_advisory.get_status().get("screenshot_status", "")
+            
+            if "replit_mode" in screenshot_status:
+                # Demo data for Replit testing environment only
+                demo_data = {
+                    "hero_cards": ["As", "Kh"],
+                    "board": ["Qd", "Jc", "9s"],
+                    "pot_size": 125,
+                    "your_stack": 2400,
+                    "position": "Button",
+                    "betting_round": "Flop",
+                    "players": [
+                        {"name": "Player1", "stack": 1800, "last_action": "Check"},
+                        {"name": "Player2", "stack": 3200, "last_action": "Bet $50"}
+                    ],
+                    "regions": {
+                        "hero_card_1": [100, 200, 150, 250],
+                        "hero_card_2": [160, 200, 210, 250],
+                        "board_card_1": [300, 150, 350, 200],
+                        "board_card_2": [360, 150, 410, 200],
+                        "board_card_3": [420, 150, 470, 200]
+                    },
+                    "demo_mode": True,
+                    "environment": "replit_testing",
+                    "message": "Demo data - Run on Windows with ACR for live detection"
+                }
+                return JSONResponse(content=demo_data)
+            else:
+                # Return actual error for production environment when ACR available but not detected
+                return JSONResponse(content=table_state)
         
         if table_state:
             return JSONResponse(content=table_state)
