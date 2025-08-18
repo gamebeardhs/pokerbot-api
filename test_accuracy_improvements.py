@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Cross-platform test script
 """
 Test the improved ACR calibration accuracy with realistic scenarios.
 This script verifies the enhanced accuracy calculations and region detection.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Cross-platform Python starter script
 """
 Simple starter script for the Poker Advisory App.
 Double-click this file to start the app on your desktop.

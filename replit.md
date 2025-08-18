@@ -6,6 +6,16 @@ This project delivers a comprehensive FastAPI-based poker advisory service, leve
 
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes
+
+## Windows Compatibility Fixes (August 18, 2025)
+- **Unicode Encoding**: Fixed all UnicodeDecodeError issues by implementing UTF-8 encoding throughout
+- **Cross-Platform Fonts**: Implemented Windows/Unix font detection with graceful fallbacks
+- **Path Compatibility**: Removed all Unix-specific paths and shebangs
+- **Screenshot Robustness**: Added PyAutoGUI fallback for Windows screen capture
+- **Windows Optimization**: Enhanced dependency installation and system integration
+- **Deployment Ready**: System now fully compatible with Windows desktop environments
+
 # System Architecture
 
 ## Backend Framework

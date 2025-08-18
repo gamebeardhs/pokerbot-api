@@ -4,6 +4,7 @@ import json
 import cv2
 import numpy as np
 import pytesseract
+import os
 from PIL import Image, ImageDraw, ImageFont
 from typing import Dict, Tuple, List, Any
 import logging
@@ -44,9 +45,24 @@ class CalibrationDemo:
         draw = ImageDraw.Draw(img)
         
         try:
-            font_large = ImageFont.truetype("arial.ttf", 20)
-            font_medium = ImageFont.truetype("arial.ttf", 16)
-            font_small = ImageFont.truetype("arial.ttf", 12)
+            # Try to load cross-platform fonts
+            if os.name == 'nt':
+                font_large = ImageFont.truetype("arial.ttf", 20)
+                font_medium = ImageFont.truetype("arial.ttf", 16)
+                font_small = ImageFont.truetype("arial.ttf", 12)
+            else:
+                # Try common Unix fonts
+                font_names = ["DejaVuSans.ttf", "LiberationSans-Regular.ttf", "arial.ttf"]
+                font_large = font_medium = font_small = ImageFont.load_default()
+                
+                for font_name in font_names:
+                    try:
+                        font_large = ImageFont.truetype(font_name, 20)
+                        font_medium = ImageFont.truetype(font_name, 16)
+                        font_small = ImageFont.truetype(font_name, 12)
+                        break
+                    except:
+                        continue
         except:
             font_large = ImageFont.load_default()
             font_medium = ImageFont.load_default()

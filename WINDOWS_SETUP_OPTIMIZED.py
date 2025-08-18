@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Windows-optimized setup script
 """
 Windows-Optimized Poker Advisory App Setup
 Handles Windows-specific installation, dependencies, and startup.

@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import pytesseract
 import json
+import os
 from PIL import Image, ImageGrab, ImageTk, ImageDraw, ImageFont
 from typing import Dict, Tuple, Optional, Any
 import logging
@@ -258,7 +259,19 @@ class ACRInteractiveCalibrator:
         draw = ImageDraw.Draw(img)
         
         try:
-            font = ImageFont.truetype("arial.ttf", 12)
+            # Try to load a cross-platform font
+            if os.name == 'nt':
+                font = ImageFont.truetype("arial.ttf", 12)
+            else:
+                # Try common Unix fonts
+                for font_name in ["DejaVuSans.ttf", "LiberationSans-Regular.ttf", "arial.ttf"]:
+                    try:
+                        font = ImageFont.truetype(font_name, 12)
+                        break
+                    except:
+                        continue
+                else:
+                    font = ImageFont.load_default()
         except:
             font = ImageFont.load_default()
         

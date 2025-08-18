@@ -5,6 +5,7 @@ import numpy as np
 import pytesseract
 import json
 import asyncio
+import os
 from PIL import Image, ImageGrab, ImageDraw, ImageFont
 from typing import Dict, Tuple, List, Optional, Any
 from playwright.async_api import async_playwright
@@ -37,9 +38,21 @@ class ACRCalibrationTool:
         img_with_regions = self.screenshot.copy()
         draw = ImageDraw.Draw(img_with_regions)
         
-        # Try to load a font
+        # Try to load a cross-platform font
         try:
-            font = ImageFont.truetype("arial.ttf", 16)
+            # Try common Windows font first
+            if os.name == 'nt':
+                font = ImageFont.truetype("arial.ttf", 16)
+            else:
+                # Try common Unix fonts
+                for font_name in ["DejaVuSans.ttf", "LiberationSans-Regular.ttf", "arial.ttf"]:
+                    try:
+                        font = ImageFont.truetype(font_name, 16)
+                        break
+                    except:
+                        continue
+                else:
+                    font = ImageFont.load_default()
         except:
             font = ImageFont.load_default()
         
