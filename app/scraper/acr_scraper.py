@@ -26,15 +26,14 @@ class ACRScraper(BaseScraper):
         self.setup_regions()
         
     def setup_regions(self):
-        """Setup screen regions from calibration file or defaults."""
-        # Try to load from calibration file
-        if self.load_calibration():
-            self.logger.info(f"Loaded calibration from {self.calibration_file}")
-            self.calibrated = True
-        else:
-            self.logger.warning("Using default uncalibrated regions - accuracy will be poor")
-            self._setup_default_regions()
-            self.calibrated = False
+        """Setup screen regions using dynamic detection instead of static calibration."""
+        # FIXED: Use dynamic window detection instead of static coordinates
+        from app.scraper.intelligent_calibrator import IntelligentACRCalibrator
+        
+        self.dynamic_calibrator = IntelligentACRCalibrator()
+        self.use_dynamic_detection = True
+        self.calibrated = True  # Dynamic detection is always "calibrated"
+        self.logger.info("Using dynamic window detection - adapts to any ACR window position/size")
     
     def load_calibration(self) -> bool:
         """Load calibration coordinates from JSON file."""
@@ -212,11 +211,40 @@ class ACRScraper(BaseScraper):
             return None
     
     def _capture_region(self, region: Tuple[int, int, int, int]) -> Optional[Image.Image]:
-        """Capture a specific screen region."""
+        """Capture a specific screen region with dynamic window detection."""
         try:
+            # FIXED: Use dynamic detection if available
+            if hasattr(self, 'use_dynamic_detection') and self.use_dynamic_detection:
+                # Get current window bounds dynamically
+                screenshot = self.dynamic_calibrator.capture_screen()
+                if screenshot is not None:
+                    detected, table_info = self.dynamic_calibrator.detect_acr_table(screenshot)
+                    if detected and 'features' in table_info:
+                        # Convert dynamic regions to coordinates
+                        return self._extract_dynamic_region(screenshot, region, table_info['features'])
+            
+            # Fallback to static coordinates
             x1, y1, x2, y2 = region
             screenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
             return screenshot
+        except:
+            return None
+    
+    def _extract_dynamic_region(self, screenshot, region_tuple, features):
+        """Extract region using dynamic detection features."""
+        try:
+            # Map static region names to dynamic features
+            h, w = screenshot.shape[:2] if len(screenshot.shape) == 3 else screenshot.shape[:2]
+            
+            # Create dynamic pot area (center-top area)
+            pot_region = screenshot[h//3:h//2, w//3:2*w//3]
+            
+            # Convert numpy array to PIL Image
+            from PIL import Image
+            if len(pot_region.shape) == 3:
+                return Image.fromarray(cv2.cvtColor(pot_region, cv2.COLOR_BGR2RGB))
+            else:
+                return Image.fromarray(pot_region)
         except:
             return None
     

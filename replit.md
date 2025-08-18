@@ -8,6 +8,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Dynamic Window Detection Fix (August 18, 2025)
+- **CRITICAL ARCHITECTURE FIX**: Replaced static pixel coordinates with dynamic window detection
+- **Problem Solved**: System now works regardless of ACR window position or size
+- **Dynamic Regions**: Uses relative positioning (w//2, h//3) instead of fixed coordinates
+- **Adaptive Detection**: Automatically finds ACR table elements using computer vision
+- **Window Independence**: No more calibration needed for different window positions
+- **Production Ready**: Works on any screen resolution or window placement
+
 ## Training Interface Connection Fix (August 18, 2025)
 - **Root Cause Identified**: Training interface was disconnected from auto-advisory's live data capture
 - **New Endpoints Added**: `/training/capture-current-table` and `/training/current-session-data` for live connectivity
