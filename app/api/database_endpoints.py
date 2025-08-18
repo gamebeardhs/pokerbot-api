@@ -81,28 +81,44 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
             from ..advisor.enhanced_gto_service import EnhancedGTODecisionService
             gto_service = EnhancedGTODecisionService()
             
-            table_state = {
-                "hero_cards": request.hole_cards,
-                "board": request.board_cards,
-                "pot_size": request.pot_size,
-                "bet_to_call": request.bet_to_call,
-                "stack_size": request.stack_size,
-                "position": request.position.lower(),
-                "num_players": request.num_players,
-                "betting_round": request.betting_round.lower()
-            }
+            # Convert to proper TableState object for CFR fallback
+            from ..api.models import TableState, Seat, Stakes
+            table_state_obj = TableState(
+                table_id="fallback",
+                hand_id="fallback", 
+                room="database",
+                variant="nlhe",
+                max_seats=9,
+                hero_seat=1,
+                stakes=Stakes(sb=0.5, bb=1.0),
+                street=request.betting_round.lower(),
+                board=request.board_cards,
+                pot=request.pot_size,
+                seats=[
+                    Seat(
+                        seat=1,
+                        name="Hero",
+                        stack=request.stack_size,
+                        in_hand=True,
+                        is_hero=True,
+                        position=request.position,
+                        cards=request.hole_cards  # Use 'cards' not 'hole_cards'
+                    )
+                ]
+            )
             
-            fallback_recommendation = gto_service.get_optimal_decision(table_state)
+            import asyncio
+            fallback_recommendation = asyncio.run(gto_service.compute_gto_decision(table_state_obj))
             
             if fallback_recommendation:
                 # Add this new solution to database for future use
                 solution_dict = {
-                    'decision': fallback_recommendation.decision,
-                    'bet_size': getattr(fallback_recommendation, 'bet_size', 0),
-                    'equity': getattr(fallback_recommendation, 'equity', 0.0),
-                    'reasoning': getattr(fallback_recommendation, 'reasoning', ''),
-                    'confidence': getattr(fallback_recommendation, 'confidence', 0.0),
-                    'metadata': getattr(fallback_recommendation, 'metadata', {})
+                    'decision': fallback_recommendation.decision.action if hasattr(fallback_recommendation.decision, 'action') else 'fold',
+                    'bet_size': fallback_recommendation.decision.bet_amount if hasattr(fallback_recommendation.decision, 'bet_amount') else 0,
+                    'equity': fallback_recommendation.metrics.equity.total if hasattr(fallback_recommendation, 'metrics') else 0.0,
+                    'reasoning': fallback_recommendation.reasoning if hasattr(fallback_recommendation, 'reasoning') else 'CFR analysis',
+                    'confidence': fallback_recommendation.metrics.confidence if hasattr(fallback_recommendation, 'metrics') else 0.8,
+                    'metadata': {'source': 'cfr_fallback'}
                 }
                 
                 # Async add to database

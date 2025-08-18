@@ -353,7 +353,7 @@ class GTODatabase:
                         in_hand=True,
                         is_hero=True,
                         position=situation.position.name,
-                        hole_cards=situation.hole_cards
+                        cards=situation.hole_cards
                     )
                 ]
             )
