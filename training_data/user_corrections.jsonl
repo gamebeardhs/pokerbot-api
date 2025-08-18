@@ -1,2 +1,4 @@
 {"timestamp": "2025-08-18T01:22:00Z", "action": "correction", "table_data": {"hole_cards": ["As", "Kh"], "pot_size": 150}, "screenshot_at_time": null}
 {"timestamp": "2025-08-18T01:25:00Z", "action": "confirm", "table_data": {"hole_cards": ["7h", "7s"], "pot_size": 280, "betting_round": "Turn"}, "screenshot_at_time": null}
+{"timestamp": "2025-08-18T01:28:00Z", "action": "single_correction", "table_data": {"field_name": "hole_card_0", "original_value": "7h", "corrected_value": "Ah", "context": "single_field_correction"}, "screenshot_at_time": null}
+{"timestamp": "2025-08-18T01:28:30Z", "action": "single_correction", "table_data": {"field_name": "pot_size", "original_value": "280", "corrected_value": "320", "context": "single_field_correction"}, "screenshot_at_time": null}

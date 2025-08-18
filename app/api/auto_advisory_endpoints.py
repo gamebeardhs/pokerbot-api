@@ -347,9 +347,12 @@ async def submit_training_data(training_data: dict):
             logger.warning(f"Could not save training data: {save_error}")
         
         # Calculate training strength based on action type
-        if action == 'confirm':
+        if action == 'confirm_all':
             training_strength = 0.3  # Lower weight for confirmations
-            response_msg = "Data confirmed as correct - light training applied"
+            response_msg = "All data confirmed as correct - light training applied"
+        elif action == 'single_correction':
+            training_strength = 1.0  # Full weight for single field corrections
+            response_msg = "Single field corrected - focused training applied"
         elif action == 'correction':
             training_strength = 1.0  # Full weight for corrections
             response_msg = "Corrections received - strong training applied"

@@ -397,7 +397,7 @@
             
             <div class="training-controls">
                 <button class="btn btn-confirm" onclick="confirmAllData()">Confirm All Correct</button>
-                <button class="btn btn-reset" onclick="resetChanges()">Reset Changes</button>
+                <button class="btn btn-reset" onclick="resetChanges()">Refresh Data</button>
             </div>
             
             <div class="refresh-status" id="tableRefreshStatus">
@@ -450,6 +450,15 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     element.blur();
+                    // Auto-submit this single field
+                    submitSingleField(element, field);
+                }
+            });
+            
+            element.addEventListener('blur', function() {
+                // Auto-submit when user clicks away
+                if (changedFields.has(field)) {
+                    submitSingleField(element, field);
                 }
             });
         }
@@ -491,16 +500,20 @@
                         element.classList.add('red');
                     }
                     
-                    // Track change
+                    // Track change and auto-submit
                     if (card !== originalValue) {
                         changedFields.add(field);
                         element.classList.add('changed');
+                        updateTrainingStatus();
+                        
+                        // Auto-submit this single card change
+                        setTimeout(() => submitSingleField(element, field), 100);
                     } else {
                         changedFields.delete(field);
                         element.classList.remove('changed');
+                        updateTrainingStatus();
                     }
                     
-                    updateTrainingStatus();
                     dropdown.remove();
                 });
                 
@@ -523,57 +536,60 @@
         function updateTrainingStatus() {
             const statusEl = document.getElementById('trainingStatus');
             if (changedFields.size > 0) {
-                statusEl.textContent = `${changedFields.size} field(s) modified - Click confirm to train AI`;
+                statusEl.textContent = `${changedFields.size} field(s) being edited - Auto-trains when you finish editing`;
                 statusEl.style.background = 'rgba(251, 191, 36, 0.1)';
                 statusEl.style.borderColor = 'rgba(251, 191, 36, 0.3)';
                 statusEl.style.color = '#fbbf24';
             } else {
-                statusEl.textContent = 'Training Mode: Active - Click any value to correct and improve recognition';
+                statusEl.textContent = 'Training Mode: Active - Edit any value to instantly train AI (no bulk changes needed)';
                 statusEl.style.background = 'rgba(16, 185, 129, 0.1)';
                 statusEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                 statusEl.style.color = '#10b981';
             }
         }
         
-        // Confirm all data and send to training
-        async function confirmAllData() {
-            if (changedFields.size === 0) {
-                // No changes - just confirm the current data as correct
-                await sendTrainingData(currentTableData, 'confirm');
-                showConfirmationFeedback();
-                return;
+        // Submit a single field change
+        async function submitSingleField(element, field) {
+            const newValue = element.textContent.trim();
+            let processedValue;
+            
+            // Process the value based on field type
+            if (field.includes('card')) {
+                processedValue = newValue;
+            } else if (field.includes('size') || field.includes('stack')) {
+                processedValue = parseInt(newValue.replace(/[^0-9]/g, '')) || 0;
+            } else {
+                processedValue = newValue;
             }
             
-            // Collect all current values
-            const updatedData = { ...currentTableData };
+            // Create training data for just this field
+            const trainingData = {
+                field_name: field,
+                original_value: originalData[field],
+                corrected_value: processedValue,
+                context: 'single_field_correction'
+            };
             
-            // Update changed fields
-            changedFields.forEach(field => {
-                const element = document.querySelector(`[data-field="${field}"]`);
-                if (element) {
-                    if (field.includes('card')) {
-                        updatedData[field] = element.textContent.trim();
-                    } else if (field.includes('size') || field.includes('stack')) {
-                        updatedData[field] = parseInt(element.textContent.replace(/[^0-9]/g, '')) || 0;
-                    } else {
-                        updatedData[field] = element.textContent.trim();
-                    }
-                }
-            });
+            // Send to backend
+            await sendTrainingData(trainingData, 'single_correction');
             
-            // Send training data
-            await sendTrainingData(updatedData, 'correction');
+            // Show visual feedback
+            element.classList.remove('changed');
+            element.classList.add('confirmed');
+            setTimeout(() => element.classList.remove('confirmed'), 500);
             
-            // Clear changes and show confirmation
-            changedFields.clear();
-            document.querySelectorAll('.changed').forEach(el => {
-                el.classList.remove('changed');
-                el.classList.add('confirmed');
-                setTimeout(() => el.classList.remove('confirmed'), 500);
-            });
-            
+            // Remove from changed fields
+            changedFields.delete(field);
             updateTrainingStatus();
-            showConfirmationFeedback();
+            
+            showSingleFieldFeedback(field);
+        }
+        
+        // Confirm all visible data as correct (no changes needed)
+        async function confirmAllData() {
+            // Send confirmation for all current visible data
+            await sendTrainingData(currentTableData, 'confirm_all');
+            showConfirmationFeedback('All data confirmed as correct');
         }
         
         // Reset all changes
@@ -608,12 +624,12 @@
         }
         
         // Show confirmation feedback
-        function showConfirmationFeedback() {
+        function showConfirmationFeedback(message = 'Training data sent - AI learning improved!') {
             const statusEl = document.getElementById('trainingStatus');
             const originalText = statusEl.textContent;
             const originalStyle = statusEl.style.cssText;
             
-            statusEl.textContent = 'Training data sent - AI learning improved!';
+            statusEl.textContent = message;
             statusEl.style.background = 'rgba(34, 197, 94, 0.2)';
             statusEl.style.borderColor = 'rgba(34, 197, 94, 0.4)';
             statusEl.style.color = '#22c55e';
@@ -622,6 +638,12 @@
                 statusEl.textContent = originalText;
                 statusEl.style.cssText = originalStyle;
             }, 2000);
+        }
+        
+        // Show single field feedback
+        function showSingleFieldFeedback(field) {
+            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            showConfirmationFeedback(`${fieldName} corrected - AI learning updated!`);
         }
         
         // Refresh advice data
