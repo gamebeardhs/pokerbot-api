@@ -395,7 +395,7 @@
         let handsCount = 0;
         
         // Update data every 2 seconds
-        setInterval(updateInterface, 2000);
+        // Controlled polling - will be started by startPolling() function
         
         // Initial load
         updateInterface();
@@ -768,6 +768,10 @@
         
         async function testManualSolver() {
             console.log('Testing GTO solver...');
+            
+            // Temporarily pause polling to prevent overwriting test results
+            clearInterval(window.pollingInterval);
+            
             try {
                 // Test with a sample hand
                 const testHand = {
@@ -815,17 +819,45 @@
                     
                     console.log('GTO Test Result:', result);
                     alert('✅ GTO solver test successful! Check the recommendation panel for results.');
+                    
+                    // Resume polling after 10 seconds to let user see the result
+                    setTimeout(() => {
+                        startPolling();
+                    }, 10000);
+                    
                 } else {
                     const error = await response.text();
                     console.error('GTO test failed:', error);
                     alert('❌ GTO test failed: ' + error);
+                    
+                    // Resume polling immediately on error
+                    startPolling();
                 }
                 
             } catch (error) {
                 console.error('Error testing GTO solver:', error);
                 alert('❌ Connection error during GTO test: ' + error.message);
+                
+                // Resume polling immediately on error
+                startPolling();
             }
         }
+        
+        function startPolling() {
+            if (window.pollingInterval) {
+                clearInterval(window.pollingInterval);
+            }
+            
+            window.pollingInterval = setInterval(() => {
+                updateInterface();
+            }, 2000);
+        }
+        
+        // Start polling when page loads - update existing code
+        window.addEventListener('load', function() {
+            updateInterface(); // Initial load
+            startPolling(); // Start continuous polling
+        });
     </script>
 </body>
 </html>
