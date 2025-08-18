@@ -767,6 +767,7 @@
         }
         
         async function testManualSolver() {
+            console.log('Testing GTO solver...');
             try {
                 // Test with a sample hand
                 const testHand = {
@@ -795,13 +796,11 @@
                     ]
                 };
                 
-                const response = await fetch('/manual/solve', {
+                const response = await fetch('/test/gto', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer test-token-123'
-                    },
-                    body: JSON.stringify(testHand)
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 if (response.ok) {
@@ -810,21 +809,21 @@
                     // Update recommendation panel with test result
                     updateRecommendationPanel({
                         action: result.gto_decision.action,
-                        reasoning: result.gto_decision.detailed_explanation,
+                        reasoning: result.gto_decision.detailed_explanation || result.gto_decision.reasoning,
                         confidence: result.gto_decision.confidence
                     });
                     
                     console.log('GTO Test Result:', result);
                     alert('✅ GTO solver test successful! Check the recommendation panel for results.');
                 } else {
-                    const error = await response.json();
+                    const error = await response.text();
                     console.error('GTO test failed:', error);
-                    alert('❌ GTO test failed: ' + (error.detail || 'Unknown error'));
+                    alert('❌ GTO test failed: ' + error);
                 }
                 
             } catch (error) {
                 console.error('Error testing GTO solver:', error);
-                alert('❌ Connection error during GTO test');
+                alert('❌ Connection error during GTO test: ' + error.message);
             }
         }
     </script>

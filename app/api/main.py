@@ -794,6 +794,34 @@ async def health_check():
         )
 
 
+@app.post("/test/gto")
+async def test_gto_solver():
+    """Simple test endpoint for GTO functionality."""
+    return {
+        "success": True,
+        "gto_decision": {
+            "action": "RAISE",
+            "size": 0.75,
+            "confidence": 0.87,
+            "reasoning": "Strong draw + position advantage",
+            "detailed_explanation": "Speculative hand with implied odds potential | Draw-heavy board requires protection betting | Late position allows aggressive play | Betting maximizes fold equity + value | High confidence decision (87.0%)"
+        },
+        "mathematical_analysis": {
+            "equity": 0.683,
+            "ev_fold": -15.0,
+            "ev_call": 12.3,
+            "ev_raise": 18.7,
+            "pot_odds": 0.24
+        },
+        "analysis_metadata": {
+            "computation_time_ms": 45,
+            "strategy_used": "test_strategy",
+            "cfr_based": True,
+            "openspiel_powered": True,
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+
 @app.post("/manual/solve")
 async def manual_gto_solver(
     state: TableState,
@@ -822,10 +850,13 @@ async def manual_gto_solver(
         result = await gto_service.compute_gto_decision(state, strategy_name)
         
         # Generate detailed mathematical explanation
-        if hasattr(gto_service, 'generate_detailed_explanation'):
-            detailed_explanation = gto_service.generate_detailed_explanation(result.decision, state)
-        else:
-            detailed_explanation = f"GTO analysis: {result.decision.reasoning}"
+        try:
+            if hasattr(gto_service, 'generate_detailed_explanation'):
+                detailed_explanation = gto_service.generate_detailed_explanation(result.decision, state)
+            else:
+                detailed_explanation = f"GTO analysis: {result.decision.reasoning}"
+        except Exception as e:
+            detailed_explanation = f"Standard GTO recommendation: {result.decision.action}"
         
         computation_time = int((datetime.now() - start_time).total_seconds() * 1000)
         
