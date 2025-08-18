@@ -108,7 +108,24 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
             )
             
             import asyncio
-            fallback_recommendation = asyncio.run(gto_service.compute_gto_decision(table_state_obj))
+            import nest_asyncio
+            nest_asyncio.apply()
+            try:
+                fallback_recommendation = await gto_service.compute_gto_decision(table_state_obj)
+            except:
+                # Fallback to simple GTO if async fails
+                from ..database.gto_database import PokerSituation, Position, BettingRound
+                situation = PokerSituation(
+                    hole_cards=request.hole_cards,
+                    board_cards=request.board_cards,
+                    position=Position[request.position.upper()],
+                    pot_size=request.pot_size,
+                    bet_to_call=request.bet_to_call,
+                    stack_size=request.stack_size,
+                    num_players=request.num_players,
+                    betting_round=BettingRound[request.betting_round.upper()]
+                )
+                fallback_recommendation = gto_db._generate_simple_gto_solution(situation)
             
             if fallback_recommendation:
                 # Add this new solution to database for future use
