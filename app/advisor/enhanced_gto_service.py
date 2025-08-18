@@ -74,8 +74,8 @@ class EnhancedGTODecisionService:
     def _create_default_strategy(self) -> Dict:
         """Create a default GTO-oriented strategy."""
         return {
-            "cfr_iterations": 100,  # Realistic for real-time (~0.5s)
-            "max_compute_time_ms": 500,
+            "cfr_iterations": 10,  # Ultra-fast for real-time (<100ms)
+            "max_compute_time_ms": 100,
             "preflop_raise_size": 3.0,
             "cbet_frequency": 0.65,
             "bluff_frequency": 0.33,
