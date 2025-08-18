@@ -101,54 +101,31 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
                         stack=request.stack_size,
                         in_hand=True,
                         is_hero=True,
-                        position=request.position,
+                        position=request.position.upper(),
                         cards=request.hole_cards  # Use 'cards' not 'hole_cards'
                     )
                 ]
             )
             
-            import asyncio
-            import nest_asyncio
-            nest_asyncio.apply()
-            try:
-                fallback_recommendation = await gto_service.compute_gto_decision(table_state_obj)
-            except Exception as fallback_error:
-                logger.warning(f"CFR fallback failed: {fallback_error}")
-                # Return simple fallback response
-                return JSONResponse({
-                    "success": False,
-                    "method": "fallback_failed", 
-                    "message": f"No database match found and CFR fallback failed: {str(fallback_error)}",
-                    "recommendation": {
-                        "decision": "fold",
-                        "bet_size": 0,
-                        "equity": 0.0,
-                        "reasoning": "Unable to compute recommendation - database miss and CFR error"
-                    }
-                })
+            # CFR fallback temporarily disabled due to async/uvloop conflicts
+            # Will be fixed in Phase 2 with proper async handling
+            logger.info("Database miss - CFR fallback temporarily disabled")
             
-            if fallback_recommendation:
-                # Add this new solution to database for future use
-                solution_dict = {
-                    'decision': fallback_recommendation.decision.action if hasattr(fallback_recommendation.decision, 'action') else 'fold',
-                    'bet_size': fallback_recommendation.decision.bet_amount if hasattr(fallback_recommendation.decision, 'bet_amount') else 0,
-                    'equity': fallback_recommendation.metrics.equity.total if hasattr(fallback_recommendation, 'metrics') else 0.0,
-                    'reasoning': fallback_recommendation.reasoning if hasattr(fallback_recommendation, 'reasoning') else 'CFR analysis',
-                    'confidence': fallback_recommendation.metrics.confidence if hasattr(fallback_recommendation, 'metrics') else 0.8,
-                    'metadata': {'source': 'cfr_fallback'}
+            return JSONResponse({
+                "success": False,
+                "method": "database_miss_cfr_disabled", 
+                "message": "No similar situation found in database. CFR computation temporarily unavailable.",
+                "recommendation": {
+                    "decision": "fold",
+                    "bet_size": 0,
+                    "equity": 0.0,
+                    "reasoning": "Database miss - awaiting TexasSolver integration for authentic GTO analysis"
+                },
+                "debug_info": {
+                    "database_situations": 6757,
+                    "next_phase": "TexasSolver integration for authentic CFR solutions"
                 }
-                
-                # Async add to database
-                gto_db.add_solution(situation, solution_dict)
-                
-                return JSONResponse({
-                    "success": True,
-                    "recommendation": solution_dict,
-                    "method": "cfr_computation_with_caching",
-                    "message": "Computed GTO recommendation and cached for future instant access"
-                })
-            
-            raise HTTPException(status_code=500, detail="Failed to generate GTO recommendation")
+            })
             
     except Exception as e:
         logger.error(f"Instant GTO recommendation failed: {e}")

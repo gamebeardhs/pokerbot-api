@@ -178,7 +178,13 @@ class GTODatabase:
                     logger.warning("No situations in database for similarity search")
                     return None
                 
-                labels, distances = self.hnsw_index.knn_query(query_vector, k=top_k)
+                # Ensure query_vector is in the right format for HNSW
+                if isinstance(query_vector, list):
+                    query_vector = np.array(query_vector, dtype=np.float32)
+                elif query_vector.dtype != np.float32:
+                    query_vector = query_vector.astype(np.float32)
+                    
+                labels, distances = self.hnsw_index.knn_query(query_vector.reshape(1, -1), k=top_k)
                 
                 # Get the most similar situation from database
                 best_match = self._get_situation_by_id(labels[0])
@@ -190,8 +196,9 @@ class GTODatabase:
                 self.query_count += 1
                 self.total_query_time += query_time
                 
+                similarity_score = float(distances[0]) if hasattr(distances[0], 'item') else distances[0]
                 logger.info(f"Instant recommendation found in {query_time*1000:.1f}ms "
-                          f"(similarity: {1-distances[0]:.3f})")
+                          f"(similarity: {1-similarity_score:.3f})")
                 
                 # Return formatted response - using dictionary format for now
                 return {
@@ -199,11 +206,11 @@ class GTODatabase:
                     'bet_size': best_match.get('bet_size', 0),
                     'reasoning': f"Similar situation analysis: {best_match['reasoning']}",
                     'equity': best_match['equity'],
-                    'confidence': best_match['cfr_confidence'] * (1 - distances[0]),  # Adjust for similarity
+                    'confidence': best_match['cfr_confidence'] * (1 - similarity_score),  # Adjust for similarity
                     'strategy': 'database_lookup',
                     'metrics': {
                         'source': 'database_lookup',
-                        'similarity_score': 1 - distances[0],
+                        'similarity_score': 1 - similarity_score,
                         'query_time_ms': query_time * 1000,
                         'similar_situations': len(labels)
                     }
@@ -211,6 +218,8 @@ class GTODatabase:
                 
         except Exception as e:
             logger.error(f"Database lookup failed: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     def _get_situation_by_id(self, situation_id: int) -> Optional[Dict[str, Any]]:
