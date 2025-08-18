@@ -41,29 +41,13 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
             logger.info("Black screen detected - attempting demo mode calibration")
             
             try:
-                result = intelligent_calibrator.auto_calibrate_table()
-                if result and result.regions:
-                    return {
-                        "success": True,
-                        "table_detected": True,
-                        "accuracy_score": result.accuracy_score,
-                        "success_rate": result.success_rate,
-                        "regions_found": len(result.regions),
-                        "message": f"✅ Demo mode calibration: {result.accuracy_score:.1%} accuracy",
-                        "status": "DEMO_MODE",
-                        "regions": {name: {
-                            "x": region.x, "y": region.y,
-                            "width": region.width, "height": region.height,
-                            "confidence": region.confidence, "type": region.element_type
-                        } for name, region in result.regions.items()},
-                        "validation_tests": result.validation_tests,
-                        "timestamp": result.timestamp,
-                        "recommendations": [
-                            "Demo mode active - using fallback regions",
-                            "For live ACR detection: Run as administrator",
-                            "Open ACR poker client and join a table"
-                        ]
-                    }
+                # REMOVED: Demo mode calibration - return actual detection failure
+                return {
+                    "success": False,
+                    "table_detected": False,
+                    "error": "Cannot capture screen - check Windows permissions or run as administrator",
+                    "message": "Screen capture failed - ACR table not detected"
+                }
             except Exception as e:
                 logger.error(f"Demo mode calibration failed: {e}")
             
@@ -97,20 +81,12 @@ async def auto_calibrate_acr_table() -> Dict[str, Any]:
             green_percentage = 0.0
         
         if green_percentage < 3.0:
+            # REMOVED: Demo mode - return actual detection failure
             return {
-                "success": True,  # Changed to true for demo/test purposes
-                "table_detected": True,
-                "accuracy_score": 0.20,  # 20% as shown in logs
-                "success_rate": 0.20,
-                "regions_found": 2,
-                "message": f"⚠️ Demo mode: {green_percentage:.1f}% green area detected (manual analysis available)",
-                "status": "DEMO_MODE",
-                "recommendations": [
-                    "Use /gui for manual poker analysis",
-                    "For live ACR detection: Open ACR poker client",
-                    "Join a poker table (not lobby) for full auto-detection",
-                    "Current detection works for manual input scenarios"
-                ],
+                "success": False,
+                "table_detected": False,
+                "error": f"Insufficient green felt detected: {green_percentage:.1f}% (need 3.0%+)",
+                "message": "No ACR poker table found in screenshot",
                 "detection_details": {
                     "screenshot_resolution": f"{screenshot.width}x{screenshot.height}",
                     "green_felt_percentage": green_percentage,

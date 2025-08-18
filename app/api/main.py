@@ -144,6 +144,11 @@ async def root():
     }
 
 
+@app.get("/unified", response_class=HTMLResponse)
+async def unified_advisor_interface():
+    """Serve the unified poker advisory interface."""
+    return FileResponse("app/static/unified_advisor.html")
+
 @app.get("/gui", response_class=HTMLResponse)
 async def gto_testing_gui():
     """Enhanced GUI for testing GTO decisions with all advanced features."""

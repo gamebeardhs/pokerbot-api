@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Unified Poker Advisory Interface</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Consolas', 'Monaco', monospace; 
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+        
+        .container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; 
+            grid-template-rows: 1fr auto; 
+            height: 100vh; 
+            gap: 10px; 
+            padding: 10px;
+        }
+        
+        .panel {
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .panel h2 {
+            color: #64ffda;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #64ffda;
+            padding-bottom: 5px;
+        }
+        
+        /* Left Panel - What I See */
+        .vision-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .screenshot-container {
+            flex: 1;
+            background: #000;
+            border-radius: 8px;
+            min-height: 200px;
+            position: relative;
+            border: 1px solid #333;
+        }
+        
+        .screenshot-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .detection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .detection-box {
+            position: absolute;
+            border: 2px solid;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .hero-cards { border-color: #00ff00; color: #00ff00; }
+        .board-cards { border-color: #ffff00; color: #ffff00; }
+        .pot-area { border-color: #ff6600; color: #ff6600; }
+        .action-buttons { border-color: #ff0066; color: #ff0066; }
+        
+        .ocr-results {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .ocr-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(100, 100, 150, 0.2);
+        }
+        
+        .ocr-label { color: #64ffda; font-weight: bold; }
+        .ocr-value { color: #ffffff; }
+        
+        /* Center Panel - My Recommendation */
+        .recommendation-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .gto-action {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .action-fold { background: linear-gradient(135deg, #ff4444, #cc0000); }
+        .action-call { background: linear-gradient(135deg, #ffaa00, #ff8800); }
+        .action-raise { background: linear-gradient(135deg, #44ff44, #00cc00); }
+        .action-check { background: linear-gradient(135deg, #4444ff, #0000cc); }
+        
+        .explanation-box {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            width: 100%;
+            min-height: 120px;
+            border-left: 4px solid #64ffda;
+        }
+        
+        .explanation-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #e0e0e0;
+        }
+        
+        .confidence-meter {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-high { background: linear-gradient(90deg, #00ff00, #66ff66); }
+        .confidence-medium { background: linear-gradient(90deg, #ffaa00, #ffcc66); }
+        .confidence-low { background: linear-gradient(90deg, #ff4444, #ff6666); }
+        
+        /* Right Panel - Training & Corrections */
+        .training-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .correction-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .correction-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #4a4a6a, #2a2a4a);
+            color: #e0e0e0;
+        }
+        
+        .correction-btn:hover {
+            background: linear-gradient(135deg, #5a5a7a, #3a3a5a);
+            transform: translateY(-2px);
+        }
+        
+        .session-stats {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            grid-column: 1 / -1;
+            background: rgba(20, 20, 40, 0.95);
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(100, 100, 150, 0.3);
+        }
+        
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-connected { background: #00ff00; }
+        .status-disconnected { background: #ff4444; }
+        .status-warning { background: #ffaa00; }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: #333;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active { background: #64ffda; }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active .toggle-slider { transform: translateX(25px); }
+        
+        .error-message {
+            color: #ff4444;
+            font-size: 12px;
+            text-align: center;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ff4444;
+        }
+        
+        .no-data {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: What I See -->
+        <div class="panel vision-panel">
+            <h2>🔍 What I See</h2>
+            
+            <div class="screenshot-container" id="screenshotContainer">
+                <img id="screenshotImage" src="" alt="No screenshot available" style="display: none;">
+                <div class="detection-overlay" id="detectionOverlay"></div>
+                <div class="no-data" id="noScreenshotMessage">No ACR table detected</div>
+            </div>
+            
+            <div class="ocr-results" id="ocrResults">
+                <div class="no-data">Waiting for table data...</div>
+            </div>
+        </div>
+        
+        <!-- Center Panel: My Recommendation -->
+        <div class="panel recommendation-panel">
+            <h2>🎯 My Recommendation</h2>
+            
+            <div class="gto-action action-fold" id="gtoAction">WAITING</div>
+            
+            <div class="explanation-box">
+                <div class="explanation-text" id="explanationText">
+                    Connect to an ACR poker table to receive GTO recommendations with detailed mathematical reasoning.
+                </div>
+            </div>
+            
+            <div style="width: 100%;">
+                <div style="font-size: 12px; margin-bottom: 5px; color: #64ffda;">Confidence:</div>
+                <div class="confidence-meter">
+                    <div class="confidence-fill confidence-high" id="confidenceFill" style="width: 0%;"></div>
+                </div>
+                <div style="font-size: 11px; text-align: center; margin-top: 5px; color: #999;" id="confidenceText">0%</div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: Training & Corrections -->
+        <div class="panel training-panel">
+            <h2>🎓 Training & Corrections</h2>
+            
+            <div class="correction-buttons">
+                <button class="correction-btn" onclick="correctCards()">Fix Cards</button>
+                <button class="correction-btn" onclick="correctPot()">Fix Pot</button>
+                <button class="correction-btn" onclick="correctStacks()">Fix Stacks</button>
+                <button class="correction-btn" onclick="correctPlayers()">Fix Players</button>
+            </div>
+            
+            <div class="session-stats">
+                <h3 style="color: #64ffda; font-size: 14px; margin-bottom: 10px;">Session Stats</h3>
+                <div class="stat-item">
+                    <span>Corrections Made:</span>
+                    <span id="correctionsCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Hands Analyzed:</span>
+                    <span id="handsCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Accuracy:</span>
+                    <span id="accuracyPercent">---%</span>
+                </div>
+                <div class="stat-item">
+                    <span>Last Update:</span>
+                    <span id="lastUpdate">Never</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicators">
+                <div class="status-indicator">
+                    <div class="status-dot status-disconnected" id="tableStatus"></div>
+                    <span>Table: <span id="tableStatusText">Disconnected</span></span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot status-disconnected" id="turnStatus"></div>
+                    <span>Turn: <span id="turnStatusText">Unknown</span></span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot status-disconnected" id="gtoStatus"></div>
+                    <span>GTO: <span id="gtoStatusText">Offline</span></span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="font-size: 11px; color: #999;" id="lastUpdateTime">Never updated</div>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 12px;">Auto-Advisory:</span>
+                    <div class="toggle-switch" id="autoToggle" onclick="toggleAutoAdvisory()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 12px;">Debug:</span>
+                    <div class="toggle-switch" id="debugToggle" onclick="toggleDebugMode()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoAdvisoryEnabled = true;
+        let debugModeEnabled = false;
+        let correctionsCount = 0;
+        let handsCount = 0;
+        
+        // Update data every 2 seconds
+        setInterval(updateInterface, 2000);
+        
+        // Initial load
+        updateInterface();
+        
+        async function updateInterface() {
+            try {
+                // Fetch latest table data and advice
+                const [tableResponse, adviceResponse] = await Promise.all([
+                    fetch('/auto/table-data'),
+                    fetch('/auto/latest-advice')
+                ]);
+                
+                if (tableResponse.ok) {
+                    const tableData = await tableResponse.json();
+                    updateVisionPanel(tableData);
+                    updateStatusIndicators(true, false, false);
+                } else {
+                    updateVisionPanel(null);
+                    updateStatusIndicators(false, false, false);
+                }
+                
+                if (adviceResponse.ok) {
+                    const adviceData = await adviceResponse.json();
+                    updateRecommendationPanel(adviceData);
+                    updateStatusIndicators(null, null, true);
+                } else {
+                    updateRecommendationPanel(null);
+                    updateStatusIndicators(null, null, false);
+                }
+                
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('Error updating interface:', error);
+                updateStatusIndicators(false, false, false);
+            }
+        }
+        
+        function updateVisionPanel(tableData) {
+            const ocrResults = document.getElementById('ocrResults');
+            const screenshotContainer = document.getElementById('screenshotContainer');
+            const noScreenshotMessage = document.getElementById('noScreenshotMessage');
+            
+            if (tableData && !tableData.error) {
+                noScreenshotMessage.style.display = 'none';
+                
+                // Update OCR results
+                ocrResults.innerHTML = '';
+                
+                if (tableData.hero_cards && tableData.hero_cards.length > 0) {
+                    addOcrItem('Hero Cards', tableData.hero_cards.join(', '));
+                }
+                if (tableData.board && tableData.board.length > 0) {
+                    addOcrItem('Board', tableData.board.join(', '));
+                }
+                if (tableData.pot_size !== undefined) {
+                    addOcrItem('Pot Size', '$' + tableData.pot_size);
+                }
+                if (tableData.your_stack !== undefined) {
+                    addOcrItem('Your Stack', '$' + tableData.your_stack);
+                }
+                if (tableData.position) {
+                    addOcrItem('Position', tableData.position);
+                }
+                if (tableData.betting_round) {
+                    addOcrItem('Street', tableData.betting_round);
+                }
+                
+                handsCount++;
+                document.getElementById('handsCount').textContent = handsCount;
+                
+            } else {
+                noScreenshotMessage.style.display = 'block';
+                noScreenshotMessage.textContent = tableData?.error || 'No ACR table detected';
+                ocrResults.innerHTML = '<div class="no-data">Waiting for table data...</div>';
+            }
+        }
+        
+        function addOcrItem(label, value) {
+            const ocrResults = document.getElementById('ocrResults');
+            const item = document.createElement('div');
+            item.className = 'ocr-item';
+            item.innerHTML = `
+                <span class="ocr-label">${label}:</span>
+                <span class="ocr-value">${value}</span>
+            `;
+            ocrResults.appendChild(item);
+        }
+        
+        function updateRecommendationPanel(adviceData) {
+            const gtoAction = document.getElementById('gtoAction');
+            const explanationText = document.getElementById('explanationText');
+            const confidenceFill = document.getElementById('confidenceFill');
+            const confidenceText = document.getElementById('confidenceText');
+            
+            if (adviceData && adviceData.action) {
+                // Update action display
+                gtoAction.textContent = adviceData.action;
+                gtoAction.className = `gto-action action-${adviceData.action.toLowerCase()}`;
+                
+                // Update explanation
+                explanationText.textContent = adviceData.reasoning || 'No reasoning provided';
+                
+                // Update confidence
+                const confidence = adviceData.confidence || 0;
+                const confidenceNum = typeof confidence === 'string' ? 
+                    (confidence === 'HIGH' ? 85 : confidence === 'MEDIUM' ? 60 : 35) : confidence;
+                
+                confidenceFill.style.width = confidenceNum + '%';
+                confidenceText.textContent = confidenceNum + '%';
+                
+                if (confidenceNum >= 70) {
+                    confidenceFill.className = 'confidence-fill confidence-high';
+                } else if (confidenceNum >= 40) {
+                    confidenceFill.className = 'confidence-fill confidence-medium';
+                } else {
+                    confidenceFill.className = 'confidence-fill confidence-low';
+                }
+                
+            } else {
+                gtoAction.textContent = 'WAITING';
+                gtoAction.className = 'gto-action action-fold';
+                explanationText.textContent = 'Connect to an ACR poker table to receive GTO recommendations with detailed mathematical reasoning.';
+                confidenceFill.style.width = '0%';
+                confidenceText.textContent = '0%';
+            }
+        }
+        
+        function updateStatusIndicators(tableConnected, turnDetected, gtoActive) {
+            // Table status
+            if (tableConnected !== null) {
+                const tableStatus = document.getElementById('tableStatus');
+                const tableStatusText = document.getElementById('tableStatusText');
+                
+                if (tableConnected) {
+                    tableStatus.className = 'status-dot status-connected';
+                    tableStatusText.textContent = 'Connected';
+                } else {
+                    tableStatus.className = 'status-dot status-disconnected';
+                    tableStatusText.textContent = 'Disconnected';
+                }
+            }
+            
+            // Turn status  
+            if (turnDetected !== null) {
+                const turnStatus = document.getElementById('turnStatus');
+                const turnStatusText = document.getElementById('turnStatusText');
+                
+                if (turnDetected) {
+                    turnStatus.className = 'status-dot status-connected';
+                    turnStatusText.textContent = 'Your Turn';
+                } else {
+                    turnStatus.className = 'status-dot status-warning';
+                    turnStatusText.textContent = 'Waiting';
+                }
+            }
+            
+            // GTO status
+            if (gtoActive !== null) {
+                const gtoStatus = document.getElementById('gtoStatus');
+                const gtoStatusText = document.getElementById('gtoStatusText');
+                
+                if (gtoActive) {
+                    gtoStatus.className = 'status-dot status-connected';
+                    gtoStatusText.textContent = 'Active';
+                } else {
+                    gtoStatus.className = 'status-dot status-disconnected';
+                    gtoStatusText.textContent = 'Offline';
+                }
+            }
+        }
+        
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastUpdateTime').textContent = timeString;
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+        
+        function toggleAutoAdvisory() {
+            autoAdvisoryEnabled = !autoAdvisoryEnabled;
+            const toggle = document.getElementById('autoToggle');
+            
+            if (autoAdvisoryEnabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+        
+        function toggleDebugMode() {
+            debugModeEnabled = !debugModeEnabled;
+            const toggle = document.getElementById('debugToggle');
+            
+            if (debugModeEnabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+        
+        function correctCards() {
+            correctionsCount++;
+            document.getElementById('correctionsCount').textContent = correctionsCount;
+            updateAccuracy();
+            // TODO: Open correction interface for cards
+            console.log('Correcting cards...');
+        }
+        
+        function correctPot() {
+            correctionsCount++;
+            document.getElementById('correctionsCount').textContent = correctionsCount;
+            updateAccuracy();
+            // TODO: Open correction interface for pot
+            console.log('Correcting pot...');
+        }
+        
+        function correctStacks() {
+            correctionsCount++;
+            document.getElementById('correctionsCount').textContent = correctionsCount;
+            updateAccuracy();
+            // TODO: Open correction interface for stacks
+            console.log('Correcting stacks...');
+        }
+        
+        function correctPlayers() {
+            correctionsCount++;
+            document.getElementById('correctionsCount').textContent = correctionsCount;
+            updateAccuracy();
+            // TODO: Open correction interface for players
+            console.log('Correcting players...');
+        }
+        
+        function updateAccuracy() {
+            if (handsCount > 0) {
+                const accuracy = Math.max(0, 100 - (correctionsCount / handsCount * 100));
+                document.getElementById('accuracyPercent').textContent = Math.round(accuracy) + '%';
+            }
+        }
+    </script>
+</body>
+</html>

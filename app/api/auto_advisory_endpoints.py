@@ -169,49 +169,71 @@ class AutoAdvisoryService:
             return 0
     
     def _generate_gto_advice(self):
-        """Generate GTO advice for current situation."""
+        """Generate GTO advice for current situation using real table data."""
         try:
-            logger.info("Generating automated GTO advice...")
+            logger.info("Generating GTO advice from real table data...")
             
-            # Get table state from calibrator
+            # Get real table state from calibrator
             table_state = self.calibrator.get_latest_table_state()
             
-            if table_state:
-                # Create realistic advice based on situation
-                actions = ["CALL", "RAISE", "FOLD", "CHECK"]
-                action = random.choice(actions)
+            if table_state and "error" not in table_state:
+                logger.info("Real table state detected - connecting to GTO engine")
                 
-                reasons = [
-                    "Strong hand, position advantage",
-                    "Good bluff spot with fold equity", 
-                    "Board texture favors continuation",
-                    "Value betting against calling range",
-                    "Pot odds favor this decision"
-                ]
-                
-                advice = {
-                    "action": action,
-                    "bet_size": f"${random.randint(25, 150)}" if action == "RAISE" else None,
-                    "equity": round(random.uniform(35, 85), 1),
-                    "confidence": random.choice(["HIGH", "MEDIUM", "LOW"]),
-                    "reasoning": random.choice(reasons),
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-                }
-                
-                self.latest_advice = advice
-                self.advice_history.append({
-                    "timestamp": advice["timestamp"],
-                    "advice": advice
-                })
-                
-                # Keep only last 10 hands
-                if len(self.advice_history) > 10:
-                    self.advice_history.pop(0)
+                # Connect to real Enhanced GTO Service
+                try:
+                    from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
+                    from app.api.models import TableState
                     
-                logger.info(f"GTO Advice: {advice.get('action', 'N/A')} - {advice.get('reasoning', 'N/A')}")
+                    # Initialize GTO service if not already done
+                    if not hasattr(self, 'gto_service'):
+                        self.gto_service = EnhancedGTODecisionService()
+                    
+                    # Convert table state to proper format
+                    # This is a simplified conversion - in production would need full mapping
+                    converted_state = self._convert_to_table_state(table_state)
+                    
+                    if converted_state:
+                        # Get real GTO decision
+                        gto_response = asyncio.create_task(
+                            self.gto_service.get_gto_decision(converted_state)
+                        )
+                        
+                        # For now, create simplified advice structure
+                        self.latest_advice = {
+                            "action": "ANALYZING",
+                            "reasoning": "Processing real table data with GTO engine...",
+                            "confidence": "PENDING",
+                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                            "using_real_gto": True
+                        }
+                        
+                        logger.info("Real GTO analysis initiated")
+                    else:
+                        self.latest_advice = None
+                        
+                except ImportError as e:
+                    logger.error(f"GTO service not available: {e}")
+                    self.latest_advice = None
+                except Exception as e:
+                    logger.error(f"GTO engine connection failed: {e}")
+                    self.latest_advice = None
+            else:
+                logger.info("No real table data available - skipping advice generation")
+                self.latest_advice = None
                 
         except Exception as e:
             logger.error(f"Error generating advice: {e}")
+            self.latest_advice = None
+    
+    def _convert_to_table_state(self, raw_state: dict) -> Optional['TableState']:
+        """Convert raw table state to TableState model."""
+        try:
+            # This is a simplified conversion - would need full implementation
+            # For now, return None to indicate conversion not ready
+            return None
+        except Exception as e:
+            logger.error(f"Table state conversion failed: {e}")
+            return None
     
     def get_status(self):
         """Get current monitoring status."""
@@ -268,7 +290,7 @@ async def get_latest_advice():
     if auto_advisory.latest_advice:
         return JSONResponse(content=auto_advisory.latest_advice)
     else:
-        return JSONResponse(content={"message": "No advice available yet"})
+        return JSONResponse(content={"error": "No GTO advice available - connect to ACR table"}, status_code=404)
 
 @router.get("/advice-history") 
 async def get_advice_history():
@@ -290,55 +312,15 @@ async def get_table_data():
         # Get the latest table state from the calibrator
         table_state = auto_advisory.calibrator.get_latest_table_state()
         
-        # FIXED: Provide demo data ONLY when ACR not available for training interface
-        if table_state and "error" in table_state and auto_advisory.calibrator:
-            # Check if this is truly no ACR (Replit environment) vs calibration issue
-            screenshot_status = auto_advisory.get_status().get("screenshot_status", "")
-            
-            if "replit_mode" in screenshot_status:
-                # Demo data for Replit testing environment only
-                demo_data = {
-                    "hero_cards": ["As", "Kh"],
-                    "board": ["Qd", "Jc", "9s"],
-                    "pot_size": 125,
-                    "your_stack": 2400,
-                    "position": "Button",
-                    "betting_round": "Flop",
-                    "players": [
-                        {"name": "Player1", "stack": 1800, "last_action": "Check"},
-                        {"name": "Player2", "stack": 3200, "last_action": "Bet $50"}
-                    ],
-                    "regions": {
-                        "hero_card_1": [100, 200, 150, 250],
-                        "hero_card_2": [160, 200, 210, 250],
-                        "board_card_1": [300, 150, 350, 200],
-                        "board_card_2": [360, 150, 410, 200],
-                        "board_card_3": [420, 150, 470, 200]
-                    },
-                    "demo_mode": True,
-                    "environment": "replit_testing",
-                    "message": "Demo data - Run on Windows with ACR for live detection"
-                }
-                return JSONResponse(content=demo_data)
-            else:
-                # Return actual error for production environment when ACR available but not detected
-                return JSONResponse(content=table_state)
+        # REMOVED: All demo data - return real data or explicit error
+        if table_state and "error" in table_state:
+            return JSONResponse(content=table_state, status_code=400)
         
         if table_state:
             return JSONResponse(content=table_state)
         else:
-            # Return empty state when no table data available
-            return JSONResponse(content={
-                "hole_cards": [],
-                "community_cards": [],
-                "pot_size": 0,
-                "your_stack": 0,
-                "position": "Unknown",
-                "action_type": "Unknown",
-                "players": [],
-                "betting_round": "Unknown",
-                "message": "No table data available"
-            })
+            # Return error when no real table data available
+            return JSONResponse(content={"error": "No ACR table detected"}, status_code=404)
     except Exception as e:
         logger.error(f"Error fetching table data: {e}")
         return JSONResponse(content={"error": str(e)})
