@@ -113,8 +113,9 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
             try:
                 fallback_recommendation = await gto_service.compute_gto_decision(table_state_obj)
             except:
-                # Fallback to simple GTO if async fails
-                from ..database.gto_database import PokerSituation, Position, BettingRound
+                # Fallback to simple GTO using enum imports
+                from ..models.poker_models import Position, BettingRound
+                from ..database.gto_database import PokerSituation
                 situation = PokerSituation(
                     hole_cards=request.hole_cards,
                     board_cards=request.board_cards,
@@ -190,8 +191,9 @@ async def get_database_stats():
 async def add_single_situation(request: Dict[str, Any]):
     """Add a single GTO situation to the database."""
     try:
-        # Convert request to PokerSituation
-        from ..database.gto_database import PokerSituation, Position, BettingRound
+        # Convert request to PokerSituation  
+        from ..models.poker_models import Position, BettingRound
+        from ..database.gto_database import PokerSituation
         
         situation = PokerSituation(
             hole_cards=request["hole_cards"],
