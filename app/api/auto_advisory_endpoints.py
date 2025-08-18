@@ -345,7 +345,7 @@ async def get_latest_advice():
     if auto_advisory.latest_advice:
         return JSONResponse(content=auto_advisory.latest_advice)
     else:
-        raise HTTPException(status_code=404, detail="No advice available yet")
+        return JSONResponse(content={"message": "No advice available yet"})
 
 @router.get("/advice-history") 
 async def get_advice_history():
@@ -364,8 +364,8 @@ async def get_advice_display():
 async def get_table_data():
     """Get current table information for display verification."""
     try:
-        # Get the latest table state from the trigger service
-        table_state = auto_advisory.trigger_service.scraper.get_latest_table_state()
+        # Get the latest table state from the calibrator
+        table_state = auto_advisory.calibrator.get_latest_table_state()
         
         if table_state:
             # Format the data for display

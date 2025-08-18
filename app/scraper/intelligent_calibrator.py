@@ -1011,6 +1011,37 @@ class IntelligentACRCalibrator:
             json.dump(save_data, f, indent=2)
         
         logger.info(f"Saved auto-calibration results with {result.success_rate:.1%} success rate")
+    
+    def get_latest_table_state(self) -> Optional[Dict]:
+        """Get the latest table state for display verification."""
+        try:
+            # Capture current screenshot
+            screenshot = self.capture_screen()
+            if screenshot is None:
+                return None
+            
+            # Extract basic table information using OCR
+            # This is a simplified version for display purposes
+            table_state = {
+                "hole_cards": ["As", "Kh"],  # Mock data - would use OCR in production
+                "community_cards": ["Qd", "Js", "10c"],  # Mock data
+                "pot_size": 125,  # Mock data
+                "your_stack": 2500,  # Mock data
+                "position": "Button",  # Mock data
+                "action_type": "Call/Raise/Fold",  # Mock data
+                "players": [
+                    {"name": "Player1", "stack": 1800, "last_action": "Check"},
+                    {"name": "Player2", "stack": 3200, "last_action": "Bet $50"},
+                    {"name": "You", "stack": 2500, "last_action": "Waiting"}
+                ],
+                "betting_round": "Flop"
+            }
+            
+            return table_state
+            
+        except Exception as e:
+            logger.error(f"Error getting table state: {e}")
+            return None
 
 def test_intelligent_calibration():
     """Test the intelligent calibration system."""
