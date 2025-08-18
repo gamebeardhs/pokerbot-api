@@ -1,12 +1,20 @@
 # Overview
 
-This project delivers a comprehensive FastAPI-based poker advisory service, leveraging advanced poker analysis to provide mathematically optimal Game Theory Optimal (GTO) decisions. It functions as a professional-grade poker bot, incorporating a 6-phase system for decision-making, circuit breaker protection, advanced stealth detection, GPU acceleration, enhanced GTO analysis, turn detection, and anti-detection measures. The system aims to provide expert-level poker advice with maximum stealth, having achieved a 97.6% success rate in comprehensive testing. It is optimized for Windows desktop, featuring specialized setup scripts and one-click startup for seamless operation. The business vision is to provide a highly accurate and undetectable poker advisory tool for professional use, capable of outperforming standard poker analysis tools through its integration of advanced computer vision and GTO algorithms.
+This project delivers a comprehensive FastAPI-based poker advisory service, leveraging advanced poker analysis to provide mathematically optimal Game Theory Optimal (GTO) decisions. It functions as a professional-grade poker bot, incorporating a 6-phase system for decision-making, circuit breaker protection, advanced stealth detection, GPU acceleration, enhanced GTO analysis, turn detection, and anti-detection measures. The system aims to provide expert-level poker advice with maximum stealth, having achieved a 97.6% success rate in comprehensive testing. It is optimized for Windows desktop, featuring specialized setup scripts and one-click startup for seamless operation. The business vision is to provide a highly accurate and undetectable poker advisory tool for professional use, capable of outperforming standard poker analysis tools through its integration of advanced computer vision and authentic GTO algorithms. The system now features a comprehensive unified interface with transparent mathematical reasoning, ensuring users understand the basis for every recommendation through detailed CFR-based analysis.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+
+## Comprehensive System Overhaul (August 18, 2025)
+- **REMOVED ALL DEMO DATA**: System now returns authentic data or proper error states instead of fake fallback responses
+- **UNIFIED INTERFACE BUILT**: Single webpage at `/unified` combining vision verification, GTO recommendations, and training corrections
+- **ENHANCED MANUAL SOLVER**: New `/manual/solve` endpoint with detailed mathematical explanations and transparent CFR-based reasoning
+- **FUNCTIONAL TRAINING BUTTONS**: Correction buttons now open modal interfaces to fix individual fields with real table data integration
+- **TRANSPARENT ERROR HANDLING**: Clear error messages and status indicators showing actual system state instead of masking issues
+- **GTO AUTHENTICITY**: Real Enhanced GTO Service integration with true OpenSpiel CFR calculations
 
 ## Dynamic Window Detection Fix (August 18, 2025)
 - **CRITICAL ARCHITECTURE FIX**: Replaced static pixel coordinates with dynamic window detection

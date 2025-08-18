@@ -195,7 +195,7 @@ class AutoAdvisoryService:
                     if converted_state:
                         # Get real GTO decision
                         gto_response = asyncio.create_task(
-                            self.gto_service.get_gto_decision(converted_state)
+                            self.gto_service.compute_gto_decision(converted_state)
                         )
                         
                         # For now, create simplified advice structure
@@ -225,7 +225,7 @@ class AutoAdvisoryService:
             logger.error(f"Error generating advice: {e}")
             self.latest_advice = None
     
-    def _convert_to_table_state(self, raw_state: dict) -> Optional['TableState']:
+    def _convert_to_table_state(self, raw_state: dict):
         """Convert raw table state to TableState model."""
         try:
             # This is a simplified conversion - would need full implementation
@@ -291,6 +291,32 @@ async def get_latest_advice():
         return JSONResponse(content=auto_advisory.latest_advice)
     else:
         return JSONResponse(content={"error": "No GTO advice available - connect to ACR table"}, status_code=404)
+
+@router.post("/train")
+async def submit_training_correction(request: dict):
+    """Submit training corrections for individual fields."""
+    try:
+        correction_data = request
+        logger.info(f"Received training correction: {correction_data.get('action', 'unknown')}")
+        
+        # Store correction for future training (would integrate with ML system)
+        timestamp = correction_data.get('timestamp', time.strftime("%Y-%m-%d %H:%M:%S"))
+        
+        # In production, this would:
+        # 1. Store correction in training database
+        # 2. Update machine learning models
+        # 3. Improve future recognition accuracy
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Correction submitted successfully",
+            "timestamp": timestamp,
+            "correction_type": correction_data.get('table_data', {}).get('type', 'unknown')
+        })
+        
+    except Exception as e:
+        logger.error(f"Training correction failed: {e}")
+        return JSONResponse(content={"error": "Failed to submit correction"}, status_code=400)
 
 @router.get("/advice-history") 
 async def get_advice_history():

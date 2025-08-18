@@ -379,10 +379,10 @@
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 12px;">Debug:</span>
-                    <div class="toggle-switch" id="debugToggle" onclick="toggleDebugMode()">
-                        <div class="toggle-slider"></div>
-                    </div>
+                    <button onclick="testManualSolver()" style="
+                        background: #64ffda; color: #000; border: none; padding: 8px 15px;
+                        border-radius: 5px; font-size: 11px; cursor: pointer;
+                    ">Test GTO</button>
                 </div>
             </div>
         </div>
@@ -597,42 +597,232 @@
             }
         }
         
-        function correctCards() {
-            correctionsCount++;
-            document.getElementById('correctionsCount').textContent = correctionsCount;
-            updateAccuracy();
-            // TODO: Open correction interface for cards
-            console.log('Correcting cards...');
+        async function correctCards() {
+            try {
+                const response = await fetch('/auto/table-data');
+                if (response.ok) {
+                    const tableData = await response.json();
+                    openCorrectionModal('cards', tableData.hero_cards || [], 'Fix the cards you were dealt');
+                } else {
+                    alert('No table data available to correct. Connect to ACR first.');
+                }
+            } catch (error) {
+                console.error('Error fetching table data for correction:', error);
+            }
         }
         
-        function correctPot() {
-            correctionsCount++;
-            document.getElementById('correctionsCount').textContent = correctionsCount;
-            updateAccuracy();
-            // TODO: Open correction interface for pot
-            console.log('Correcting pot...');
+        async function correctPot() {
+            try {
+                const response = await fetch('/auto/table-data');
+                if (response.ok) {
+                    const tableData = await response.json();
+                    openCorrectionModal('pot', [tableData.pot_size || 0], 'Fix the pot size');
+                } else {
+                    alert('No table data available to correct. Connect to ACR first.');
+                }
+            } catch (error) {
+                console.error('Error fetching table data for correction:', error);
+            }
         }
         
-        function correctStacks() {
-            correctionsCount++;
-            document.getElementById('correctionsCount').textContent = correctionsCount;
-            updateAccuracy();
-            // TODO: Open correction interface for stacks
-            console.log('Correcting stacks...');
+        async function correctStacks() {
+            try {
+                const response = await fetch('/auto/table-data');
+                if (response.ok) {
+                    const tableData = await response.json();
+                    openCorrectionModal('stacks', [tableData.your_stack || 0], 'Fix your stack size');
+                } else {
+                    alert('No table data available to correct. Connect to ACR first.');
+                }
+            } catch (error) {
+                console.error('Error fetching table data for correction:', error);
+            }
         }
         
-        function correctPlayers() {
-            correctionsCount++;
-            document.getElementById('correctionsCount').textContent = correctionsCount;
-            updateAccuracy();
-            // TODO: Open correction interface for players
-            console.log('Correcting players...');
+        async function correctPlayers() {
+            try {
+                const response = await fetch('/auto/table-data');
+                if (response.ok) {
+                    const tableData = await response.json();
+                    openCorrectionModal('players', tableData.players || [], 'Fix player information');
+                } else {
+                    alert('No table data available to correct. Connect to ACR first.');
+                }
+            } catch (error) {
+                console.error('Error fetching table data for correction:', error);
+            }
+        }
+        
+        function openCorrectionModal(type, currentData, title) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 1000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #1e1e32; padding: 20px; border-radius: 10px;
+                max-width: 400px; width: 90%; border: 1px solid #64ffda;
+            `;
+            
+            content.innerHTML = `
+                <h3 style="color: #64ffda; margin-bottom: 15px;">${title}</h3>
+                <div id="correctionFields"></div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button onclick="submitCorrection('${type}')" style="
+                        background: #64ffda; color: #000; border: none; padding: 10px 20px;
+                        border-radius: 5px; margin-right: 10px; cursor: pointer;
+                    ">Submit</button>
+                    <button onclick="closeModal()" style="
+                        background: #666; color: #fff; border: none; padding: 10px 20px;
+                        border-radius: 5px; cursor: pointer;
+                    ">Cancel</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Populate fields based on type
+            const fieldsDiv = content.querySelector('#correctionFields');
+            if (type === 'cards') {
+                fieldsDiv.innerHTML = `
+                    <input id="card1" placeholder="First card (e.g., As)" value="${currentData[0] || ''}" 
+                           style="width: 80px; margin: 5px; padding: 8px; background: #333; color: #fff; border: 1px solid #555;">
+                    <input id="card2" placeholder="Second card (e.g., Kh)" value="${currentData[1] || ''}"
+                           style="width: 80px; margin: 5px; padding: 8px; background: #333; color: #fff; border: 1px solid #555;">
+                `;
+            } else if (type === 'pot') {
+                fieldsDiv.innerHTML = `
+                    <input id="potAmount" type="number" placeholder="Pot amount" value="${currentData[0] || ''}"
+                           style="width: 150px; padding: 8px; background: #333; color: #fff; border: 1px solid #555;">
+                `;
+            } else if (type === 'stacks') {
+                fieldsDiv.innerHTML = `
+                    <input id="stackAmount" type="number" placeholder="Your stack" value="${currentData[0] || ''}"
+                           style="width: 150px; padding: 8px; background: #333; color: #fff; border: 1px solid #555;">
+                `;
+            }
+            
+            // Store modal reference and type
+            window.currentModal = modal;
+            window.currentCorrectionType = type;
+        }
+        
+        async function submitCorrection(type) {
+            try {
+                let correctionData = { type, timestamp: new Date().toISOString() };
+                
+                if (type === 'cards') {
+                    correctionData.cards = [
+                        document.getElementById('card1').value,
+                        document.getElementById('card2').value
+                    ].filter(card => card.trim());
+                } else if (type === 'pot') {
+                    correctionData.pot_size = parseFloat(document.getElementById('potAmount').value) || 0;
+                } else if (type === 'stacks') {
+                    correctionData.stack_size = parseFloat(document.getElementById('stackAmount').value) || 0;
+                }
+                
+                const response = await fetch('/auto/train', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'correction',
+                        table_data: correctionData,
+                        timestamp: correctionData.timestamp
+                    })
+                });
+                
+                if (response.ok) {
+                    correctionsCount++;
+                    document.getElementById('correctionsCount').textContent = correctionsCount;
+                    updateAccuracy();
+                    closeModal();
+                } else {
+                    alert('Failed to submit correction. Please try again.');
+                }
+                
+            } catch (error) {
+                console.error('Error submitting correction:', error);
+                alert('Error submitting correction.');
+            }
+        }
+        
+        function closeModal() {
+            if (window.currentModal) {
+                document.body.removeChild(window.currentModal);
+                window.currentModal = null;
+                window.currentCorrectionType = null;
+            }
         }
         
         function updateAccuracy() {
             if (handsCount > 0) {
                 const accuracy = Math.max(0, 100 - (correctionsCount / handsCount * 100));
                 document.getElementById('accuracyPercent').textContent = Math.round(accuracy) + '%';
+            }
+        }
+        
+        async function testManualSolver() {
+            try {
+                // Test with a sample hand
+                const testHand = {
+                    table_id: "test-table",
+                    hand_id: "test-hand",
+                    room: "ACR",
+                    variant: "holdem",
+                    max_seats: 6,
+                    hero_seat: 1,
+                    stakes: [1.0, 2.0],
+                    street: "FLOP",
+                    board: ["As", "Kh", "Qd"],
+                    hero_hole: ["Js", "Tc"],
+                    pot: 47.0,
+                    to_call: 15.0,
+                    seats: [
+                        {
+                            seat: 1,
+                            is_hero: true,
+                            stack: 200.0,
+                            position: "BTN",
+                            in_hand: true
+                        }
+                    ]
+                };
+                
+                const response = await fetch('/manual/solve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token-123'
+                    },
+                    body: JSON.stringify(testHand)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update recommendation panel with test result
+                    updateRecommendationPanel({
+                        action: result.gto_decision.action,
+                        reasoning: result.gto_decision.detailed_explanation,
+                        confidence: result.gto_decision.confidence
+                    });
+                    
+                    console.log('GTO Test Result:', result);
+                    alert('✅ GTO solver test successful! Check the recommendation panel for results.');
+                } else {
+                    const error = await response.json();
+                    console.error('GTO test failed:', error);
+                    alert('❌ GTO test failed: ' + (error.detail || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Error testing GTO solver:', error);
+                alert('❌ Connection error during GTO test');
             }
         }
     </script>

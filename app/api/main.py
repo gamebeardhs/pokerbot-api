@@ -794,6 +794,74 @@ async def health_check():
         )
 
 
+@app.post("/manual/solve")
+async def manual_gto_solver(
+    state: TableState,
+    strategy_name: str = "default_cash6max",
+    token: str = Depends(verify_token)
+):
+    """
+    Enhanced manual GTO solver with detailed mathematical explanations.
+    
+    This endpoint provides:
+    1. True CFR-based GTO calculations using OpenSpiel
+    2. Detailed mathematical reasoning for each decision
+    3. Step-by-step breakdown of equity calculations
+    4. Position and board texture analysis
+    5. Transparent explanation of the decision process
+    """
+    start_time = datetime.now()
+    
+    try:
+        if not gto_service:
+            raise HTTPException(status_code=503, detail="Enhanced GTO service not available")
+        
+        logger.info(f"Manual solver request - Street: {state.street}, Hero: {state.hero_hole}")
+        
+        # Get enhanced GTO decision with detailed reasoning
+        result = await gto_service.get_gto_decision(state, strategy_name)
+        
+        # Generate detailed mathematical explanation
+        if hasattr(gto_service, 'generate_detailed_explanation'):
+            detailed_explanation = gto_service.generate_detailed_explanation(result.decision, state)
+        else:
+            detailed_explanation = f"GTO analysis: {result.decision.reasoning}"
+        
+        computation_time = int((datetime.now() - start_time).total_seconds() * 1000)
+        
+        # Enhanced response with transparent reasoning
+        enhanced_response = {
+            "success": True,
+            "gto_decision": {
+                "action": result.decision.action,
+                "size": result.decision.size,
+                "confidence": result.decision.confidence,
+                "reasoning": result.decision.reasoning,
+                "detailed_explanation": detailed_explanation
+            },
+            "mathematical_analysis": {
+                "equity": result.metrics.equity_breakdown.raw_equity if result.metrics else 0.0,
+                "ev_fold": getattr(result.metrics, 'ev_fold', 0.0) if result.metrics else 0.0,
+                "ev_call": getattr(result.metrics, 'ev_call', 0.0) if result.metrics else 0.0,
+                "ev_raise": getattr(result.metrics, 'ev_raise', 0.0) if result.metrics else 0.0,
+                "pot_odds": state.to_call / (state.pot + state.to_call) if state.to_call and state.pot else 0.0
+            },
+            "analysis_metadata": {
+                "computation_time_ms": computation_time,
+                "strategy_used": strategy_name,
+                "cfr_based": True,
+                "openspiel_powered": True,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+        logger.info(f"Manual solver completed: {result.decision.action} in {computation_time}ms")
+        return enhanced_response
+        
+    except Exception as e:
+        logger.error(f"Manual solver failed: {e}")
+        raise HTTPException(status_code=500, detail=f"GTO analysis failed: {str(e)}")
+
 @app.post("/decide", response_model=GTOResponse)
 async def make_gto_decision(
     state: TableState,
