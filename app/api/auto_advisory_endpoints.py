@@ -12,7 +12,7 @@ from threading import Thread, Event
 import json
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import numpy as np
 import cv2
 
@@ -138,9 +138,12 @@ class AutoAdvisoryService:
             active_buttons = self._detect_active_buttons(screenshot)
             
             # DEBUG: Log button detection details
-            logger.info(f"🔎 Active buttons detected: {len(active_buttons)} buttons")
-            for i, button in enumerate(active_buttons[:3]):  # Log first 3 buttons
-                logger.debug(f"  Button {i+1}: x={button.get('x', 0)}, y={button.get('y', 0)}, w={button.get('w', 0)}, h={button.get('h', 0)}")
+            if len(active_buttons) > 0:
+                logger.info(f"🔴 RED buttons detected: {len(active_buttons)} buttons (your turn!)")
+                for i, button in enumerate(active_buttons[:3]):  # Log first 3 buttons
+                    logger.debug(f"  Red Button {i+1}: x={button.get('x', 0)}, y={button.get('y', 0)}, w={button.get('w', 0)}, h={button.get('h', 0)}")
+            else:
+                logger.debug(f"🔎 No red buttons detected (not your turn)")
             
             # Compare with previous state to detect new turn
             current_state = {
@@ -158,9 +161,9 @@ class AutoAdvisoryService:
                 logger.debug("🟡 Initial state recorded")
                 return False
                 
-            # Detect transition to active state
+            # Detect transition to active state (red buttons appearing)
             was_inactive = self.last_button_state["active_buttons"] == 0
-            now_active = current_state["active_buttons"] >= 2 and current_state["active_buttons"] <= 5  # 2-5 buttons (typical poker actions)
+            now_active = current_state["active_buttons"] >= 1  # At least 1 red button = your turn
             
             self.last_button_state = current_state
             
@@ -184,24 +187,35 @@ class AutoAdvisoryService:
     def _detect_active_buttons(self, screenshot: np.ndarray) -> list:
         """Detect active/highlighted action buttons indicating your turn."""
         try:
-            # Simple button detection - look for bright colored rectangular regions
+            # Focus on bottom-right corner where action buttons are located
             if len(screenshot.shape) == 3:
-                # Convert to HSV for better color detection
-                hsv = cv2.cvtColor(screenshot, cv2.COLOR_RGB2HSV)
+                height, width = screenshot.shape[:2]
                 
-                # Look for bright button colors (green for call, red for fold, blue for raise)
-                bright_mask = cv2.inRange(hsv, np.array([0, 50, 100]), np.array([180, 255, 255]))
+                # Extract bottom-right quarter of screen (where ACR action buttons are)
+                action_region = screenshot[int(height*0.75):, int(width*0.6):]
+                
+                # Convert to HSV for better color detection
+                hsv = cv2.cvtColor(action_region, cv2.COLOR_RGB2HSV)
+                
+                # Look specifically for RED buttons (ACR action buttons turn red when active)
+                # Red hue range: 0-10 and 160-180 in HSV
+                red_mask1 = cv2.inRange(hsv, np.array([0, 100, 100]), np.array([10, 255, 255]))
+                red_mask2 = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([180, 255, 255]))
+                red_mask = cv2.bitwise_or(red_mask1, red_mask2)
                 
                 # Find contours (button regions)
-                contours, _ = cv2.findContours(bright_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 
-                # Filter for button-sized rectangles
+                # Filter for button-sized rectangles in action area
                 buttons = []
                 for contour in contours:
                     x, y, w, h = cv2.boundingRect(contour)
-                    # Button size filters (typical poker client buttons)
-                    if 50 < w < 200 and 20 < h < 60:
-                        buttons.append({"x": x, "y": y, "w": w, "h": h})
+                    # Action button size filters (ACR specific)
+                    if 40 < w < 120 and 15 < h < 50:
+                        # Convert coordinates back to full screen
+                        full_x = x + int(width*0.6)
+                        full_y = y + int(height*0.75)
+                        buttons.append({"x": full_x, "y": full_y, "w": w, "h": h, "red_intensity": cv2.countNonZero(red_mask)})
                 
                 return buttons
             
@@ -340,3 +354,8 @@ async def get_advice_history():
         "history": auto_advisory.advice_history,
         "total_hands": len(auto_advisory.advice_history)
     })
+
+@router.get("/advice-display")
+async def get_advice_display():
+    """Serve the live advice display web interface."""
+    return FileResponse("advice_display.html")

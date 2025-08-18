@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Advisory - Live GTO Advice</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.active {
+            background: #44ff44;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .advice-card {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .advice-card.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .advice-action {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .advice-action.CALL { color: #28a745; }
+        .advice-action.RAISE { color: #dc3545; }
+        .advice-action.FOLD { color: #6c757d; }
+        .advice-action.CHECK { color: #17a2b8; }
+        
+        .advice-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .advice-reasoning {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            font-style: italic;
+            text-align: center;
+        }
+        
+        .advice-meta {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .no-advice {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .no-advice h2 {
+            margin-bottom: 10px;
+        }
+        
+        .confidence-HIGH { border-left-color: #28a745; }
+        .confidence-MEDIUM { border-left-color: #ffc107; }
+        .confidence-LOW { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🃏 Poker Advisory</h1>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+            <div id="lastUpdate">Never</div>
+        </div>
+        
+        <div id="adviceContainer">
+            <div class="no-advice">
+                <h2>Waiting for your turn...</h2>
+                <p>Monitoring ACR table for action buttons</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastAdviceId = null;
+        
+        async function fetchAdvice() {
+            try {
+                const response = await fetch('/auto/latest-advice');
+                const data = await response.json();
+                
+                if (data && data.timestamp !== lastAdviceId) {
+                    displayAdvice(data);
+                    lastAdviceId = data.timestamp;
+                    updateStatus(true, 'Monitoring Active');
+                }
+            } catch (error) {
+                console.error('Error fetching advice:', error);
+                updateStatus(false, 'Connection Error');
+            }
+        }
+        
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/auto/status');
+                const status = await response.json();
+                
+                if (status.monitoring) {
+                    updateStatus(true, `Active - ${status.advice_count} advice given`);
+                } else {
+                    updateStatus(false, 'Monitoring Stopped');
+                }
+                
+                document.getElementById('lastUpdate').textContent = 
+                    `Last check: ${new Date(status.last_check).toLocaleTimeString()}`;
+            } catch (error) {
+                updateStatus(false, 'API Unavailable');
+            }
+        }
+        
+        function displayAdvice(advice) {
+            const container = document.getElementById('adviceContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            container.innerHTML = `
+                <div class="advice-card show">
+                    <div class="advice-action ${advice.action}">${advice.action}</div>
+                    <div class="advice-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Bet Size</div>
+                            <div class="detail-value">${advice.bet_size || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Equity</div>
+                            <div class="detail-value">${advice.equity}%</div>
+                        </div>
+                    </div>
+                    <div class="advice-reasoning confidence-${advice.confidence}">
+                        "${advice.reasoning}"
+                    </div>
+                    <div class="advice-meta">
+                        Confidence: ${advice.confidence} | ${timestamp}
+                        ${advice.test_mode ? ' | TEST MODE' : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateStatus(active, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            dot.classList.toggle('active', active);
+            statusText.textContent = text;
+        }
+        
+        // Start monitoring
+        fetchStatus();
+        fetchAdvice();
+        
+        // Poll for updates every 2 seconds
+        setInterval(fetchAdvice, 2000);
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>
