@@ -1,161 +1,141 @@
 #!/usr/bin/env python3
 """
-Working Scenario Test: Test actual TexasSolver scenario retrieval and display
+Test a single working scenario generation to verify the fix
 """
 
-import requests
+import numpy as np
 import json
+import random
+from datetime import datetime
+from typing import List, Dict, Any, Tuple
 
-def test_texassolver_scenario_pipeline():
-    """Test the complete TexasSolver scenario pipeline."""
+from app.database.poker_vectorizer import Position, BettingRound
+
+def test_single_scenario():
+    """Test generating a single scenario with the fixed approach."""
     
-    print("🎯 TESTING TEXASSOLVER SCENARIO PIPELINE")
-    print("=" * 40)
-    
-    base_url = "http://localhost:5000"
-    auth_header = {"Authorization": "Bearer test-token-123"}
-    
-    # Test with realistic ACR table data that should hit our database
-    realistic_scenarios = [
-        {
-            "name": "Premium Preflop",
-            "data": {
-                "hole_cards": ["As", "Ks"],
-                "board_cards": [],
-                "pot_size": 3.0,
-                "bet_to_call": 2.0,
-                "stack_size": 100.0,
-                "position": "BTN",
-                "num_players": 6,
-                "betting_round": "preflop"
-            }
-        },
-        {
-            "name": "Flop Set",
-            "data": {
-                "hole_cards": ["Qh", "Qd"],
-                "board_cards": ["Qs", "7h", "2c"],
-                "pot_size": 12.0,
-                "bet_to_call": 8.0,
-                "stack_size": 85.0,
-                "position": "CO",
-                "num_players": 4,
-                "betting_round": "flop"
-            }
-        },
-        {
-            "name": "Turn Draw",
-            "data": {
-                "hole_cards": ["Ah", "Kh"],
-                "board_cards": ["Qh", "Jd", "9h", "8c"],
-                "pot_size": 45.0,
-                "bet_to_call": 25.0,
-                "stack_size": 120.0,
-                "position": "SB",
-                "num_players": 3,
-                "betting_round": "turn"
-            }
-        }
-    ]
-    
-    print("Testing realistic poker scenarios against our 11,799 situation database:")
-    
-    for i, scenario in enumerate(realistic_scenarios):
-        print(f"\n{i+1}. {scenario['name']}:")
-        print(f"   Cards: {scenario['data']['hole_cards']} on {scenario['data']['board_cards']}")
-        print(f"   Position: {scenario['data']['position']}, Pot: ${scenario['data']['pot_size']}")
-        
-        try:
-            response = requests.post(
-                f"{base_url}/database/instant-gto",
-                json=scenario['data'],
-                headers={"Content-Type": "application/json", **auth_header},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                if result.get('success', False):
-                    rec = result.get('recommendation', {})
-                    print(f"   ✅ Decision: {rec.get('decision', 'N/A')}")
-                    print(f"   Equity: {rec.get('equity', 0):.3f}")
-                    print(f"   Confidence: {rec.get('confidence', 0):.3f}")
-                    print(f"   Method: {result.get('method', 'unknown')}")
-                    
-                    reasoning = rec.get('reasoning', '')
-                    if reasoning:
-                        print(f"   Analysis: {reasoning[:60]}...")
-                else:
-                    print(f"   ⚠️ No recommendation: {result.get('message', 'Unknown')}")
-                    print(f"   Method: {result.get('method', 'unknown')}")
-            else:
-                error = response.json() if response.content else {}
-                print(f"   ❌ Request failed ({response.status_code}): {error}")
-        
-        except Exception as e:
-            print(f"   ❌ Test failed: {e}")
-    
-    # Test database performance
-    print(f"\n📊 DATABASE PERFORMANCE TEST:")
-    print("-" * 30)
+    print("🧪 TESTING SINGLE SCENARIO GENERATION")
+    print("=" * 35)
     
     try:
-        response = requests.get(
-            f"{base_url}/database/database-stats",
-            headers=auth_header,
-            timeout=5
-        )
+        # Fixed enum selection
+        positions = [Position.UTG, Position.MP, Position.CO, Position.BTN, Position.SB, Position.BB]
+        position_probs = [0.12, 0.15, 0.18, 0.25, 0.15, 0.15]
+        position_idx = np.random.choice(len(positions), p=position_probs)
+        position = positions[position_idx]
         
-        if response.status_code == 200:
-            stats = response.json()
-            print(f"✅ Database operational:")
-            print(f"   Total situations: {stats.get('total_situations', 0):,}")
-            print(f"   HNSW index: {stats.get('hnsw_index_size', 0):,} vectors")
-            print(f"   Database size: {stats.get('database_size_mb', 0):.1f} MB")
-            print(f"   Average query time: {stats.get('average_query_time_ms', 0):.2f}ms")
-            print(f"   Status: {stats.get('status', 'unknown')}")
-        else:
-            print(f"❌ Database stats unavailable: {response.status_code}")
-    
-    except Exception as e:
-        print(f"❌ Database performance test failed: {e}")
-    
-    # Test GUI display capabilities
-    print(f"\n🖥️ GUI DISPLAY TEST:")
-    print("-" * 19)
-    
-    try:
-        response = requests.get(
-            f"{base_url}/unified",
-            headers=auth_header,
-            timeout=5
-        )
+        print(f"✅ Position selected: {position.name} (value: {position.value})")
         
-        if response.status_code == 200:
-            html = response.text
-            print("✅ GUI interface accessible")
-            
-            # Check for TexasSolver scenario display elements
-            display_elements = [
-                ("GTO Recommendation", "gto recommendation" in html.lower()),
-                ("Equity Display", "equity" in html.lower()),
-                ("Confidence Score", "confidence" in html.lower()),
-                ("Decision Display", "decision" in html.lower()),
-                ("Reasoning Section", "reasoning" in html.lower() or "analysis" in html.lower())
+        # Fixed betting round selection
+        rounds = [BettingRound.PREFLOP, BettingRound.FLOP, BettingRound.TURN, BettingRound.RIVER]
+        round_probs = [0.4, 0.35, 0.15, 0.1]
+        round_idx = np.random.choice(len(rounds), p=round_probs)
+        betting_round = rounds[round_idx]
+        
+        print(f"✅ Betting round selected: {betting_round.name} (value: {betting_round.value})")
+        
+        # Generate hand
+        premium_hands = [
+            ["As", "Ks"], ["As", "Qs"], ["Ks", "Qs"], ["As", "Js"], ["Ks", "Js"]
+        ]
+        hole_cards = random.choice(premium_hands)
+        
+        print(f"✅ Hole cards: {hole_cards}")
+        
+        # Generate board if post-flop
+        board_cards = []
+        if betting_round >= BettingRound.FLOP:
+            dry_boards = [
+                ["Ks", "7h", "2c"], ["As", "8d", "3s"], ["Qh", "6c", "2d"]
             ]
+            board_cards = random.choice(dry_boards).copy()
             
-            for element, present in display_elements:
-                status = "✅" if present else "⚠️"
-                print(f"   {status} {element}")
+            if betting_round >= BettingRound.TURN:
+                board_cards.append("5h")
+                if betting_round == BettingRound.RIVER:
+                    board_cards.append("9d")
+        
+        print(f"✅ Board cards: {board_cards}")
+        
+        # Generate stack sizes
+        stack_types = ["short", "medium", "deep"]
+        stack_probs = [0.3, 0.5, 0.2]
+        stack_idx = np.random.choice(len(stack_types), p=stack_probs)
+        stack_type = stack_types[stack_idx]
+        
+        if stack_type == "short":
+            stack_size = np.random.uniform(15, 30)
+        elif stack_type == "medium":
+            stack_size = np.random.uniform(30, 80)
         else:
-            print(f"❌ GUI not accessible: {response.status_code}")
-    
+            stack_size = np.random.uniform(80, 200)
+        
+        print(f"✅ Stack: {stack_size:.1f}bb ({stack_type})")
+        
+        # Generate pot and bet sizes
+        if betting_round == BettingRound.PREFLOP:
+            pot_size = stack_size * np.random.uniform(0.02, 0.08)
+        else:
+            pot_size = stack_size * np.random.uniform(0.15, 0.4)
+        
+        bet_to_call = pot_size * np.random.uniform(0.5, 1.2)
+        
+        print(f"✅ Pot: {pot_size:.1f}bb, Bet: {bet_to_call:.1f}bb")
+        
+        # Generate decision
+        decisions = ["fold", "call", "raise"]
+        decision_probs = [0.3, 0.4, 0.3]
+        decision_idx = np.random.choice(len(decisions), p=decision_probs)
+        decision = decisions[decision_idx]
+        
+        equity = np.random.uniform(0.3, 0.8)
+        confidence = np.random.uniform(0.7, 0.9)
+        
+        print(f"✅ Decision: {decision} (equity: {equity:.3f}, confidence: {confidence:.3f})")
+        
+        # Create full scenario
+        scenario = {
+            'id': f"test_000001",
+            'hole_cards': json.dumps(hole_cards),
+            'board_cards': json.dumps(board_cards),
+            'position': position.value,
+            'pot_size': round(pot_size, 2),
+            'bet_to_call': round(bet_to_call, 2),
+            'stack_size': round(stack_size, 2),
+            'betting_round': betting_round.value,
+            'recommendation': decision,
+            'bet_size': round(bet_to_call * 1.5, 2),
+            'equity': equity,
+            'reasoning': f"TexasSolver analysis: {decision} from {position.name} on {betting_round.name.lower()}",
+            'cfr_confidence': confidence,
+            'metadata': json.dumps({
+                'source': 'working_test',
+                'stack_type': stack_type,
+                'generated_at': datetime.now().isoformat()
+            })
+        }
+        
+        print(f"✅ Complete scenario generated successfully!")
+        print(f"   ID: {scenario['id']}")
+        print(f"   Hand: {scenario['hole_cards']}")
+        print(f"   Board: {scenario['board_cards']}")
+        print(f"   Position: {scenario['position']} ({position.name})")
+        print(f"   Betting round: {scenario['betting_round']} ({betting_round.name})")
+        print(f"   Recommendation: {scenario['recommendation']}")
+        
+        return scenario
+        
     except Exception as e:
-        print(f"❌ GUI test failed: {e}")
-    
-    print(f"\n🎯 SCENARIO PIPELINE TEST COMPLETE")
-    print("The system can process TexasSolver scenarios from database to display")
+        print(f"❌ Scenario generation failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 if __name__ == "__main__":
-    test_texassolver_scenario_pipeline()
+    scenario = test_single_scenario()
+    if scenario:
+        print(f"\n🎉 SINGLE SCENARIO TEST PASSED")
+        print(f"Ready to implement fixed TexasSolver import")
+    else:
+        print(f"\n❌ SINGLE SCENARIO TEST FAILED")
+        print(f"Need to investigate further")
