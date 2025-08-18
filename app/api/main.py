@@ -819,7 +819,7 @@ async def manual_gto_solver(
         logger.info(f"Manual solver request - Street: {state.street}, Hero: {state.hero_hole}")
         
         # Get enhanced GTO decision with detailed reasoning
-        result = await gto_service.get_gto_decision(state, strategy_name)
+        result = await gto_service.compute_gto_decision(state, strategy_name)
         
         # Generate detailed mathematical explanation
         if hasattr(gto_service, 'generate_detailed_explanation'):

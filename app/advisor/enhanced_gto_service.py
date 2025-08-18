@@ -562,6 +562,190 @@ class EnhancedGTODecisionService:
         ]
         return "enhanced_" + "_".join(key_components)
     
+    def generate_detailed_explanation(self, decision, state: TableState) -> str:
+        """Generate human-readable explanation from mathematical data."""
+        try:
+            explanation_parts = []
+            
+            # Extract mathematical components
+            action = getattr(decision, 'action', 'UNKNOWN')
+            confidence = getattr(decision, 'confidence', 0.0)
+            size = getattr(decision, 'size', 0.0)
+            
+            # Hand strength analysis
+            hero_cards = state.hero_hole or []
+            if len(hero_cards) == 2:
+                if self._is_premium_hand(hero_cards):
+                    explanation_parts.append("Premium hand (top 15% starting range)")
+                elif self._is_strong_hand(hero_cards):
+                    explanation_parts.append("Strong hand (top 30% starting range)")
+                elif self._is_speculative_hand(hero_cards):
+                    explanation_parts.append("Speculative hand with implied odds potential")
+                else:
+                    explanation_parts.append("Marginal hand requiring careful play")
+            
+            # Board texture analysis
+            if state.board:
+                board_analysis = self._analyze_board_texture(state.board)
+                if board_analysis.get("draw_heavy"):
+                    explanation_parts.append("Draw-heavy board requires protection betting")
+                elif board_analysis.get("dry"):
+                    explanation_parts.append("Dry board allows wider bluffing range")
+                
+                if board_analysis.get("high_card_heavy"):
+                    explanation_parts.append("High card board favors preflop aggressor")
+            
+            # Position analysis
+            hero_position = self._get_hero_position(state)
+            if hero_position:
+                if hero_position in ["BTN", "CO"]:
+                    explanation_parts.append("Late position allows aggressive play")
+                elif hero_position in ["UTG", "UTG+1"]:
+                    explanation_parts.append("Early position requires tighter range")
+                elif hero_position == "BB":
+                    explanation_parts.append("Big blind has closing action advantage")
+            
+            # Stack depth considerations
+            pot_size = state.pot or 0
+            to_call = state.to_call or 0
+            if pot_size > 0:
+                spr = self._estimate_spr(state)
+                if spr < 3:
+                    explanation_parts.append(f"Low SPR ({spr:.1f}) favors commitment with strong hands")
+                elif spr > 10:
+                    explanation_parts.append(f"Deep stacks ({spr:.1f}) allow speculative plays")
+            
+            # Expected Value reasoning
+            if action == "RAISE" or action == "BET":
+                explanation_parts.append("Betting maximizes fold equity + value")
+            elif action == "CALL":
+                if to_call > 0 and pot_size > 0:
+                    pot_odds = to_call / (pot_size + to_call)
+                    explanation_parts.append(f"Call profitable with {pot_odds:.1%} pot odds")
+            elif action == "FOLD":
+                explanation_parts.append("Insufficient equity to continue profitably")
+            
+            # Confidence modifier
+            if confidence > 0.8:
+                confidence_text = "High confidence decision"
+            elif confidence > 0.6:
+                confidence_text = "Medium confidence decision"
+            else:
+                confidence_text = "Close decision requiring careful consideration"
+            
+            # Combine explanation
+            main_explanation = " | ".join(explanation_parts) if explanation_parts else "Standard GTO play"
+            
+            return f"{main_explanation} | {confidence_text} ({confidence:.1%})"
+            
+        except Exception as e:
+            logger.error(f"Explanation generation failed: {e}")
+            return f"GTO analysis: {action} recommended based on mathematical optimization"
+    
+    def _is_premium_hand(self, cards) -> bool:
+        """Check if hand is premium (AA, KK, QQ, AK)."""
+        if len(cards) != 2:
+            return False
+        
+        ranks = [self._get_rank(card) for card in cards]
+        ranks.sort(reverse=True)
+        
+        # Pairs: AA, KK, QQ  
+        if ranks[0] == ranks[1] and ranks[0] in [14, 13, 12]:
+            return True
+        
+        # AK suited/unsuited
+        if ranks == [14, 13]:
+            return True
+            
+        return False
+    
+    def _is_strong_hand(self, cards) -> bool:
+        """Check if hand is strong (JJ, TT, AQ, AJ, KQ)."""
+        if len(cards) != 2:
+            return False
+        
+        ranks = [self._get_rank(card) for card in cards]
+        ranks.sort(reverse=True)
+        
+        # Medium pairs: JJ, TT, 99
+        if ranks[0] == ranks[1] and ranks[0] in [11, 10, 9]:
+            return True
+        
+        # Strong broadways
+        if ranks == [14, 12] or ranks == [14, 11] or ranks == [13, 12]:
+            return True
+            
+        return False
+    
+    def _is_speculative_hand(self, cards) -> bool:
+        """Check if hand is speculative (suited connectors, small pairs)."""
+        if len(cards) != 2:
+            return False
+        
+        ranks = [self._get_rank(card) for card in cards]
+        suits = [self._get_suit(card) for card in cards]
+        
+        # Small/medium pairs
+        if ranks[0] == ranks[1] and ranks[0] <= 8:
+            return True
+        
+        # Suited connectors
+        if suits[0] == suits[1] and abs(ranks[0] - ranks[1]) <= 2:
+            return True
+        
+        return False
+    
+    def _get_rank(self, card: str) -> int:
+        """Convert card to rank number (2=2, A=14)."""
+        rank_map = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, 
+                   '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+        return rank_map.get(card[0].upper(), 2)
+    
+    def _get_suit(self, card: str) -> str:
+        """Extract suit from card."""
+        return card[-1].lower() if len(card) > 1 else 's'
+    
+    def _analyze_board_texture(self, board) -> Dict:
+        """Analyze board texture characteristics."""
+        if not board or len(board) < 3:
+            return {"draw_heavy": False, "dry": True, "high_card_heavy": False}
+        
+        ranks = [self._get_rank(card) for card in board]
+        suits = [self._get_suit(card) for card in board]
+        
+        # Count suit distribution
+        suit_counts = {}
+        for suit in suits:
+            suit_counts[suit] = suit_counts.get(suit, 0) + 1
+        max_suit_count = max(suit_counts.values()) if suit_counts else 0
+        
+        # Check for draws
+        ranks_sorted = sorted(ranks)
+        connected = any(abs(ranks_sorted[i] - ranks_sorted[i+1]) <= 2 for i in range(len(ranks_sorted)-1))
+        
+        return {
+            "draw_heavy": max_suit_count >= 2 or connected,
+            "dry": max_suit_count <= 1 and not connected,
+            "high_card_heavy": any(rank >= 10 for rank in ranks)
+        }
+    
+    def _estimate_spr(self, state: TableState) -> float:
+        """Estimate stack-to-pot ratio."""
+        pot = state.pot or 0
+        if pot <= 0:
+            return 10.0  # Default assumption
+            
+        # Find hero stack
+        hero_stack = 100.0  # Default
+        if state.seats:
+            for seat in state.seats:
+                if getattr(seat, 'is_hero', False) and getattr(seat, 'stack', None):
+                    hero_stack = seat.stack
+                    break
+        
+        return hero_stack / pot if pot > 0 else 10.0
+    
     def _build_enhanced_response(self, analysis: Dict, strategy_name: str, 
                                state: TableState) -> GTOResponse:
         """Build enhanced GTO response with comprehensive analysis."""
