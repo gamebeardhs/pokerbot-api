@@ -826,50 +826,70 @@ async def test_gto_solver():
         # Run the actual Enhanced GTO Service analysis
         start_time = datetime.now()
         
-        # Quick service status check
-        service_status = {
-            "gto_service_exists": gto_service is not None,
-            "is_available": gto_service.is_available() if gto_service else False,
-            "cfr_ready": gto_service.is_cfr_ready() if gto_service else False
-        }
-        
-        computation_time = int((datetime.now() - start_time).total_seconds() * 1000) + 50  # Simulate processing time
-        
-        # For now, return a working response that shows the concept works
-        # This demonstrates the pipeline: mock ACR data → analysis → structured response
-        return {
-            "success": True,
-            "test_scenario": {
-                "description": "JTo on As-Kh-Qd flop (Broadway straight - the nuts!)",
-                "hero_cards": test_table_state.hero_hole,
-                "board": test_table_state.board,
-                "position": "Button",
-                "pot_size": test_table_state.pot,
-                "bet_to_call": test_table_state.to_call,
-                "hand_strength": "Broadway straight (nuts)"
-            },
-            "gto_decision": {
-                "action": "BET",
-                "size": 35.0,
-                "confidence": 0.95,
-                "reasoning": "Made nuts (Broadway straight) on coordinated board - extract maximum value",
-                "detailed_explanation": "AUTHENTIC ANALYSIS: JTo on As-Kh-Qd creates A-K-Q-J-T Broadway straight (the nuts) | Premium made hand requires value betting | Button position allows for maximum value extraction | Coordinated board means opponents can have strong draws - bet for value and protection"
-            },
-            "mathematical_analysis": {
-                "equity": 1.0,  # We have the nuts
-                "hand_strength": "Broadway straight (nuts)",
-                "pot_odds": round(test_table_state.to_call / (test_table_state.pot + test_table_state.to_call), 3) if test_table_state.to_call else 0,
-                "recommended_sizing": "75% pot (value bet)"
-            },
-            "analysis_metadata": {
-                "computation_time_ms": computation_time,
-                "strategy_used": "authentic_hand_evaluation",
-                "service_status": service_status,
-                "timestamp": datetime.now().isoformat(),
-                "authentic_analysis": True,
-                "note": "Demonstrates working pipeline - mock ACR data processed correctly"
+        # Run real GTO analysis with optimized settings
+        if gto_service and gto_service.is_available():
+            try:
+                # Use the real Enhanced GTO Service with timeout protection
+                gto_result = await asyncio.wait_for(
+                    gto_service.compute_gto_decision(test_table_state, "default_cash6max"),
+                    timeout=3.0  # 3 second max for real-time use
+                )
+                
+                computation_time = int((datetime.now() - start_time).total_seconds() * 1000)
+                
+                return {
+                    "success": True,
+                    "test_scenario": {
+                        "description": f"JTo on As-Kh-Qd flop - realistic ACR table analysis",
+                        "hero_cards": test_table_state.hero_hole,
+                        "board": test_table_state.board,
+                        "position": "Button",
+                        "pot_size": test_table_state.pot,
+                        "bet_to_call": test_table_state.to_call
+                    },
+                    "gto_decision": {
+                        "action": gto_result.decision.action,
+                        "size": getattr(gto_result.decision, 'size', 0),
+                        "confidence": gto_result.decision.confidence,
+                        "reasoning": gto_result.decision.reasoning,
+                        "detailed_explanation": getattr(gto_result.decision, 'detailed_explanation', gto_result.decision.reasoning)
+                    },
+                    "mathematical_analysis": {
+                        "equity": getattr(gto_result, 'equity', 0.0),
+                        "ev_analysis": getattr(gto_result, 'ev_breakdown', {}),
+                        "board_texture": getattr(gto_result, 'board_texture', {}),
+                        "pot_odds": round(test_table_state.to_call / (test_table_state.pot + test_table_state.to_call), 3) if test_table_state.to_call else 0
+                    },
+                    "analysis_metadata": {
+                        "computation_time_ms": computation_time,
+                        "strategy_used": "default_cash6max",
+                        "cfr_based": True,
+                        "openspiel_powered": gto_service.is_cfr_ready(),
+                        "timestamp": datetime.now().isoformat(),
+                        "authentic_gto": True,
+                        "note": "Real Enhanced GTO Service with optimized CFR settings"
+                    }
+                }
+                
+            except asyncio.TimeoutError:
+                return {
+                    "success": False,
+                    "error": "GTO computation timeout (>3s)",
+                    "message": "CFR solver took too long - need to optimize iteration count for real-time use",
+                    "test_scenario": {
+                        "description": "JTo on As-Kh-Qd flop",
+                        "hero_cards": test_table_state.hero_hole,
+                        "board": test_table_state.board
+                    }
+                }
+        else:
+            return {
+                "success": False,
+                "error": "GTO service not available",
+                "message": "Enhanced GTO Service is not initialized or OpenSpiel is not available",
+                "openspiel_available": gto_service.is_available() if gto_service else False,
+                "cfr_ready": gto_service.is_cfr_ready() if gto_service else False
             }
-        }
         
     except Exception as e:
         logger.error(f"GTO test failed: {str(e)}")

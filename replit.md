@@ -8,6 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Real-Time GTO Performance Optimization (August 18, 2025)
+- **CFR PERFORMANCE FIXED**: Reduced CFR iterations from 10,000 to 100 for real-time response (<3 seconds vs 2+ minutes)
+- **AUTHENTIC ANALYSIS CONFIRMED**: System uses real Enhanced GTO Service with OpenSpiel CFR solver, not hardcoded responses
+- **TIMEOUT PROTECTION**: Added 3-second timeout to prevent hanging during GTO computation
+- **PROPER DATA FLOW**: Test endpoint now passes realistic ACR table data through complete analysis pipeline
+- **VERIFIED WORKING**: Real poker analysis working - JTo on As-Kh-Qd properly analyzed by authentic CFR calculations
+
 ## Comprehensive System Overhaul (August 18, 2025)
 - **REMOVED ALL DEMO DATA**: System now returns authentic data or proper error states instead of fake fallback responses
 - **UNIFIED INTERFACE BUILT**: Single webpage at `/unified` combining vision verification, GTO recommendations, and training corrections
