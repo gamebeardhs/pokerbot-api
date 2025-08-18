@@ -412,6 +412,8 @@
         let currentTableData = {};
         let changedFields = new Set();
         let originalData = {};
+        let isUserEditing = false;
+        let autoUpdatePaused = false;
         
         // Card definitions
         const suits = ['h', 'd', 'c', 's'];
@@ -432,6 +434,10 @@
             
             element.addEventListener('focus', function() {
                 originalData[field] = element.textContent.trim();
+                // Pause auto-updates when user starts editing
+                isUserEditing = true;
+                autoUpdatePaused = true;
+                showEditingStatus(true);
             });
             
             element.addEventListener('input', function() {
@@ -456,6 +462,13 @@
             });
             
             element.addEventListener('blur', function() {
+                // Resume auto-updates when user finishes editing
+                setTimeout(() => {
+                    isUserEditing = false;
+                    autoUpdatePaused = false;
+                    showEditingStatus(false);
+                }, 100); // Small delay to prevent race conditions
+                
                 // Auto-submit when user clicks away
                 if (changedFields.has(field)) {
                     submitSingleField(element, field);
@@ -515,6 +528,12 @@
                     }
                     
                     dropdown.remove();
+                    // Resume updates when selection made
+                    setTimeout(() => {
+                        isUserEditing = false;
+                        autoUpdatePaused = false;
+                        showEditingStatus(false);
+                    }, 100);
                 });
                 
                 dropdown.appendChild(option);
@@ -523,11 +542,22 @@
             selector.appendChild(dropdown);
             element.parentNode.insertBefore(selector, element.nextSibling);
             
+            // Pause updates while dropdown is open
+            isUserEditing = true;
+            autoUpdatePaused = true;
+            showEditingStatus(true);
+            
             // Close dropdown when clicking outside
             setTimeout(() => {
                 document.addEventListener('click', function closeDropdown() {
                     dropdown.remove();
                     document.removeEventListener('click', closeDropdown);
+                    // Resume updates when dropdown closes
+                    setTimeout(() => {
+                        isUserEditing = false;
+                        autoUpdatePaused = false;
+                        showEditingStatus(false);
+                    }, 100);
                 });
             }, 100);
         }
@@ -696,8 +726,14 @@
             }
         }
         
-        // Refresh table data
+        // Refresh table data (respects pause state)
         async function refreshTableData() {
+            // Skip refresh if user is actively editing
+            if (autoUpdatePaused) {
+                console.log('Auto-update paused - user is editing');
+                return;
+            }
+            
             try {
                 const response = await fetch('/auto/table-data');
                 const data = await response.json();
@@ -799,6 +835,25 @@
                         Error fetching table data: ${error.message}
                     </div>
                 `;
+            }
+        }
+        
+        // Show editing status indicator
+        function showEditingStatus(isEditing) {
+            const statusEl = document.getElementById('trainingStatus');
+            if (isEditing) {
+                const originalStyle = statusEl.style.cssText;
+                statusEl.dataset.originalStyle = originalStyle;
+                statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                statusEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                statusEl.style.color = '#ef4444';
+                statusEl.textContent = '⏸️ Auto-updates paused - You are editing';
+            } else {
+                const originalStyle = statusEl.dataset.originalStyle;
+                if (originalStyle) {
+                    statusEl.style.cssText = originalStyle;
+                }
+                updateTrainingStatus(); // Restore normal status
             }
         }
         

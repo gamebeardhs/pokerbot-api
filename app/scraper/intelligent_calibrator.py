@@ -1026,14 +1026,14 @@ class IntelligentACRCalibrator:
                         for name, region_dict in cal_data.get("regions", {}).items():
                             self.calibrated_regions[name] = TableRegion(**region_dict)
                 except FileNotFoundError:
-                    logger.warning("No calibration found - using fallback demo mode")
-                    return self._get_demo_table_state()
+                    logger.error("No calibration found - please run calibration first")
+                    return {"error": "No calibration found", "message": "Please run initial table calibration"}
             
             # Capture real screen
             screenshot = self.capture_screen()
             if screenshot is None or screenshot.sum() == 0:
-                logger.warning("Screen capture failed - using fallback demo mode")
-                return self._get_demo_table_state()
+                logger.error("Screen capture failed - ACR table not detected")
+                return {"error": "No ACR table detected", "message": "Please ensure ACR poker client is open and visible"}
             
             # Extract real table data from screen using calibrated regions
             table_state = self._extract_real_table_data(screenshot)
@@ -1046,56 +1046,9 @@ class IntelligentACRCalibrator:
             
         except Exception as e:
             logger.error(f"Error getting real table state: {e}")
-            return self._get_demo_table_state()
+            return {"error": "Table reading failed", "message": f"Error: {str(e)}"}
     
-    def _get_demo_table_state(self) -> Dict:
-        """Fallback demo mode when real screen reading fails."""
-        import time
-        
-        # Only use demo mode as absolute fallback
-        scenarios = [
-            {
-                "hole_cards": ["As", "Kh"],
-                "community_cards": ["Qd", "Js", "10c"],
-                "pot_size": 125,
-                "your_stack": 2500,
-                "position": "Button",
-                "action_type": "Call/Raise/Fold",
-                "betting_round": "Flop"
-            },
-            {
-                "hole_cards": ["7h", "7s"],
-                "community_cards": ["2c", "9d", "Kh", "4s"],
-                "pot_size": 280,
-                "your_stack": 1850,
-                "position": "Early Position",
-                "action_type": "Check/Bet/Fold",
-                "betting_round": "Turn"
-            },
-            {
-                "hole_cards": ["Ac", "Qh"],
-                "community_cards": [],
-                "pot_size": 45,
-                "your_stack": 3200,
-                "position": "Late Position",
-                "action_type": "Call/Raise/Fold",
-                "betting_round": "Preflop"
-            }
-        ]
-        
-        scenario_index = int(time.time() / 15) % len(scenarios)
-        table_state = scenarios[scenario_index].copy()
-        
-        table_state["players"] = [
-            {"name": "AggroFish23", "stack": 1800, "last_action": "Check"},
-            {"name": "TightNit99", "stack": 3200, "last_action": "Bet $50"},
-            {"name": "You", "stack": table_state["your_stack"], "last_action": "Waiting"},
-            {"name": "CallStation", "stack": 950, "last_action": "Call"},
-            {"name": "BluffMaster", "stack": 2100, "last_action": "Fold"}
-        ]
-        
-        logger.warning(f"DEMO MODE: Table state extracted: {table_state['betting_round']}, Pot: ${table_state['pot_size']}")
-        return table_state
+
     
     def _extract_real_table_data(self, screenshot: np.ndarray) -> Dict:
         """Extract actual table data from screenshot using OCR."""
