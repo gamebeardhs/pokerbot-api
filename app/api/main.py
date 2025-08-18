@@ -824,8 +824,8 @@ async def test_gto_solver():
         # Use the actual Enhanced GTO service
         start_time = datetime.now()
         
-        if enhanced_gto_service:
-            result = await enhanced_gto_service.compute_gto_decision(test_state, "default_cash6max")
+        if gto_service:
+            result = await gto_service.compute_gto_decision(test_state, "default_cash6max")
             
             # Generate detailed explanation using the transparent reasoning engine
             detailed_explanation = f"Test scenario analysis: Hand={'-'.join(test_state.hero_hole)} on Board={'-'.join(test_state.board)} | {result.decision.reasoning}"
@@ -869,7 +869,7 @@ async def test_gto_solver():
             return {
                 "success": False,
                 "error": "GTO service not available",
-                "message": "Enhanced GTO service is not initialized"
+                "message": "GTO service is not initialized"
             }
         
     except Exception as e:
