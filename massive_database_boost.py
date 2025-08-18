@@ -80,16 +80,16 @@ class MassiveDatabaseBoost:
             (BettingRound.RIVER, 0.10)      # 10% river
         ]
         
-        betting_round = np.random.choice(
-            [br for br, _ in betting_rounds],
-            p=[prob for _, prob in betting_rounds]
-        )
+        betting_round_list = [br for br, _ in betting_rounds]
+        betting_round_probs = [prob for _, prob in betting_rounds]
+        betting_round_idx = np.random.choice(len(betting_round_list), p=betting_round_probs)
+        betting_round = betting_round_list[betting_round_idx]
         
         # Select position based on frequency
-        position = np.random.choice(
-            list(self.position_frequencies.keys()),
-            p=list(self.position_frequencies.values())
-        )
+        positions = list(self.position_frequencies.keys())
+        probabilities = list(self.position_frequencies.values())
+        position_idx = np.random.choice(len(positions), p=probabilities)
+        position = positions[position_idx]
         
         # Generate hole cards based on position tightness
         if position in [Position.UTG, Position.MP]:
@@ -106,9 +106,12 @@ class MassiveDatabaseBoost:
         
         # Generate board based on betting round
         board_cards = []
+        texture_type = 'preflop'  # Default
         if betting_round >= BettingRound.FLOP:
-            texture_type = np.random.choice(['dry', 'wet', 'paired', 'monotone'], 
-                                          p=[0.40, 0.30, 0.20, 0.10])
+            texture_types = ['dry', 'wet', 'paired', 'monotone']
+            texture_probs = [0.40, 0.30, 0.20, 0.10]
+            texture_idx = np.random.choice(len(texture_types), p=texture_probs)
+            texture_type = texture_types[texture_idx]
             board_cards = random.choice(self.flop_textures[texture_type])
             
             if betting_round >= BettingRound.TURN:
@@ -120,8 +123,10 @@ class MassiveDatabaseBoost:
                     board_cards.append(river_card)
         
         # Generate realistic stack and pot sizes
-        stack_type = np.random.choice(['short', 'medium', 'deep', 'very_deep'],
-                                    p=[0.20, 0.50, 0.25, 0.05])
+        stack_types = ['short', 'medium', 'deep', 'very_deep']
+        stack_probs = [0.20, 0.50, 0.25, 0.05]
+        stack_idx = np.random.choice(len(stack_types), p=stack_probs)
+        stack_type = stack_types[stack_idx]
         stack_range = self.stack_ranges[stack_type]
         stack_size = np.random.uniform(stack_range[0], stack_range[1])
         
@@ -165,7 +170,7 @@ class MassiveDatabaseBoost:
             'metadata': json.dumps({
                 'source': 'massive_boost',
                 'stack_type': stack_type,
-                'texture_type': texture_type if betting_round >= BettingRound.FLOP else 'preflop',
+                'texture_type': texture_type,
                 'generated_at': datetime.now().isoformat()
             })
         }
