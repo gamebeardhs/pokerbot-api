@@ -465,7 +465,8 @@ class TexasSolverIntegration:
                         pot_size=5.0,  # From situation
                         bet_to_call=0.0,
                         stack_size=100.0,
-                        betting_round=betting_round
+                        betting_round=betting_round,
+                        num_players=6  # Add missing required parameter
                     )
                     
                     # Add to database

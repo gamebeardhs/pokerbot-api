@@ -196,7 +196,7 @@ class GTODatabase:
                 self.query_count += 1
                 self.total_query_time += query_time
                 
-                similarity_score = float(distances[0]) if hasattr(distances[0], 'item') else distances[0]
+                similarity_score = distances[0].item() if hasattr(distances[0], 'item') else float(distances[0])
                 logger.info(f"Instant recommendation found in {query_time*1000:.1f}ms "
                           f"(similarity: {1-similarity_score:.3f})")
                 
