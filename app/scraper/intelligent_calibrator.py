@@ -1008,7 +1008,7 @@ class IntelligentACRCalibrator:
         }
         
         # Save to file
-        with open("acr_auto_calibration_results.json", 'w') as f:
+        with open("acr_auto_calibration_results.json", 'w', encoding='utf-8') as f:
             json.dump(save_data, f, indent=2)
         
         logger.info(f"Saved auto-calibration results with {result.success_rate:.1%} success rate")
@@ -1020,7 +1020,7 @@ class IntelligentACRCalibrator:
             if not hasattr(self, 'calibrated_regions') or not self.calibrated_regions:
                 # Load calibration if available
                 try:
-                    with open("acr_calibration_results.json", 'r') as f:
+                    with open("acr_calibration_results.json", 'r', encoding='utf-8') as f:
                         cal_data = json.load(f)
                         self.calibrated_regions = {}
                         for name, region_dict in cal_data.get("regions", {}).items():
@@ -1163,7 +1163,7 @@ class IntelligentACRCalibrator:
             
             # Get recent corrections (last 50 entries)
             corrections = []
-            with open(training_file, 'r') as f:
+            with open(training_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines[-50:]:  # Last 50 corrections
                     try:

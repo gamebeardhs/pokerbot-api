@@ -72,6 +72,14 @@ The system has been significantly enhanced with advanced card recognition inspir
 - Implemented mathematical GTO approximations when OpenSpiel unavailable
 - System now runs on Windows desktop with simple double-click startup
 
+**✓ COMPLETED: Critical Windows Encoding & UX Fixes (August 18, 2025)**
+- Fixed critical Unicode encoding errors causing Windows crashes (UnicodeDecodeError: 'charmap' codec)
+- Added UTF-8 encoding specification to all file operations preventing CP1252 issues
+- Completely disabled demo mode fallback ensuring local deployments only read real ACR tables
+- Implemented pause functionality preventing auto-update interruptions during field editing
+- Enhanced user experience with visual pause indicators and automatic resume behavior
+- System now fully stable on Windows with seamless editing workflow
+
 **✓ COMPLETED: Complete 52-Card Template System (August 17, 2025)**
 - Successfully auto-generated all 52 poker card templates (was 5, now 52)
 - Implemented 3-method template extraction: ACR client, open source download, auto-generation

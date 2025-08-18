@@ -27,7 +27,7 @@ class TrainedACRRecognizer:
             self.label_encoder = joblib.load(self.model_path / "label_encoder.pkl")
             
             # Load metadata
-            with open(self.model_path / "metadata.json", 'r') as f:
+            with open(self.model_path / "metadata.json", 'r', encoding='utf-8') as f:
                 self.metadata = json.load(f)
             
             print(f"Loaded ACR card recognition model with {self.metadata['num_classes']} classes")

@@ -52,7 +52,7 @@ class CardTrainer:
             return []
             
         try:
-            with open(self.examples_file, 'r') as f:
+            with open(self.examples_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 return [TrainingExample(**example) for example in data]
         except Exception as e:
@@ -62,7 +62,7 @@ class CardTrainer:
     def _save_training_examples(self):
         """Save training examples to file."""
         try:
-            with open(self.examples_file, 'w') as f:
+            with open(self.examples_file, 'w', encoding='utf-8') as f:
                 json.dump([example.to_dict() for example in self.training_examples], f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save training examples: {e}")

@@ -254,7 +254,7 @@ class TemplateManager:
             
             # Save metadata
             metadata_path = os.path.join(self.templates_dir, f"{card}.json")
-            with open(metadata_path, 'w') as f:
+            with open(metadata_path, 'w', encoding='utf-8') as f:
                 json.dump({
                     'card': card,
                     'confidence_threshold': confidence,
@@ -286,7 +286,7 @@ class TemplateManager:
                     created_at = ""
                     
                     if os.path.exists(metadata_path):
-                        with open(metadata_path, 'r') as f:
+                        with open(metadata_path, 'r', encoding='utf-8') as f:
                             metadata = json.load(f)
                             confidence = metadata.get('confidence_threshold', 0.8)
                             created_at = metadata.get('created_at', '')
@@ -422,7 +422,7 @@ class NeuralCardTrainer:
             'generated_at': datetime.now().isoformat()
         }
         
-        with open(os.path.join(output_dir, 'metadata.json'), 'w') as f:
+        with open(os.path.join(output_dir, 'metadata.json'), 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2)
         
         logger.info(f"Saved training dataset to {output_dir}")

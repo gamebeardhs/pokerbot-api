@@ -380,7 +380,7 @@ async def get_enhanced_display():
     """Serve the enhanced advice display with training capabilities."""
     from fastapi.responses import HTMLResponse
     try:
-        with open("advice_display_enhanced.html", "r") as f:
+        with open("advice_display_enhanced.html", "r", encoding="utf-8") as f:
             content = f.read()
         return HTMLResponse(content=content)
     except FileNotFoundError:
