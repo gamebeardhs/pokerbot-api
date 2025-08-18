@@ -66,6 +66,10 @@ app.include_router(calibration_web_router, prefix="/calibration", tags=["calibra
 from app.api.auto_advisory_endpoints import router as auto_advisory_router
 app.include_router(auto_advisory_router, prefix="/auto", tags=["automated-advisory"])
 
+# Include database endpoints for instant GTO
+from app.api.database_endpoints import router as database_router
+app.include_router(database_router, prefix="/database", tags=["instant-gto"])
+
 # Mount static files
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

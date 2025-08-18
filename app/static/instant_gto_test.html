@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant GTO Database Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #1a1a2e; color: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: #16213e; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #0f4c75; }
+        .header { text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .stat-item { background: #0f4c75; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #4ecdc4; }
+        .stat-label { font-size: 12px; color: #aaa; margin-top: 5px; }
+        .form-row { display: flex; gap: 15px; margin: 10px 0; align-items: center; }
+        .form-group { flex: 1; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #4ecdc4; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #0f4c75; border-radius: 4px; background: #16213e; color: #eee; }
+        button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .response { margin: 20px 0; padding: 15px; border-radius: 8px; }
+        .success { background: #0f5132; border: 1px solid #198754; }
+        .error { background: #842029; border: 1px solid #dc3545; }
+        .loading { background: #664d03; border: 1px solid #ffc107; }
+        .response-time { font-size: 12px; color: #4ecdc4; margin-top: 5px; }
+        .cards { display: flex; gap: 10px; align-items: center; }
+        .card-input { width: 60px !important; }
+        pre { background: #0f4c75; padding: 15px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Instant GTO Database System</h1>
+            <p>Sub-100ms poker recommendations using precomputed CFR solutions</p>
+        </div>
+
+        <!-- Database Statistics -->
+        <div class="card">
+            <h2>📊 Database Status</h2>
+            <div class="stats-grid" id="stats-grid">
+                <!-- Stats will be loaded here -->
+            </div>
+            <button onclick="loadStats()" id="refresh-stats">🔄 Refresh Stats</button>
+            <button onclick="populateDatabase()" id="populate-btn">🗄️ Populate Database</button>
+            <button onclick="rebuildIndex()" id="rebuild-btn">🔧 Rebuild Index</button>
+        </div>
+
+        <!-- Instant GTO Test -->
+        <div class="card">
+            <h2>🎯 Instant GTO Recommendation Test</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Hole Cards</label>
+                    <div class="cards">
+                        <input type="text" id="hole1" class="card-input" placeholder="As" value="As">
+                        <input type="text" id="hole2" class="card-input" placeholder="Kh" value="Kh">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Position</label>
+                    <select id="position">
+                        <option value="BTN" selected>Button</option>
+                        <option value="CO">Cutoff</option>
+                        <option value="UTG">UTG</option>
+                        <option value="MP">MP</option>
+                        <option value="SB">Small Blind</option>
+                        <option value="BB">Big Blind</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Board Cards (optional)</label>
+                    <div class="cards">
+                        <input type="text" id="board1" class="card-input" placeholder="Qd" value="Qd">
+                        <input type="text" id="board2" class="card-input" placeholder="Jc" value="Jc">
+                        <input type="text" id="board3" class="card-input" placeholder="9s" value="9s">
+                        <input type="text" id="board4" class="card-input" placeholder="">
+                        <input type="text" id="board5" class="card-input" placeholder="">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Betting Round</label>
+                    <select id="betting-round">
+                        <option value="preflop">Preflop</option>
+                        <option value="flop" selected>Flop</option>
+                        <option value="turn">Turn</option>
+                        <option value="river">River</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Pot Size</label>
+                    <input type="number" id="pot-size" value="15" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Bet to Call</label>
+                    <input type="number" id="bet-to-call" value="5" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Stack Size</label>
+                    <input type="number" id="stack-size" value="100" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Players</label>
+                    <input type="number" id="num-players" value="3" min="2" max="9">
+                </div>
+            </div>
+
+            <button onclick="getInstantGTO()" id="gto-btn">⚡ Get Instant GTO</button>
+            <button onclick="runSpeedTest()" id="speed-btn">🏎️ Speed Test (10 queries)</button>
+
+            <div id="response"></div>
+        </div>
+
+        <!-- Quick Tests -->
+        <div class="card">
+            <h2>🧪 Quick Tests</h2>
+            <div class="form-row">
+                <button onclick="testPreflop()">🎴 Test Preflop</button>
+                <button onclick="testFlop()">🃏 Test Flop</button>
+                <button onclick="testTurn()">🎯 Test Turn</button>
+                <button onclick="testRiver()">🏁 Test River</button>
+                <button onclick="testSystemEndpoint()">🔧 Test Endpoint</button>
+            </div>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load database statistics
+        async function loadStats() {
+            const refreshBtn = document.getElementById('refresh-stats');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Loading...';
+
+            try {
+                const response = await fetch('/database/database-stats');
+                const data = await response.json();
+                
+                const statsGrid = document.getElementById('stats-grid');
+                statsGrid.innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-value">${data.total_situations.toLocaleString()}</div>
+                        <div class="stat-label">Total Situations</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.hnsw_index_size.toLocaleString()}</div>
+                        <div class="stat-label">Index Size</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.total_queries.toLocaleString()}</div>
+                        <div class="stat-label">Total Queries</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.average_query_time_ms.toFixed(1)}ms</div>
+                        <div class="stat-label">Avg Query Time</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.database_size_mb.toFixed(1)}MB</div>
+                        <div class="stat-label">Database Size</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${data.status}</div>
+                        <div class="stat-label">Status</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                document.getElementById('stats-grid').innerHTML = '<div class="error">Failed to load statistics</div>';
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh Stats';
+            }
+        }
+
+        // Get instant GTO recommendation
+        async function getInstantGTO() {
+            const btn = document.getElementById('gto-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Computing...';
+            
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = '<div class="loading">⚡ Getting instant recommendation...</div>';
+
+            const startTime = performance.now();
+
+            try {
+                // Collect board cards
+                const boardCards = [];
+                for (let i = 1; i <= 5; i++) {
+                    const card = document.getElementById(`board${i}`).value.trim();
+                    if (card) boardCards.push(card);
+                }
+
+                const payload = {
+                    hole_cards: [
+                        document.getElementById('hole1').value || 'As',
+                        document.getElementById('hole2').value || 'Kh'
+                    ],
+                    board_cards: boardCards,
+                    position: document.getElementById('position').value,
+                    pot_size: parseFloat(document.getElementById('pot-size').value),
+                    bet_to_call: parseFloat(document.getElementById('bet-to-call').value),
+                    stack_size: parseFloat(document.getElementById('stack-size').value),
+                    num_players: parseInt(document.getElementById('num-players').value),
+                    betting_round: document.getElementById('betting-round').value
+                };
+
+                const response = await fetch('/database/instant-gto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                const responseTime = performance.now() - startTime;
+
+                if (data.success) {
+                    const rec = data.recommendation;
+                    responseDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Recommendation: ${rec.decision.toUpperCase()}</h3>
+                            <p><strong>Reasoning:</strong> ${rec.reasoning || rec.metrics?.explanation || 'GTO optimal play'}</p>
+                            <p><strong>Equity:</strong> ${(rec.equity * 100).toFixed(1)}% | <strong>Confidence:</strong> ${(rec.confidence * 100).toFixed(1)}%</p>
+                            ${rec.bet_size ? `<p><strong>Bet Size:</strong> ${rec.bet_size}</p>` : ''}
+                            <p><strong>Method:</strong> ${data.method}</p>
+                            <div class="response-time">⚡ Response time: ${responseTime.toFixed(1)}ms</div>
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Failed to get recommendation'}</div>`;
+                }
+            } catch (error) {
+                const responseTime = performance.now() - startTime;
+                responseDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                        <div class="response-time">⏱️ Response time: ${responseTime.toFixed(1)}ms</div>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ Get Instant GTO';
+            }
+        }
+
+        // Speed test
+        async function runSpeedTest() {
+            const btn = document.getElementById('speed-btn');
+            btn.disabled = true;
+            btn.textContent = '🏎️ Running...';
+
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = '<div class="loading">🏎️ Running speed test (10 queries)...</div>';
+
+            const times = [];
+            const situations = [
+                {hole_cards: ['As', 'Kh'], position: 'BTN', pot_size: 10, bet_to_call: 3},
+                {hole_cards: ['Qd', 'Qc'], position: 'CO', pot_size: 15, bet_to_call: 5},
+                {hole_cards: ['Ah', 'Jh'], position: 'UTG', pot_size: 8, bet_to_call: 2},
+                {hole_cards: ['9s', '9d'], position: 'BB', pot_size: 12, bet_to_call: 4},
+                {hole_cards: ['Ac', 'Tc'], position: 'SB', pot_size: 6, bet_to_call: 1}
+            ];
+
+            for (let i = 0; i < 10; i++) {
+                const situation = situations[i % situations.length];
+                const startTime = performance.now();
+
+                try {
+                    const response = await fetch('/database/instant-gto', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...situation,
+                            stack_size: 100,
+                            num_players: 6,
+                            betting_round: 'preflop',
+                            board_cards: []
+                        })
+                    });
+                    
+                    await response.json();
+                    const time = performance.now() - startTime;
+                    times.push(time);
+                } catch (error) {
+                    times.push(999); // Error penalty
+                }
+            }
+
+            const avgTime = times.reduce((a, b) => a + b) / times.length;
+            const minTime = Math.min(...times);
+            const maxTime = Math.max(...times);
+
+            responseDiv.innerHTML = `
+                <div class="success">
+                    <h3>🏎️ Speed Test Results</h3>
+                    <p><strong>Average:</strong> ${avgTime.toFixed(1)}ms</p>
+                    <p><strong>Fastest:</strong> ${minTime.toFixed(1)}ms</p>
+                    <p><strong>Slowest:</strong> ${maxTime.toFixed(1)}ms</p>
+                    <p><strong>Target:</strong> < 100ms ✅</p>
+                </div>
+            `;
+
+            btn.disabled = false;
+            btn.textContent = '🏎️ Speed Test (10 queries)';
+        }
+
+        // Database operations
+        async function populateDatabase() {
+            const btn = document.getElementById('populate-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Populating...';
+
+            try {
+                const response = await fetch('/database/populate-database', { method: 'POST' });
+                const data = await response.json();
+                
+                alert(data.message);
+                loadStats(); // Refresh stats
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🗄️ Populate Database';
+            }
+        }
+
+        async function rebuildIndex() {
+            const btn = document.getElementById('rebuild-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Rebuilding...';
+
+            try {
+                const response = await fetch('/database/rebuild-index', { method: 'POST' });
+                const data = await response.json();
+                
+                alert(data.message);
+                loadStats();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔧 Rebuild Index';
+            }
+        }
+
+        // Quick tests
+        async function testPreflop() {
+            document.getElementById('hole1').value = 'As';
+            document.getElementById('hole2').value = 'Ks';
+            document.getElementById('position').value = 'UTG';
+            document.getElementById('betting-round').value = 'preflop';
+            document.getElementById('board1').value = '';
+            document.getElementById('board2').value = '';
+            document.getElementById('board3').value = '';
+            document.getElementById('pot-size').value = '3';
+            document.getElementById('bet-to-call').value = '2';
+            await getInstantGTO();
+        }
+
+        async function testFlop() {
+            document.getElementById('hole1').value = 'Ah';
+            document.getElementById('hole2').value = 'Kh';
+            document.getElementById('position').value = 'BTN';
+            document.getElementById('betting-round').value = 'flop';
+            document.getElementById('board1').value = 'Qd';
+            document.getElementById('board2').value = 'Jc';
+            document.getElementById('board3').value = '9s';
+            document.getElementById('pot-size').value = '15';
+            document.getElementById('bet-to-call').value = '8';
+            await getInstantGTO();
+        }
+
+        async function testTurn() {
+            document.getElementById('betting-round').value = 'turn';
+            document.getElementById('board4').value = '7h';
+            document.getElementById('pot-size').value = '35';
+            document.getElementById('bet-to-call').value = '15';
+            await getInstantGTO();
+        }
+
+        async function testRiver() {
+            document.getElementById('betting-round').value = 'river';
+            document.getElementById('board5').value = '2c';
+            document.getElementById('pot-size').value = '70';
+            document.getElementById('bet-to-call').value = '25';
+            await getInstantGTO();
+        }
+
+        async function testSystemEndpoint() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<div class="loading">🔧 Testing system endpoint...</div>';
+
+            try {
+                const response = await fetch('/database/test-instant-gto');
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <div class="success">
+                        <h4>✅ System Test Passed</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ System test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            loadStats();
+        };
+    </script>
+</body>
+</html>

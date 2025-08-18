@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.116.1",
+    "hnswlib>=0.8.0",
     "joblib>=1.5.1",
     "numpy>=2.3.2",
     "open-spiel>=1.6",
