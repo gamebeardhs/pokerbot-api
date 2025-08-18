@@ -810,20 +810,27 @@
                 if (response.ok) {
                     const result = await response.json();
                     
-                    // Update recommendation panel with test result
-                    updateRecommendationPanel({
-                        action: result.gto_decision.action,
-                        reasoning: result.gto_decision.detailed_explanation || result.gto_decision.reasoning,
-                        confidence: result.gto_decision.confidence
-                    });
+                    if (result.success) {
+                        // Update recommendation panel with real test result
+                        updateRecommendationPanel({
+                            action: result.gto_decision.action,
+                            reasoning: result.gto_decision.detailed_explanation || result.gto_decision.reasoning,
+                            confidence: result.gto_decision.confidence
+                        });
+                        
+                        console.log('GTO Test Result:', result);
+                        
+                        // Show detailed test scenario information
+                        const scenario = result.test_scenario;
+                        alert(`✅ Real GTO analysis complete!\n\nTest Scenario: ${scenario.description}\nCards: ${scenario.hero_cards.join('')} vs ${scenario.board.join('-')}\nPosition: ${scenario.position}\nRecommendation: ${result.gto_decision.action}\n\nCheck the panel for detailed reasoning!`);
+                    } else {
+                        alert(`❌ GTO test failed: ${result.error}\n\n${result.message || 'Check console for details'}`);
+                    }
                     
-                    console.log('GTO Test Result:', result);
-                    alert('✅ GTO solver test successful! Check the recommendation panel for results.');
-                    
-                    // Resume polling after 10 seconds to let user see the result
+                    // Resume polling after 15 seconds to let user see the result
                     setTimeout(() => {
                         startPolling();
-                    }, 10000);
+                    }, 15000);
                     
                 } else {
                     const error = await response.text();
