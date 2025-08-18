@@ -870,7 +870,7 @@
                     
                     // Show preview section
                     const previewSection = document.getElementById('screenshot-preview');
-                    if (previewSection) {
+                    if (previewSection && previewSection.classList) {
                         previewSection.classList.remove('hidden');
                     }
                     
@@ -920,10 +920,10 @@
         }
 
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            showTab('interactive');
-            loadStats();
-            checkLiveStatus();
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof showTab === 'function') showTab('interactive');
+            if (typeof loadStats === 'function') loadStats();
+            if (typeof checkLiveStatus === 'function') checkLiveStatus();
         });
     </script>
 </body>

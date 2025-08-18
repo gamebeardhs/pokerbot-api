@@ -131,10 +131,10 @@ class AutoAdvisoryService:
             # Convert to HSV for better color detection
             hsv = cv2.cvtColor(button_region, cv2.COLOR_BGR2HSV)
             
-            # Red color ranges for ACR buttons
-            red_lower1 = np.array([0, 120, 70])
-            red_upper1 = np.array([10, 255, 255])
-            red_lower2 = np.array([170, 120, 70])
+            # FIXED: Narrow red ranges for ACR buttons only (not cards)
+            red_lower1 = np.array([0, 180, 150])
+            red_upper1 = np.array([8, 255, 255])
+            red_lower2 = np.array([172, 180, 150])
             red_upper2 = np.array([180, 255, 255])
             
             mask1 = cv2.inRange(hsv, red_lower1, red_upper1)
@@ -147,16 +147,16 @@ class AutoAdvisoryService:
             button_count = 0
             for contour in contours:
                 area = cv2.contourArea(contour)
-                if 300 < area < 15000:  # Button size range
+                if 1000 < area < 8000:  # FIXED: Stricter button size range
                     x, y, w, h = cv2.boundingRect(contour)
                     aspect_ratio = w / h if h > 0 else 0
-                    if 1.2 < aspect_ratio < 5.0:  # Button shape
+                    if 1.8 < aspect_ratio < 4.0:  # FIXED: More button-like shapes
                         button_count += 1
             
-            # Additional check for red pixels
+            # FIXED: Stricter red pixel check to avoid card false positives
             if button_count == 0:
                 red_pixels = cv2.countNonZero(red_mask)
-                if red_pixels > 800:  # Significant red presence
+                if red_pixels > 2500:  # Much higher threshold for buttons
                     button_count = 1
             
             if button_count > 0:
@@ -289,6 +289,31 @@ async def get_table_data():
     try:
         # Get the latest table state from the calibrator
         table_state = auto_advisory.calibrator.get_latest_table_state()
+        
+        # FIXED: Provide demo data when ACR not available for training interface
+        if table_state and "error" in table_state:
+            demo_data = {
+                "hero_cards": ["As", "Kh"],
+                "board": ["Qd", "Jc", "9s"],
+                "pot_size": 125,
+                "your_stack": 2400,
+                "position": "Button",
+                "betting_round": "Flop",
+                "players": [
+                    {"name": "Player1", "stack": 1800, "last_action": "Check"},
+                    {"name": "Player2", "stack": 3200, "last_action": "Bet $50"}
+                ],
+                "regions": {
+                    "hero_card_1": [100, 200, 150, 250],
+                    "hero_card_2": [160, 200, 210, 250],
+                    "board_card_1": [300, 150, 350, 200],
+                    "board_card_2": [360, 150, 410, 200],
+                    "board_card_3": [420, 150, 470, 200]
+                },
+                "demo_mode": True,
+                "message": "Demo data - Connect ACR for live detection"
+            }
+            return JSONResponse(content=demo_data)
         
         if table_state:
             return JSONResponse(content=table_state)
