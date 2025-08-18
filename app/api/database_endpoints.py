@@ -112,21 +112,20 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
             nest_asyncio.apply()
             try:
                 fallback_recommendation = await gto_service.compute_gto_decision(table_state_obj)
-            except:
-                # Fallback to simple GTO using enum imports
-                from ..models.poker_models import Position, BettingRound
-                from ..database.gto_database import PokerSituation
-                situation = PokerSituation(
-                    hole_cards=request.hole_cards,
-                    board_cards=request.board_cards,
-                    position=Position[request.position.upper()],
-                    pot_size=request.pot_size,
-                    bet_to_call=request.bet_to_call,
-                    stack_size=request.stack_size,
-                    num_players=request.num_players,
-                    betting_round=BettingRound[request.betting_round.upper()]
-                )
-                fallback_recommendation = gto_db._generate_simple_gto_solution(situation)
+            except Exception as fallback_error:
+                logger.warning(f"CFR fallback failed: {fallback_error}")
+                # Return simple fallback response
+                return JSONResponse({
+                    "success": False,
+                    "method": "fallback_failed", 
+                    "message": f"No database match found and CFR fallback failed: {str(fallback_error)}",
+                    "recommendation": {
+                        "decision": "fold",
+                        "bet_size": 0,
+                        "equity": 0.0,
+                        "reasoning": "Unable to compute recommendation - database miss and CFR error"
+                    }
+                })
             
             if fallback_recommendation:
                 # Add this new solution to database for future use
