@@ -826,25 +826,47 @@ async def test_gto_solver():
         # Run the actual Enhanced GTO Service analysis
         start_time = datetime.now()
         
-        # For real-time testing, use fast heuristic analysis that demonstrates
-        # the working system components without expensive CFR computation
+        # Use authentic poker analysis components without expensive CFR
         if gto_service and gto_service.is_available():
             try:
-                # Quick hand strength evaluation using board analyzer
+                # Import and use your real hand evaluator
+                from app.core.hand_evaluator import HandEvaluator
+                
+                hand_evaluator = HandEvaluator()
+                
+                # Analyze board texture using your real board analyzer
                 board_texture = gto_service.board_analyzer.analyze_board(test_table_state.board)
                 
-                # Analyze the specific test case: JTo on As-Kh-Qd
+                # Get the actual cards
                 hero_cards = test_table_state.hero_hole  # ["js", "tc"]
                 board_cards = test_table_state.board     # ["as", "kh", "qd"]
                 
-                # Hand evaluation: Jack-Ten makes Broadway straight (A-K-Q-J-T)
-                hand_strength = "Broadway straight (the nuts)"
-                equity = 1.0  # We have the nuts vs any reasonable opponent range
-                action = "BET"
-                bet_size = int(test_table_state.pot * 0.75)  # 75% pot bet for value
-                confidence = 0.98
+                # Use your authentic hand evaluator to analyze the 7-card combination
+                all_cards = hero_cards + board_cards  # ["js", "tc", "as", "kh", "qd"]
+                hand_rank, kickers = hand_evaluator.evaluate_hand(all_cards)
                 
-                reasoning = f"Made {hand_strength} with {hero_cards[0]}-{hero_cards[1]} on {'-'.join(board_cards)} - maximum value extraction required"
+                # Convert hand rank to readable description using your evaluator's ranking system
+                rank_names = {v: k for k, v in hand_evaluator.HAND_RANKINGS.items()}
+                hand_type = rank_names.get(hand_rank, "unknown")
+                
+                # Calculate equity using your hand evaluator's methods
+                equity = hand_evaluator.estimate_equity(hero_cards, board_cards, 2)  # vs 1 opponent
+                
+                # Use basic GTO heuristics for action/sizing based on authentic hand strength
+                if hand_rank >= hand_evaluator.HAND_RANKINGS['straight']:
+                    action = "BET"
+                    bet_size = int(test_table_state.pot * 0.75)  
+                    confidence = min(0.95, equity + 0.1)
+                elif hand_rank >= hand_evaluator.HAND_RANKINGS['pair']:
+                    action = "CALL" if test_table_state.to_call else "CHECK"
+                    bet_size = 0
+                    confidence = equity
+                else:
+                    action = "FOLD" if test_table_state.to_call else "CHECK"
+                    bet_size = 0
+                    confidence = equity
+                
+                reasoning = f"Hand evaluation: {hand_type} (rank {hand_rank}) with equity {equity:.2f} against opponent range"
                 
                 computation_time = int((datetime.now() - start_time).total_seconds() * 1000)
                 
@@ -857,18 +879,20 @@ async def test_gto_solver():
                         "position": "Button",
                         "pot_size": test_table_state.pot,
                         "bet_to_call": test_table_state.to_call,
-                        "hand_made": hand_strength
+                        "hand_type": hand_type,
+                        "hand_rank": hand_rank
                     },
                     "gto_decision": {
                         "action": action,
                         "size": bet_size,
                         "confidence": confidence,
                         "reasoning": reasoning,
-                        "detailed_explanation": f"FAST HEURISTIC ANALYSIS: {reasoning} | Board texture: {board_texture} | Position advantage allows for aggressive value betting | Real-time analysis demonstrates working system components"
+                        "detailed_explanation": f"AUTHENTIC POKER ANALYSIS: {reasoning} | Board analysis: {board_texture} | Uses real HandEvaluator and BoardAnalyzer components from your poker engine"
                     },
                     "mathematical_analysis": {
-                        "equity": equity,
-                        "hand_strength": hand_strength,
+                        "equity": round(equity, 3),
+                        "hand_rank": hand_rank,
+                        "hand_type": hand_type,
                         "board_texture": board_texture,
                         "pot_odds": round(test_table_state.to_call / (test_table_state.pot + test_table_state.to_call), 3) if test_table_state.to_call else 0
                     },
@@ -882,7 +906,7 @@ async def test_gto_solver():
                         "board_analyzer_used": True,
                         "timestamp": datetime.now().isoformat(),
                         "authentic_components": True,
-                        "note": "Fast test mode - uses board analyzer and heuristics instead of full CFR for real-time response"
+                        "note": "AUTHENTIC ANALYSIS: Uses your real HandEvaluator + BoardAnalyzer instead of hardcoded responses"
                     }
                 }
                 
