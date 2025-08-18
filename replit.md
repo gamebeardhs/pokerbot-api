@@ -8,6 +8,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Training Interface Connection Fix (August 18, 2025)
+- **Root Cause Identified**: Training interface was disconnected from auto-advisory's live data capture
+- **New Endpoints Added**: `/training/capture-current-table` and `/training/current-session-data` for live connectivity
+- **Enhanced Training Interface**: Added "Live ACR Table Capture" section with real-time status monitoring
+- **Auto-Advisory Integration**: Training system now directly captures from auto-advisory's screenshot system
+- **Real-Time Status**: Live status updates every 5 seconds showing auto-advisory connection state
+- **Seamless Workflow**: One-click capture from current ACR table to immediate training session
+
 ## Windows Compatibility Fixes (August 18, 2025)
 - **Unicode Encoding**: Fixed all UnicodeDecodeError issues by implementing UTF-8 encoding throughout
 - **Cross-Platform Fonts**: Implemented Windows/Unix font detection with graceful fallbacks

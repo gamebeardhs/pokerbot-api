@@ -869,7 +869,10 @@
                     currentImage = result.image_base64;
                     
                     // Show preview section
-                    document.getElementById('screenshot-preview').classList.remove('hidden');
+                    const previewSection = document.getElementById('screenshot-preview');
+                    if (previewSection) {
+                        previewSection.classList.remove('hidden');
+                    }
                     
                     // Populate regions if available
                     if (result.regions && Object.keys(result.regions).length > 0) {
