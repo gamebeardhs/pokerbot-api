@@ -186,8 +186,16 @@ class GTODatabase:
                     
                 labels, distances = self.hnsw_index.knn_query(query_vector.reshape(1, -1), k=top_k)
                 
+                # Handle HNSW response format correctly
+                if isinstance(labels[0], (list, tuple, np.ndarray)):
+                    best_label = labels[0][0] if len(labels[0]) > 0 else 0
+                    best_distance = distances[0][0] if len(distances[0]) > 0 else 1.0
+                else:
+                    best_label = labels[0]
+                    best_distance = distances[0]
+                
                 # Get the most similar situation from database
-                best_match = self._get_situation_by_id(labels[0])
+                best_match = self._get_situation_by_id(best_label)
                 if best_match is None:
                     return None
                 
@@ -196,7 +204,8 @@ class GTODatabase:
                 self.query_count += 1
                 self.total_query_time += query_time
                 
-                similarity_score = distances[0].item() if hasattr(distances[0], 'item') else float(distances[0])
+                # Get similarity score safely
+                similarity_score = float(best_distance)
                 logger.info(f"Instant recommendation found in {query_time*1000:.1f}ms "
                           f"(similarity: {1-similarity_score:.3f})")
                 

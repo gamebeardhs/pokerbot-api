@@ -64,7 +64,7 @@ app.include_router(calibration_web_router, prefix="/calibration", tags=["calibra
 
 # Include automated advisory system
 from app.api.auto_advisory_endpoints import router as auto_advisory_router
-app.include_router(auto_advisory_router, prefix="/auto", tags=["automated-advisory"])
+app.include_router(auto_advisory_router, prefix="/auto-advisory", tags=["automated-advisory"])
 
 # Include database endpoints for instant GTO
 from app.api.database_endpoints import router as database_router
