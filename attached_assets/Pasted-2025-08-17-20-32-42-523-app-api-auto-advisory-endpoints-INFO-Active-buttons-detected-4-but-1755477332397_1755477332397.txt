@@ -1,0 +1,30 @@
+2025-08-17 20:32:42,523 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 4 buttons
+2025-08-17 20:32:43,725 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 33.1
+2025-08-17 20:32:43,750 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 4 buttons
+2025-08-17 20:32:44,944 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.1
+2025-08-17 20:32:44,970 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 4 buttons
+2025-08-17 20:32:46,158 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:46,182 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:47,376 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:47,401 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:48,596 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:48,622 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:49,833 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:49,858 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:51,081 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:51,109 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:52,313 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:52,340 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:53,550 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 35.0
+2025-08-17 20:32:53,577 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:54,822 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 34.9
+2025-08-17 20:32:54,851 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:56,067 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 34.9
+2025-08-17 20:32:56,095 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 5 buttons
+2025-08-17 20:32:57,337 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 36.3
+2025-08-17 20:32:57,366 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 11 buttons
+2025-08-17 20:32:58,564 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 36.3
+2025-08-17 20:32:58,591 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 11 buttons
+2025-08-17 20:32:59,795 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 36.3
+2025-08-17 20:32:59,820 - app.api.auto_advisory_endpoints - INFO - 🔎 Active buttons detected: 12 buttons
+2025-08-17 20:33:01,025 - app.api.auto_advisory_endpoints - INFO - 🔍 Screenshot captured: (2160, 3840, 3), mean brightness: 36.2
