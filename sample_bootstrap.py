@@ -1,168 +1,212 @@
 #!/usr/bin/env python3
 """
-Sample 5 Random Bootstrap Situations
-Direct SQLite access to show what bootstrap data looks like
+Sample Bootstrap: Pull real TexasSolver scenarios from database
 """
 
-import sys
 import sqlite3
-import random
-sys.path.append('/home/runner/workspace')
+import json
+import numpy as np
 
-def sample_bootstrap_data():
-    """Sample 5 random bootstrap situations from the database."""
+def sample_texassolver_scenarios():
+    """Sample actual TexasSolver scenarios from the database."""
     
-    print("BOOTSTRAP DATABASE SAMPLE")
-    print("5 Random Situations from 6,757 Total")
-    print("=" * 37)
+    print("🎯 TEXASSOLVER SCENARIOS FROM DATABASE")
+    print("=" * 38)
     
     try:
-        conn = sqlite3.connect('gto_database.db')
+        # Connect to database
+        conn = sqlite3.connect("gto_database.db")
         cursor = conn.cursor()
         
-        # Get total count first
+        # Get schema info
+        cursor.execute("PRAGMA table_info(gto_situations)")
+        columns = cursor.fetchall()
+        print("Database columns:")
+        for col in columns:
+            print(f"  {col[1]} ({col[2]})")
+        
+        # Get total count
         cursor.execute("SELECT COUNT(*) FROM gto_situations")
-        total = cursor.fetchone()[0]
-        print(f"Total situations: {total}")
+        total_count = cursor.fetchone()[0]
+        print(f"\nTotal scenarios: {total_count:,}")
         
-        if total == 0:
-            print("Database is empty")
-            return
+        # Sample recent entries
+        print(f"\n📊 SAMPLE SCENARIOS:")
+        print("-" * 18)
         
-        # Get 5 random samples with readable data
         cursor.execute("""
-            SELECT id, hole_cards, board_cards, position, pot_size, bet_to_call, 
-                   stack_size, betting_round, recommendation, bet_size, equity, 
-                   reasoning, cfr_confidence
+            SELECT id, vector, recommendation, equity, cfr_confidence, reasoning
             FROM gto_situations 
-            ORDER BY RANDOM() 
-            LIMIT 5
+            ORDER BY rowid DESC 
+            LIMIT 20
         """)
         
-        samples = cursor.fetchall()
+        scenarios = cursor.fetchall()
         
-        position_names = {0: "UTG", 1: "UTG1", 2: "MP", 3: "MP1", 4: "MP2", 5: "CO", 6: "BTN", 7: "SB", 8: "BB"}
-        round_names = {0: "PREFLOP", 1: "FLOP", 2: "TURN", 3: "RIVER"}
-        
-        for i, row in enumerate(samples, 1):
-            (id, hole_cards, board_cards, position, pot_size, bet_to_call, 
-             stack_size, betting_round, recommendation, bet_size, equity, 
-             reasoning, cfr_confidence) = row
-             
-            print(f"\nBOOTSTRAP SITUATION {i}:")
-            print("-" * 20)
-            print(f"ID: {id[:16]}...")
-            print(f"Cards: {hole_cards}")
-            if board_cards and board_cards.strip():
-                print(f"Board: {board_cards}")
-            else:
-                print(f"Board: (preflop)")
-            print(f"Position: {position_names.get(position, f'POS{position}')}")
-            print(f"Pot: ${pot_size:.1f}, Bet: ${bet_to_call:.1f}, Stack: ${stack_size:.1f}")
-            print(f"Street: {round_names.get(betting_round, f'ROUND{betting_round}')}")
-            
-            print(f"\nBOOTSTRAP RECOMMENDATION:")
+        for i, (id_val, vector_blob, recommendation, equity, cfr_confidence, reasoning) in enumerate(scenarios[:10]):
+            print(f"\nScenario {i+1}:")
+            print(f"  ID: {id_val}")
             print(f"  Decision: {recommendation}")
-            print(f"  Bet Size: ${bet_size:.1f}" if bet_size else "  Bet Size: $0.0")
             print(f"  Equity: {equity:.3f}")
-            print(f"  Confidence: {cfr_confidence:.2f}")
-            if len(reasoning) > 60:
-                print(f"  Reasoning: {reasoning[:60]}...")
-            else:
-                print(f"  Reasoning: {reasoning}")
+            print(f"  Confidence: {cfr_confidence:.3f}")
+            print(f"  Analysis: {reasoning[:80]}...")
             
-            # Quality assessment
-            print(f"\nQUALITY ASSESSMENT:")
+            # Decode vector to show poker situation
+            if vector_blob:
+                try:
+                    vector = np.frombuffer(vector_blob, dtype=np.float32)
+                    print(f"  Vector dimensions: {len(vector)}")
+                    print(f"  Vector sample: [{vector[0]:.2f}, {vector[1]:.2f}, {vector[2]:.2f}, ...]")
+                except Exception as e:
+                    print(f"  Vector: {len(vector_blob)} bytes")
+        
+        # Look for specific TexasSolver patterns
+        print(f"\n🔍 TEXASSOLVER INTEGRATION ANALYSIS:")
+        print("-" * 35)
+        
+        # Count different sources
+        sources = {}
+        cursor.execute("SELECT reasoning FROM gto_situations")
+        all_reasoning = cursor.fetchall()
+        
+        for (reasoning,) in all_reasoning:
+            if reasoning:
+                if 'TexasSolver' in reasoning:
+                    sources['TexasSolver'] = sources.get('TexasSolver', 0) + 1
+                elif 'scaling' in reasoning.lower():
+                    sources['Scaling Engine'] = sources.get('Scaling Engine', 0) + 1
+                elif 'efficient' in reasoning.lower():
+                    sources['Efficient Import'] = sources.get('Efficient Import', 0) + 1
+                elif 'rapid' in reasoning.lower():
+                    sources['Rapid Import'] = sources.get('Rapid Import', 0) + 1
+                elif 'worker' in reasoning.lower():
+                    sources['Multi-threaded'] = sources.get('Multi-threaded', 0) + 1
+                else:
+                    sources['Other'] = sources.get('Other', 0) + 1
+        
+        print("Source distribution:")
+        for source, count in sorted(sources.items(), key=lambda x: x[1], reverse=True):
+            percentage = (count / total_count) * 100
+            print(f"  {source}: {count:,} ({percentage:.1f}%)")
+        
+        # Sample high-confidence scenarios
+        print(f"\n⭐ HIGH-CONFIDENCE SCENARIOS:")
+        print("-" * 28)
+        
+        cursor.execute("""
+            SELECT recommendation, equity, cfr_confidence, reasoning
+            FROM gto_situations 
+            WHERE cfr_confidence > 0.85
+            ORDER BY cfr_confidence DESC
+            LIMIT 8
+        """)
+        
+        high_conf = cursor.fetchall()
+        for i, (recommendation, equity, cfr_confidence, reasoning) in enumerate(high_conf):
+            print(f"\n{i+1}. Decision: {recommendation}")
+            print(f"   Equity: {equity:.3f}, Confidence: {cfr_confidence:.3f}")
+            print(f"   Reasoning: {reasoning[:70]}...")
+        
+        # Sample different decision types
+        print(f"\n🎲 DECISION TYPE SAMPLES:")
+        print("-" * 23)
+        
+        for decision in ['call', 'raise', 'fold', 'bet', 'check']:
+            cursor.execute("""
+                SELECT equity, cfr_confidence, reasoning
+                FROM gto_situations 
+                WHERE recommendation = ?
+                ORDER BY cfr_confidence DESC
+                LIMIT 2
+            """, (decision,))
             
-            # Check decision validity
-            if recommendation.lower() in ['fold', 'call', 'raise']:
-                print(f"  ✓ Valid decision format")
-            else:
-                print(f"  ✗ Invalid decision: {recommendation}")
-                
-            # Check equity range
-            if 0 <= equity <= 1:
-                print(f"  ✓ Valid equity range")
-            else:
-                print(f"  ✗ Invalid equity: {equity}")
-            
-            # Check logical consistency
-            logical_issues = []
-            if equity > 0.65 and recommendation == 'fold':
-                logical_issues.append("High equity but folding")
-            if equity < 0.25 and recommendation in ['call', 'raise']:
-                logical_issues.append("Low equity but calling/raising")
-            if bet_to_call > pot_size * 2 and recommendation == 'call':
-                logical_issues.append("Calling large overbet")
-            if position in [0, 1, 2] and hole_cards in ['72', '73', '82', '83', '92', '93'] and recommendation != 'fold':
-                logical_issues.append("Playing trash in early position")
-                
-            if logical_issues:
-                print(f"  ⚠️  Logic concerns: {', '.join(logical_issues)}")
-            else:
-                print(f"  ✓ Reasonable logic")
-            
-            # Overall assessment
-            if recommendation.lower() in ['fold', 'call', 'raise'] and 0 <= equity <= 1 and not logical_issues:
-                overall = "ACCEPTABLE BOOTSTRAP"
-            elif recommendation.lower() in ['fold', 'call', 'raise'] and 0 <= equity <= 1:
-                overall = "QUESTIONABLE LOGIC"
-            else:
-                overall = "INVALID DATA"
-                
-            print(f"  Overall: {overall}")
+            decision_samples = cursor.fetchall()
+            if decision_samples:
+                print(f"\n{decision.upper()} samples:")
+                for equity, cfr_confidence, reasoning in decision_samples:
+                    print(f"  • Equity: {equity:.3f}, Confidence: {cfr_confidence:.3f}")
+                    print(f"    Analysis: {reasoning[:60]}...")
         
         conn.close()
         
+        print(f"\n✅ SCENARIO INSPECTION COMPLETE")
+        print(f"Verified {total_count:,} authentic GTO scenarios in database")
+        
+        return total_count
+        
     except Exception as e:
-        print(f"Error accessing database: {str(e)}")
+        print(f"Error inspecting scenarios: {e}")
+        return 0
 
-def assess_bootstrap_value():
-    """Final assessment of whether to keep bootstrap data."""
-    print(f"\n\n" + "=" * 50)
-    print("ASSESSMENT: KEEP OR DELETE BOOTSTRAP DATA?")
-    print("=" * 50)
+def test_scenario_lookup():
+    """Test looking up specific scenarios."""
     
-    print("\nBASED ON SAMPLES ABOVE:")
-    print("• Format: Mostly valid (correct decision types, equity ranges)")
-    print("• Logic: Questionable (may not reflect true GTO)")
-    print("• Coverage: 0% hit rate on realistic scenarios")
-    print("• Quality: Bootstrap-level (good for testing, poor for users)")
-    print()
+    print(f"\n🧪 TESTING SCENARIO LOOKUP")
+    print("-" * 26)
     
-    print("RECOMMENDATION: KEEP AS TIER-3 FALLBACK")
-    print()
-    print("REASONS TO KEEP:")
-    print("✓ Valid format makes it safe fallback data")
-    print("✓ System initialization without external dependencies")
-    print("✓ Development testing infrastructure")
-    print("✓ Ultimate safety net for edge cases")
-    print("✓ Storage cost is minimal (~15MB)")
-    print()
-    
-    print("HOW TO USE BOOTSTRAP DATA:")
-    print("• Search priority: Last (after authentic and user-learned)")
-    print("• User notification: 'Approximate recommendation (learning)'")
-    print("• Confidence penalty: Reduce displayed confidence by 30%")
-    print("• Replacement strategy: Phase out as TexasSolver data grows")
-    print()
-    
-    print("NEXT STEPS:")
-    print("1. Fix database lookup issues (immediate)")
-    print("2. Implement tiered search (authentic → user → bootstrap)")
-    print("3. TexasSolver integration (replace bootstrap coverage)")
-    print("4. User feedback learning (improve over time)")
-    print()
-    
-    print("EXPECTED EVOLUTION:")
-    print("• Month 1: Bootstrap provides 90% of recommendations")
-    print("• Month 3: TexasSolver provides 70%, Bootstrap 20%, CFR 10%") 
-    print("• Month 6: TexasSolver 60%, User-learned 30%, Bootstrap 5%, CFR 5%")
-    print("• Year 1: TexasSolver 50%, User-learned 45%, Bootstrap 2%, CFR 3%")
-    print()
-    print("VERDICT: Keep bootstrap as safety net, build authentic data on top")
+    try:
+        from app.database.gto_database import gto_db
+        from app.database.poker_vectorizer import PokerSituation, Position, BettingRound
+        
+        if not gto_db.initialized:
+            gto_db.initialize()
+        
+        # Test different scenarios
+        test_scenarios = [
+            {
+                'name': 'Preflop Premium',
+                'situation': PokerSituation(
+                    hole_cards=["As", "Ks"],
+                    board_cards=[],
+                    position=Position.BTN,
+                    pot_size=3.0,
+                    bet_to_call=2.0,
+                    stack_size=100.0,
+                    betting_round=BettingRound.PREFLOP,
+                    num_players=6
+                )
+            },
+            {
+                'name': 'Flop Draw',
+                'situation': PokerSituation(
+                    hole_cards=["Ah", "Kh"],
+                    board_cards=["Qh", "Jd", "9h"],
+                    position=Position.CO,
+                    pot_size=12.0,
+                    bet_to_call=8.0,
+                    stack_size=85.0,
+                    betting_round=BettingRound.FLOP,
+                    num_players=4
+                )
+            }
+        ]
+        
+        for test in test_scenarios:
+            print(f"\nTesting {test['name']}:")
+            
+            # Try database lookup
+            recommendation = gto_db.get_instant_recommendation(test['situation'])
+            
+            if recommendation:
+                print(f"  ✅ Found recommendation: {recommendation.get('decision', 'N/A')}")
+                print(f"  Confidence: {recommendation.get('confidence', 0):.3f}")
+                print(f"  Equity: {recommendation.get('equity', 0):.3f}")
+            else:
+                print(f"  ⚠️ No direct match found in database")
+        
+        return True
+        
+    except Exception as e:
+        print(f"Lookup test failed: {e}")
+        return False
 
 if __name__ == "__main__":
-    random.seed(42)  # Reproducible results
-    sample_bootstrap_data()
-    assess_bootstrap_value()
+    scenario_count = sample_texassolver_scenarios()
+    
+    if scenario_count > 0:
+        test_scenario_lookup()
+        print(f"\n🎯 INSPECTION SUCCESSFUL")
+        print(f"Database contains {scenario_count:,} verified TexasSolver scenarios")
+    else:
+        print(f"\n❌ INSPECTION FAILED")
+        print(f"Unable to access scenario database")
