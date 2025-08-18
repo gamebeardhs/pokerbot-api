@@ -91,7 +91,7 @@ async def get_instant_gto_recommendation(request: InstantGTORequest) -> JSONResp
                 max_seats=9,
                 hero_seat=1,
                 stakes=Stakes(sb=0.5, bb=1.0),
-                street=request.betting_round.lower(),
+                street=request.betting_round.upper(),
                 board=request.board_cards,
                 pot=request.pot_size,
                 seats=[
@@ -168,6 +168,37 @@ async def get_database_stats():
     except Exception as e:
         logger.error(f"Database stats retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=f"Stats error: {str(e)}")
+
+@router.post("/add-situation") 
+async def add_single_situation(request: Dict[str, Any]):
+    """Add a single GTO situation to the database."""
+    try:
+        # Convert request to PokerSituation
+        from ..database.gto_database import PokerSituation, Position, BettingRound
+        
+        situation = PokerSituation(
+            hole_cards=request["hole_cards"],
+            board_cards=request.get("board_cards", []),
+            position=Position[request["position"].upper()],
+            pot_size=request["pot_size"],
+            bet_to_call=request["bet_to_call"], 
+            stack_size=request["stack_size"],
+            num_players=request["num_players"],
+            betting_round=BettingRound[request["betting_round"].upper()]
+        )
+        
+        # Generate GTO solution
+        solution = gto_db._generate_simple_gto_solution(situation)
+        if solution:
+            success = gto_db.add_solution(situation, solution)
+            if success:
+                return {"success": True, "message": "Situation added successfully"}
+        
+        return {"success": False, "message": "Failed to generate or add solution"}
+        
+    except Exception as e:
+        logger.error(f"Failed to add situation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/populate-database", summary="Populate Database with Initial Solutions")
 async def populate_database(count: int = 1000):
