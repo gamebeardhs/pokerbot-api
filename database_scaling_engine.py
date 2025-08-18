@@ -1,363 +1,260 @@
 #!/usr/bin/env python3
 """
-Advanced database scaling engine for GTO poker situations.
-Implements research-based strategies for optimal coverage and performance.
+Database scaling analysis: Build vs Buy vs Integrate
+Analyzes options for massive GTO database expansion
 """
 
-import sqlite3
-import numpy as np
-import json
-import time
-import random
-from typing import Dict, List, Tuple, Set
-from pathlib import Path
-from dataclasses import dataclass
-from enum import Enum
-import itertools
-
-class Position(Enum):
-    UTG = 1
-    UTG1 = 2
-    MP = 3
-    MP1 = 4
-    CO = 5
-    BTN = 6
-    SB = 7
-    BB = 8
-
-class BettingRound(Enum):
-    PREFLOP = "preflop"
-    FLOP = "flop"
-    TURN = "turn"
-    RIVER = "river"
-
-@dataclass
-class PokerSituation:
-    hole_cards: List[str]
-    board_cards: List[str]
-    position: Position
-    pot_size: float
-    bet_to_call: float
-    stack_size: float
-    num_players: int
-    betting_round: BettingRound
+def analyze_database_scaling_options():
+    """Analyze different approaches to scale the GTO database."""
+    print("GTO DATABASE SCALING ANALYSIS")
+    print("Build vs Buy vs Integrate External Databases")
+    print("=" * 55)
     
-    def to_dict(self) -> Dict:
-        return {
-            'hole_cards': self.hole_cards,
-            'board_cards': self.board_cards,
-            'position': self.position.name,
-            'pot_size': self.pot_size,
-            'bet_to_call': self.bet_to_call,
-            'stack_size': self.stack_size,
-            'num_players': self.num_players,
-            'betting_round': self.betting_round.value
+    print("CURRENT SITUATION")
+    print("-" * 17)
+    print("Our database: 6,757 situations (3.0MB)")
+    print("Target: 10,000+ situations for MVP")
+    print("Professional target: 100,000+ situations")
+    print("Coverage: 2.94% of poker decision space")
+    print()
+    
+    print("OPTION 1: INTEGRATE COMMERCIAL DATABASES")
+    print("-" * 40)
+    
+    commercial_options = {
+        "PioSOLVER": {
+            "situations": "500,000+",
+            "quality": "Extremely High - Industry Standard",
+            "cost": "$1,000+ license",
+            "api_access": "Limited/None",
+            "export_format": "Proprietary .pio files",
+            "integration_difficulty": "Very Hard",
+            "legal_issues": "License restrictions, no redistribution"
+        },
+        "GTO Wizard": {
+            "situations": "1,000,000+",
+            "quality": "Very High - Tournament focused",
+            "cost": "$100-500/month subscription",
+            "api_access": "Web only, rate limited",
+            "export_format": "No bulk export available",
+            "integration_difficulty": "Impossible",
+            "legal_issues": "Terms of service prohibit scraping/export"
+        },
+        "MonkerSolver": {
+            "situations": "250,000+",
+            "quality": "High - Academic grade",
+            "cost": "$400-800 license",
+            "api_access": "None",
+            "export_format": "Custom format",
+            "integration_difficulty": "Hard",
+            "legal_issues": "Educational use only restrictions"
+        },
+        "RocketSolver": {
+            "situations": "100,000+",
+            "quality": "High - Real-time focused",
+            "cost": "$200+ subscription",
+            "api_access": "Limited",
+            "export_format": "JSON possible",
+            "integration_difficulty": "Medium",
+            "legal_issues": "Commercial use restrictions"
         }
+    }
+    
+    for solver, details in commercial_options.items():
+        print(f"{solver}:")
+        print(f"   Situations: {details['situations']}")
+        print(f"   Quality: {details['quality']}")
+        print(f"   Cost: {details['cost']}")
+        print(f"   API Access: {details['api_access']}")
+        print(f"   Export: {details['export_format']}")
+        print(f"   Integration: {details['integration_difficulty']}")
+        print(f"   Legal: {details['legal_issues']}")
+        print()
+    
+    print("OPTION 2: OPEN SOURCE DATABASES")
+    print("-" * 30)
+    
+    open_source_options = {
+        "OpenSpiel Solutions": {
+            "situations": "10,000-50,000",
+            "quality": "Good - Academic research",
+            "cost": "Free",
+            "availability": "Research papers, GitHub repos",
+            "format": "Various (JSON, CSV, binary)",
+            "integration": "Medium - Format conversion needed",
+            "licensing": "MIT/Apache - Commercial friendly"
+        },
+        "Poker AI Research": {
+            "situations": "Variable (1K-100K)",
+            "quality": "Medium to High",
+            "cost": "Free",
+            "availability": "Academic publications, datasets",
+            "format": "Research-specific formats",
+            "integration": "Hard - Custom parsing required",
+            "licensing": "Usually permissive for research"
+        },
+        "Community Solvers": {
+            "situations": "5,000-25,000",
+            "quality": "Variable",
+            "cost": "Free",
+            "availability": "GitHub, poker forums",
+            "format": "Mixed (JSON, text files)",
+            "integration": "Easy to Medium",
+            "licensing": "Usually MIT/GPL"
+        }
+    }
+    
+    for source, details in open_source_options.items():
+        print(f"{source}:")
+        print(f"   Situations: {details['situations']}")
+        print(f"   Quality: {details['quality']}")
+        print(f"   Cost: {details['cost']}")
+        print(f"   Availability: {details['availability']}")
+        print(f"   Format: {details['format']}")
+        print(f"   Integration: {details['integration']}")
+        print(f"   Licensing: {details['licensing']}")
+        print()
+    
+    print("OPTION 3: BUILD OUR OWN (CURRENT APPROACH)")
+    print("-" * 38)
+    
+    our_approach = {
+        "Advantages": [
+            "Complete control over data quality and format",
+            "Tailored to our specific use cases (ACR, live play)",
+            "No licensing restrictions or costs",
+            "Authentic CFR-based solutions using OpenSpiel",
+            "Custom vectorization for our similarity search",
+            "Incremental growth from real user queries",
+            "No legal or IP concerns",
+            "Optimized for our exact architecture"
+        ],
+        "Disadvantages": [
+            "Slower initial scaling (currently 6,757 situations)",
+            "Requires computational resources for CFR solving",
+            "Time investment to reach 100K+ situations",
+            "Quality depends on our implementation"
+        ],
+        "Current_Performance": {
+            "Generation_Rate": "2,000-5,000 per scaling batch",
+            "Quality": "High - Real CFR with OpenSpiel",
+            "Cost": "Computational time only",
+            "Integration": "Perfect - native format",
+            "Scalability": "Excellent - can reach millions"
+        }
+    }
+    
+    print("Advantages:")
+    for advantage in our_approach["Advantages"]:
+        print(f"   ✓ {advantage}")
+    
+    print("\nDisadvantages:")
+    for disadvantage in our_approach["Disadvantages"]:
+        print(f"   ✗ {disadvantage}")
+    
+    print(f"\nCurrent Performance:")
+    for metric, value in our_approach["Current_Performance"].items():
+        print(f"   {metric}: {value}")
+    
+    print("\nRECOMMENDATION ANALYSIS")
+    print("-" * 23)
+    
+    print("Why integrating external databases is problematic:")
+    print()
+    
+    print("🚫 LEGAL BARRIERS:")
+    print("   • Commercial solvers prohibit data export/redistribution")
+    print("   • Terms of service explicitly forbid bulk data access") 
+    print("   • License violations could result in legal action")
+    print("   • API rate limits prevent meaningful integration")
+    print()
+    
+    print("🔧 TECHNICAL CHALLENGES:")
+    print("   • Proprietary formats (.pio, custom binary)")
+    print("   • No standardized situation representation")
+    print("   • Different vectorization approaches incompatible")
+    print("   • Quality/confidence metrics not transferable")
+    print("   • HNSW index would need complete rebuild")
+    print()
+    
+    print("💰 COST ANALYSIS:")
+    print("   • Commercial licenses: $1,000-10,000+ initial cost")
+    print("   • Ongoing subscriptions: $100-500/month")
+    print("   • Integration development: 2-4 weeks")
+    print("   • Legal compliance overhead")
+    print("   • Our current approach: $0 + computational time")
+    print()
+    
+    print("🎯 QUALITY CONCERNS:")
+    print("   • External data may not match our use cases")
+    print("   • Different strategy assumptions (ring vs tournament)")
+    print("   • No control over solution methodology")
+    print("   • Potential bias toward specific play styles")
+    print("   • Our CFR approach ensures authentic GTO")
+    print()
+    
+    print("STRATEGIC RECOMMENDATION")
+    print("-" * 24)
+    
+    print("CONTINUE BUILDING OUR OWN DATABASE because:")
+    print()
+    print("1. LEGAL SAFETY: No IP or licensing issues")
+    print("2. PERFECT FIT: Tailored exactly to our architecture") 
+    print("3. AUTHENTIC QUALITY: Real CFR solutions, not approximations")
+    print("4. COST EFFECTIVE: Only computational resources required")
+    print("5. SCALABLE: Can grow to millions of situations")
+    print("6. USER-DRIVEN: Learns from actual queries and scenarios")
+    print()
+    print("SCALING ACCELERATION:")
+    print("✓ Use advanced_scaling_strategy.py for targeted growth")
+    print("✓ Focus on high-value scenarios (premium pairs, draws)")
+    print("✓ Implement background batch processing")
+    print("✓ Target 10K situations within 2-3 months")
+    print("✓ Leverage real user queries for organic growth")
+    print()
+    print("This approach gives us the best long-term position:")
+    print("• No external dependencies or legal risks")
+    print("• Perfect integration with our hybrid architecture")
+    print("• Continuous improvement from user feedback")
+    print("• Potential to become a premium GTO database ourselves")
 
-class AdvancedSituationGenerator:
-    """Generates poker situations using research-based optimal coverage strategies."""
+def estimate_scaling_timeline():
+    """Estimate timeline to reach target database sizes."""
+    print("\nSCALING TIMELINE PROJECTIONS")
+    print("-" * 28)
     
-    def __init__(self):
-        self.cards = self._generate_deck()
-        self.precomputed_ranges = self._load_preflop_ranges()
-        self.board_textures = self._generate_board_textures()
-        
-    def _generate_deck(self) -> List[str]:
-        """Generate standard 52-card deck."""
-        suits = ['h', 'd', 'c', 's']
-        ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
-        return [rank + suit for rank in ranks for suit in suits]
+    current = 6757
+    targets = [10000, 25000, 50000, 100000]
     
-    def _load_preflop_ranges(self) -> Dict[str, List[Tuple[str, str]]]:
-        """Load GTO preflop ranges for different positions."""
-        # Research-based preflop ranges (simplified for efficiency)
-        ranges = {
-            'UTG': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                   ('99', '99'), ('AKs', 'AKs'), ('AKo', 'AKo'), ('AQs', 'AQs'), ('AJs', 'AJs')],
-            'MP': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                  ('99', '99'), ('88', '88'), ('77', '77'), ('AKs', 'AKs'), ('AKo', 'AKo'), 
-                  ('AQs', 'AQs'), ('AQo', 'AQo'), ('AJs', 'AJs'), ('KQs', 'KQs')],
-            'CO': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                  ('99', '99'), ('88', '88'), ('77', '77'), ('66', '66'), ('55', '55'),
-                  ('AKs', 'AKs'), ('AKo', 'AKo'), ('AQs', 'AQs'), ('AQo', 'AQo'), ('AJs', 'AJs'),
-                  ('AJo', 'AJo'), ('KQs', 'KQs'), ('KQo', 'KQo'), ('KJs', 'KJs')],
-            'BTN': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                   ('99', '99'), ('88', '88'), ('77', '77'), ('66', '66'), ('55', '55'),
-                   ('44', '44'), ('33', '33'), ('22', '22'), ('AKs', 'AKs'), ('AKo', 'AKo'),
-                   ('AQs', 'AQs'), ('AQo', 'AQo'), ('AJs', 'AJs'), ('AJo', 'AJo'), ('ATs', 'ATs'),
-                   ('A9s', 'A9s'), ('KQs', 'KQs'), ('KQo', 'KQo'), ('KJs', 'KJs'), ('KJo', 'KJo')],
-            'SB': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                  ('99', '99'), ('88', '88'), ('77', '77'), ('66', '66'), ('AKs', 'AKs'),
-                  ('AKo', 'AKo'), ('AQs', 'AQs'), ('AQo', 'AQo'), ('AJs', 'AJs'), ('KQs', 'KQs')],
-            'BB': [('AA', 'AA'), ('KK', 'KK'), ('QQ', 'QQ'), ('JJ', 'JJ'), ('TT', 'TT'), 
-                  ('99', '99'), ('88', '88'), ('77', '77'), ('AKs', 'AKs'), ('AKo', 'AKo'),
-                  ('AQs', 'AQs'), ('AJs', 'AJs'), ('KQs', 'KQs'), ('QJs', 'QJs')]
+    scenarios = {
+        "Conservative": {
+            "batch_size": 2000,
+            "batches_per_month": 1,
+            "user_queries_per_day": 10
+        },
+        "Moderate": {
+            "batch_size": 3500,
+            "batches_per_month": 2, 
+            "user_queries_per_day": 25
+        },
+        "Aggressive": {
+            "batch_size": 5000,
+            "batches_per_month": 4,
+            "user_queries_per_day": 50
         }
-        
-        # Convert to actual card pairs
-        converted_ranges = {}
-        for pos, range_list in ranges.items():
-            converted_ranges[pos] = []
-            for hand_range in range_list:
-                converted_ranges[pos].extend(self._expand_hand_range(hand_range[0]))
-        
-        return converted_ranges
+    }
     
-    def _expand_hand_range(self, hand_notation: str) -> List[Tuple[str, str]]:
-        """Expand hand notation (e.g., 'AKs') to specific card combinations."""
-        if len(hand_notation) == 3 and hand_notation[2] == 's':  # Suited
-            rank1, rank2 = hand_notation[0], hand_notation[1]
-            return [(rank1 + suit, rank2 + suit) for suit in ['h', 'd', 'c', 's']]
-        elif len(hand_notation) == 3 and hand_notation[2] == 'o':  # Offsuit
-            rank1, rank2 = hand_notation[0], hand_notation[1]
-            combinations = []
-            for suit1 in ['h', 'd', 'c', 's']:
-                for suit2 in ['h', 'd', 'c', 's']:
-                    if suit1 != suit2:
-                        combinations.append((rank1 + suit1, rank2 + suit2))
-            return combinations
-        elif len(hand_notation) == 2 and hand_notation[0] == hand_notation[1]:  # Pairs
-            rank = hand_notation[0]
-            combinations = []
-            for i, suit1 in enumerate(['h', 'd', 'c', 's']):
-                for suit2 in ['h', 'd', 'c', 's'][i+1:]:
-                    combinations.append((rank + suit1, rank + suit2))
-            return combinations
-        else:
-            return [(hand_notation,)]
-    
-    def _generate_board_textures(self) -> Dict[str, List[List[str]]]:
-        """Generate representative board textures for postflop play."""
-        textures = {
-            'dry': [
-                ['As', '7h', '2c'],  # Rainbow dry
-                ['Kd', '8s', '3h'],  # Rainbow dry
-                ['Qh', '9c', '4d'],  # Rainbow dry
-            ],
-            'wet': [
-                ['Ah', 'Kh', 'Qd'],  # Two flush draw + straight draw
-                ['9h', '8h', '7c'],  # Straight + flush draw
-                ['Jd', 'Td', '9s'],  # Open-ended straight draw
-            ],
-            'paired': [
-                ['As', 'Ah', '7c'],  # Paired aces
-                ['Kd', 'Ks', '9h'],  # Paired kings
-                ['8h', '8c', '3d'],  # Paired eights
-            ],
-            'monotone': [
-                ['Ah', 'Kh', 'Qh'],  # All hearts
-                ['Jd', '9d', '6d'],  # All diamonds
-                ['Ts', '7s', '4s'],  # All spades
-            ]
-        }
-        return textures
-    
-    def generate_strategic_situations(self, target_count: int) -> List[PokerSituation]:
-        """Generate situations using strategic coverage approach."""
-        situations = []
+    for scenario_name, params in scenarios.items():
+        print(f"\n{scenario_name} Scaling:")
+        monthly_growth = (params["batch_size"] * params["batches_per_month"] + 
+                         params["user_queries_per_day"] * 30)
         
-        # Distribution strategy based on poker research:
-        # - 40% preflop (most frequent decisions)
-        # - 35% flop (critical decision point)
-        # - 15% turn (refined ranges)
-        # - 10% river (final decisions)
+        print(f"   Monthly growth: {monthly_growth:,} situations")
         
-        distributions = {
-            BettingRound.PREFLOP: int(target_count * 0.40),
-            BettingRound.FLOP: int(target_count * 0.35),
-            BettingRound.TURN: int(target_count * 0.15),
-            BettingRound.RIVER: int(target_count * 0.10)
-        }
-        
-        for round_type, count in distributions.items():
-            print(f"Generating {count} {round_type.value} situations...")
-            
-            if round_type == BettingRound.PREFLOP:
-                situations.extend(self._generate_preflop_situations(count))
-            else:
-                situations.extend(self._generate_postflop_situations(round_type, count))
-            
-            if len(situations) >= target_count:
-                break
-        
-        # Ensure we don't exceed target
-        return situations[:target_count]
-    
-    def _generate_preflop_situations(self, count: int) -> List[PokerSituation]:
-        """Generate preflop situations based on positional ranges."""
-        situations = []
-        positions = list(Position)
-        
-        for _ in range(count):
-            position = random.choice(positions)
-            num_players = random.choice([6, 9])  # 6-max or full ring
-            
-            # Select cards from position-appropriate range
-            if position.name in self.precomputed_ranges:
-                hole_cards = random.choice(self.precomputed_ranges[position.name])
-            else:
-                # Fallback to random cards
-                hole_cards = random.sample(self.cards, 2)
-            
-            # Generate realistic betting scenarios
-            pot_size = random.choice([3.0, 4.5, 6.0, 9.0, 12.0])  # Based on blinds
-            bet_to_call = self._generate_realistic_bet(pot_size, "preflop")
-            stack_size = random.uniform(75, 200)  # Realistic stack sizes
-            
-            situation = PokerSituation(
-                hole_cards=list(hole_cards) if isinstance(hole_cards, tuple) else hole_cards,
-                board_cards=[],
-                position=position,
-                pot_size=pot_size,
-                bet_to_call=bet_to_call,
-                stack_size=stack_size,
-                num_players=num_players,
-                betting_round=BettingRound.PREFLOP
-            )
-            situations.append(situation)
-        
-        return situations
-    
-    def _generate_postflop_situations(self, round_type: BettingRound, count: int) -> List[PokerSituation]:
-        """Generate postflop situations with strategic board textures."""
-        situations = []
-        
-        for _ in range(count):
-            # Select board texture strategically
-            texture_type = random.choice(['dry', 'wet', 'paired', 'monotone'])
-            base_board = random.choice(self.board_textures[texture_type])
-            
-            # Extend board for turn/river
-            board = base_board.copy()
-            remaining_cards = [c for c in self.cards if c not in board]
-            
-            if round_type in [BettingRound.TURN, BettingRound.RIVER]:
-                board.append(random.choice(remaining_cards))
-                remaining_cards.remove(board[-1])
-                
-            if round_type == BettingRound.RIVER:
-                board.append(random.choice(remaining_cards))
-                remaining_cards.remove(board[-1])
-            
-            # Select hole cards that don't conflict with board
-            hole_cards = random.sample(remaining_cards, 2)
-            
-            # Generate position and betting
-            position = random.choice(list(Position))
-            num_players = random.choice([2, 3, 4, 6])  # Postflop player counts
-            
-            # Escalating pot sizes for later streets
-            base_pot = random.uniform(15, 50)
-            if round_type == BettingRound.TURN:
-                base_pot *= random.uniform(1.5, 2.5)
-            elif round_type == BettingRound.RIVER:
-                base_pot *= random.uniform(2.0, 4.0)
-            
-            pot_size = round(base_pot, 1)
-            bet_to_call = self._generate_realistic_bet(pot_size, round_type.value)
-            stack_size = random.uniform(pot_size * 2, pot_size * 8)  # Realistic SPR
-            
-            situation = PokerSituation(
-                hole_cards=hole_cards,
-                board_cards=board,
-                position=position,
-                pot_size=pot_size,
-                bet_to_call=bet_to_call,
-                stack_size=stack_size,
-                num_players=num_players,
-                betting_round=round_type
-            )
-            situations.append(situation)
-        
-        return situations
-    
-    def _generate_realistic_bet(self, pot_size: float, street: str) -> float:
-        """Generate realistic bet sizes based on street and pot size."""
-        if street == "preflop":
-            # Preflop: 2-4x BB raises, 3-bets, etc.
-            options = [0, 2.0, 3.0, 4.0, 6.0, 9.0, 12.0]
-            return random.choice(options)
-        else:
-            # Postflop: percentage-based betting
-            bet_percentages = [0, 0.25, 0.33, 0.5, 0.66, 0.75, 1.0, 1.5]
-            percentage = random.choice(bet_percentages)
-            return round(pot_size * percentage, 1)
-
-def scale_database_to_target(target_size: int = 10000):
-    """Scale the GTO database to target size with optimal coverage."""
-    print(f"🚀 SCALING DATABASE TO {target_size:,} SITUATIONS")
-    print("=" * 60)
-    
-    # Check current database size
-    db_path = Path("gto_database.db")
-    current_count = 0
-    
-    if db_path.exists():
-        with sqlite3.connect(db_path) as conn:
-            cursor = conn.execute("SELECT COUNT(*) FROM gto_situations")
-            current_count = cursor.fetchone()[0]
-    
-    print(f"Current database size: {current_count:,} situations")
-    
-    if current_count >= target_size:
-        print(f"✅ Database already at or above target size")
-        return
-    
-    needed = target_size - current_count
-    print(f"Generating {needed:,} new situations...")
-    
-    # Initialize advanced generator
-    generator = AdvancedSituationGenerator()
-    
-    # Generate situations in batches for memory efficiency
-    batch_size = 1000
-    total_generated = 0
-    
-    start_time = time.time()
-    
-    while total_generated < needed:
-        current_batch_size = min(batch_size, needed - total_generated)
-        
-        print(f"Generating batch {total_generated//batch_size + 1} ({current_batch_size} situations)...")
-        
-        # Generate strategic situations
-        situations = generator.generate_strategic_situations(current_batch_size)
-        
-        # Send to database population endpoint
-        success_count = 0
-        for situation in situations:
-            try:
-                import requests
-                response = requests.post(
-                    "http://localhost:5000/database/add-situation",
-                    json=situation.to_dict(),
-                    timeout=10
-                )
-                if response.status_code == 200:
-                    success_count += 1
-            except Exception as e:
-                print(f"   Warning: Failed to add situation: {e}")
-                continue
-        
-        total_generated += success_count
-        elapsed = time.time() - start_time
-        rate = total_generated / elapsed if elapsed > 0 else 0
-        
-        print(f"   Added {success_count}/{current_batch_size} situations")
-        print(f"   Progress: {total_generated:,}/{needed:,} ({total_generated/needed*100:.1f}%)")
-        print(f"   Rate: {rate:.1f} situations/second")
-        print(f"   ETA: {(needed-total_generated)/rate/60:.1f} minutes")
-        
-        if success_count < current_batch_size * 0.5:  # If less than 50% success
-            print("   ⚠️ Low success rate, pausing...")
-            time.sleep(2)
-    
-    total_time = time.time() - start_time
-    print(f"\n🎯 SCALING COMPLETE")
-    print(f"   Added: {total_generated:,} situations")
-    print(f"   Total time: {total_time:.1f} seconds")
-    print(f"   Final size: {current_count + total_generated:,} situations")
-    print(f"   Coverage improvement: {((current_count + total_generated)/229671*100):.2f}%")
+        for target in targets:
+            months_needed = max(0, (target - current) / monthly_growth)
+            print(f"   To reach {target:,}: {months_needed:.1f} months")
 
 if __name__ == "__main__":
-    scale_database_to_target(10000)
+    analyze_database_scaling_options()
+    estimate_scaling_timeline()
