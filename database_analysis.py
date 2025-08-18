@@ -1,198 +1,287 @@
 #!/usr/bin/env python3
 """
-Analysis of how the GTO database grows and learns from new scenarios.
-Shows the mechanisms for automatic database expansion.
+Database Analysis: Comprehensive sanity check of the entire TexasSolver pipeline
 """
 
-import sys
-import os
-import time
 import sqlite3
+import json
+import time
+import requests
+from app.database.gto_database import gto_db
+from app.database.poker_vectorizer import PokerSituation, Position, BettingRound
 
-# Add app directory to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
-
-def analyze_database_growth():
-    """Analyze how the database grows and learns."""
-    print("DATABASE GROWTH ANALYSIS")
-    print("How the GTO database learns and expands")
-    print("=" * 50)
+def sanity_check_database():
+    """Complete sanity check of database integrity and content."""
     
-    # Check current database state
-    db_path = "gto_database.db"
+    print("🔍 COMPREHENSIVE DATABASE SANITY CHECK")
+    print("=" * 37)
     
-    if os.path.exists(db_path):
-        print("1. CURRENT DATABASE STATE")
-        print("-" * 25)
-        
-        conn = sqlite3.connect(db_path)
+    issues = []
+    
+    try:
+        # 1. Database file integrity
+        conn = sqlite3.connect("gto_database.db")
         cursor = conn.cursor()
         
-        # Get total situations
-        cursor.execute("SELECT COUNT(*) FROM gto_solutions")
-        total_situations = cursor.fetchone()[0]
+        # Check schema
+        cursor.execute("PRAGMA table_info(gto_situations)")
+        columns = cursor.fetchall()
+        expected_columns = ['id', 'vector', 'hole_cards', 'board_cards', 'position', 
+                          'pot_size', 'bet_to_call', 'stack_size', 'betting_round',
+                          'recommendation', 'bet_size', 'equity', 'reasoning', 
+                          'cfr_confidence', 'metadata', 'created_at']
         
-        # Get database schema
-        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='gto_solutions'")
-        schema = cursor.fetchone()
+        actual_columns = [col[1] for col in columns]
+        missing_columns = set(expected_columns) - set(actual_columns)
         
-        print(f"Total Situations: {total_situations:,}")
-        print(f"Database Schema:")
-        if schema:
-            print(f"   {schema[0]}")
+        if missing_columns:
+            issues.append(f"Missing database columns: {missing_columns}")
+        else:
+            print("✅ Database schema complete")
         
-        # Analyze recent additions (if timestamp exists)
-        try:
-            cursor.execute("SELECT situation_id, recommendation, equity, reasoning FROM gto_solutions ORDER BY ROWID DESC LIMIT 5")
-            recent = cursor.fetchall()
-            
-            if recent:
-                print(f"\nRecent Solutions (last 5):")
-                for i, (situation_id, recommendation, equity, reasoning) in enumerate(recent, 1):
-                    print(f"   {i}. {situation_id[:12]}... -> {recommendation} (equity: {equity:.3f})")
-        except Exception as e:
-            print(f"   Could not retrieve recent solutions: {e}")
+        # 2. Data integrity checks
+        cursor.execute("SELECT COUNT(*) FROM gto_situations")
+        total_count = cursor.fetchone()[0]
+        print(f"✅ Database contains {total_count:,} scenarios")
+        
+        # Check for null values in critical fields
+        cursor.execute("""
+            SELECT COUNT(*) FROM gto_situations 
+            WHERE recommendation IS NULL OR equity IS NULL OR cfr_confidence IS NULL
+        """)
+        null_count = cursor.fetchone()[0]
+        
+        if null_count > 0:
+            issues.append(f"Found {null_count} scenarios with null critical fields")
+        else:
+            print("✅ No null values in critical fields")
+        
+        # 3. Data quality checks
+        cursor.execute("""
+            SELECT MIN(equity), MAX(equity), AVG(equity),
+                   MIN(cfr_confidence), MAX(cfr_confidence), AVG(cfr_confidence)
+            FROM gto_situations
+        """)
+        min_eq, max_eq, avg_eq, min_conf, max_conf, avg_conf = cursor.fetchone()
+        
+        print(f"✅ Equity range: {min_eq:.3f} - {max_eq:.3f} (avg: {avg_eq:.3f})")
+        print(f"✅ Confidence range: {min_conf:.3f} - {max_conf:.3f} (avg: {avg_conf:.3f})")
+        
+        if min_eq < 0 or max_eq > 1:
+            issues.append(f"Invalid equity values: {min_eq} - {max_eq}")
+        
+        if min_conf < 0 or max_conf > 1:
+            issues.append(f"Invalid confidence values: {min_conf} - {max_conf}")
+        
+        # 4. Decision distribution
+        cursor.execute("""
+            SELECT recommendation, COUNT(*) 
+            FROM gto_situations 
+            GROUP BY recommendation 
+            ORDER BY COUNT(*) DESC
+        """)
+        decisions = cursor.fetchall()
+        
+        print("✅ Decision distribution:")
+        for decision, count in decisions:
+            percentage = (count / total_count) * 100
+            print(f"   {decision}: {count:,} ({percentage:.1f}%)")
+        
+        # 5. Source analysis
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN reasoning LIKE '%TexasSolver%' THEN 'TexasSolver'
+                    WHEN reasoning LIKE '%scaling%' THEN 'Scaling Engine'
+                    WHEN reasoning LIKE '%rapid%' THEN 'Rapid Import'
+                    WHEN reasoning LIKE '%efficient%' THEN 'Efficient Import'
+                    WHEN reasoning LIKE '%Worker%' THEN 'Multi-threaded'
+                    ELSE 'Other'
+                END as source,
+                COUNT(*)
+            FROM gto_situations 
+            GROUP BY source
+            ORDER BY COUNT(*) DESC
+        """)
+        sources = cursor.fetchall()
+        
+        print("✅ Source distribution:")
+        for source, count in sources:
+            percentage = (count / total_count) * 100
+            print(f"   {source}: {count:,} ({percentage:.1f}%)")
         
         conn.close()
-    else:
-        print("Database file not found")
-        return
-    
-    print(f"\n2. DATABASE GROWTH MECHANISMS")
-    print("-" * 30)
-    
-    print("The database grows through several mechanisms:")
-    print()
-    
-    print("A. AUTOMATIC FALLBACK GROWTH:")
-    print("   When database lookup fails:")
-    print("   1. System computes GTO solution via CFR")
-    print("   2. New solution automatically added to database")
-    print("   3. HNSW index updated for future similarity search")
-    print("   4. Next identical query = instant response")
-    print()
-    
-    print("B. STRATEGIC SCALING ENGINES:")
-    print("   Background processes generate situations:")
-    print("   1. Premium hands (AA-JJ) across positions")
-    print("   2. Drawing hands with nut potential")  
-    print("   3. Bluff catching scenarios")
-    print("   4. Tournament ICM situations")
-    print("   5. Multi-way pot decisions")
-    print()
-    
-    print("C. RESEARCH-BASED EXPANSION:")
-    print("   Uses 2025 GTO solver research:")
-    print("   1. 40% preflop situations")
-    print("   2. 35% flop decisions")
-    print("   3. 15% turn scenarios")
-    print("   4. 10% river spots")
-    print()
-    
-    print("D. SIMILARITY LEARNING:")
-    print("   HNSW index enables:")
-    print("   1. Similar situation detection")
-    print("   2. Vectorized poker situation matching")
-    print("   3. Approximate solutions for near-matches")
-    print("   4. Continuous coverage improvement")
-    
-    print(f"\n3. GROWTH TRIGGERS")
-    print("-" * 18)
-    
-    growth_triggers = [
-        {
-            "trigger": "API Query Miss",
-            "mechanism": "User queries unknown situation -> CFR solver -> Database storage",
-            "frequency": "Real-time (every novel query)"
-        },
-        {
-            "trigger": "Strategic Scaling",
-            "mechanism": "Background engines generate high-value situations",
-            "frequency": "On-demand (scaling operations)"
-        },
-        {
-            "trigger": "Training Data",
-            "mechanism": "Manual corrections and expert inputs get stored",
-            "frequency": "User-initiated (training sessions)"
-        },
-        {
-            "trigger": "Batch Generation",
-            "mechanism": "Systematic generation of specific scenario types",
-            "frequency": "Planned (database expansion)"
-        }
-    ]
-    
-    for i, trigger in enumerate(growth_triggers, 1):
-        print(f"{i}. {trigger['trigger']}:")
-        print(f"   Process: {trigger['mechanism']}")
-        print(f"   Timing: {trigger['frequency']}")
-        print()
-    
-    print("4. GROWTH QUALITY CONTROL")
-    print("-" * 25)
-    
-    print("Quality measures ensure database integrity:")
-    print("✓ CFR-based solutions (authentic GTO)")
-    print("✓ Vectorization for similarity detection")
-    print("✓ Confidence scoring for solution quality")
-    print("✓ Deduplication prevents redundant storage")
-    print("✓ HNSW indexing maintains fast retrieval")
-    print()
-    
-    print("5. CURRENT GROWTH RATE ANALYSIS")
-    print("-" * 32)
-    
-    # Estimate growth patterns
-    current_size = total_situations
-    
-    print(f"Current Database: {current_size:,} situations")
-    print(f"Coverage: {(current_size/229671)*100:.2f}% of poker decision space")
-    print()
-    
-    print("Growth Projections:")
-    print(f"   Moderate use (10 novel queries/day): +3,650/year")
-    print(f"   Active use (50 novel queries/day): +18,250/year")
-    print(f"   Strategic scaling operations: +2,000-5,000/batch")
-    print(f"   Target for MVP: 10,000 situations")
-    print(f"   Target for professional: 100,000+ situations")
-    
-    print(f"\n6. STORAGE EFFICIENCY")
-    print("-" * 20)
-    
-    if os.path.exists(db_path):
-        db_size_mb = os.path.getsize(db_path) / (1024 * 1024)
-        mb_per_thousand = db_size_mb / (current_size / 1000)
         
-        print(f"Current Size: {db_size_mb:.1f}MB")
-        print(f"Efficiency: {mb_per_thousand:.2f}MB per 1,000 situations")
-        print(f"Projected at 10K situations: {(mb_per_thousand * 10):.1f}MB")
-        print(f"Projected at 100K situations: {(mb_per_thousand * 100):.1f}MB")
-        
-        print(f"\nStorage is highly efficient due to:")
-        print("• Vectorized situation representation")
-        print("• Binary storage of numpy arrays")
-        print("• SQLite compression")
-        print("• Optimized indexing structure")
+    except Exception as e:
+        issues.append(f"Database check failed: {e}")
+    
+    return issues
 
-def show_growth_in_action():
-    """Demonstrate how growth would work with a new scenario."""
-    print(f"\nGROWTH DEMONSTRATION")
-    print("=" * 20)
+def sanity_check_hnsw_index():
+    """Check HNSW index integrity and performance."""
     
-    print("Example: User queries a novel scenario")
-    print("Query: AA vs flush draw on turn with overbet sizing")
-    print()
-    print("Growth Process:")
-    print("1. Database lookup -> No match found")
-    print("2. CFR solver computes optimal strategy (1-3 seconds)")
-    print("3. Solution stored: situation_id, vector, decision, equity, reasoning")
-    print("4. HNSW index updated with new vector")
-    print("5. Database size: 6,757 -> 6,758 situations")
-    print("6. Future identical queries: <1ms response")
-    print()
-    print("Result: Database learned from user's query")
-    print("Every novel situation makes the system smarter!")
+    print(f"\n🔍 HNSW INDEX SANITY CHECK")
+    print("-" * 26)
+    
+    issues = []
+    
+    try:
+        if not gto_db.initialized:
+            gto_db.initialize()
+        
+        if gto_db.hnsw_index is None:
+            issues.append("HNSW index not initialized")
+            return issues
+        
+        index_count = gto_db.hnsw_index.get_current_count()
+        print(f"✅ HNSW index contains {index_count:,} vectors")
+        
+        # Test query performance
+        test_situation = PokerSituation(
+            hole_cards=["As", "Ks"],
+            board_cards=[],
+            position=Position.BTN,
+            pot_size=3.0,
+            bet_to_call=2.0,
+            stack_size=100.0,
+            betting_round=BettingRound.PREFLOP,
+            num_players=6
+        )
+        
+        start_time = time.time()
+        recommendation = gto_db.get_instant_recommendation(test_situation)
+        query_time = time.time() - start_time
+        
+        if recommendation:
+            print(f"✅ Query successful in {query_time*1000:.1f}ms")
+            print(f"   Decision: {recommendation.get('decision', 'N/A')}")
+            print(f"   Confidence: {recommendation.get('confidence', 0):.3f}")
+        else:
+            issues.append("HNSW query returned no results")
+        
+        # Test multiple queries for consistency
+        query_times = []
+        for i in range(5):
+            start = time.time()
+            result = gto_db.get_instant_recommendation(test_situation)
+            query_times.append(time.time() - start)
+        
+        avg_time = sum(query_times) * 1000 / len(query_times)
+        print(f"✅ Average query time: {avg_time:.1f}ms")
+        
+        if avg_time > 10:  # 10ms threshold
+            issues.append(f"Query performance degraded: {avg_time:.1f}ms")
+        
+    except Exception as e:
+        issues.append(f"HNSW check failed: {e}")
+    
+    return issues
+
+def sanity_check_api_endpoints():
+    """Check API endpoints are working correctly."""
+    
+    print(f"\n🔍 API ENDPOINTS SANITY CHECK")
+    print("-" * 29)
+    
+    issues = []
+    base_url = "http://localhost:5000"
+    auth_header = {"Authorization": "Bearer test-token-123"}
+    
+    # Test database endpoint
+    test_data = {
+        "hole_cards": ["As", "Ks"],
+        "board_cards": [],
+        "pot_size": 3.0,
+        "bet_to_call": 2.0,
+        "stack_size": 100.0,
+        "position": "BTN",
+        "num_players": 6,
+        "betting_round": "preflop"
+    }
+    
+    try:
+        response = requests.post(
+            f"{base_url}/database/instant-gto",
+            json=test_data,
+            headers={"Content-Type": "application/json", **auth_header},
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success', False):
+                print("✅ Database endpoint working")
+            else:
+                issues.append(f"Database endpoint returned: {result.get('method', 'unknown')}")
+        else:
+            issues.append(f"Database endpoint failed: {response.status_code}")
+    
+    except Exception as e:
+        issues.append(f"Database endpoint test failed: {e}")
+    
+    # Test stats endpoint
+    try:
+        response = requests.get(
+            f"{base_url}/database/database-stats",
+            headers=auth_header,
+            timeout=3
+        )
+        
+        if response.status_code == 200:
+            stats = response.json()
+            print(f"✅ Stats endpoint working: {stats.get('total_situations', 0):,} situations")
+        else:
+            issues.append(f"Stats endpoint failed: {response.status_code}")
+    
+    except Exception as e:
+        issues.append(f"Stats endpoint test failed: {e}")
+    
+    # Test GUI endpoint
+    try:
+        response = requests.get(
+            f"{base_url}/unified",
+            headers=auth_header,
+            timeout=3
+        )
+        
+        if response.status_code == 200:
+            print("✅ GUI endpoint accessible")
+        else:
+            issues.append(f"GUI endpoint failed: {response.status_code}")
+    
+    except Exception as e:
+        issues.append(f"GUI endpoint test failed: {e}")
+    
+    return issues
+
+def comprehensive_sanity_check():
+    """Run complete sanity check on entire pipeline."""
+    
+    all_issues = []
+    
+    # Check each component
+    db_issues = sanity_check_database()
+    hnsw_issues = sanity_check_hnsw_index()
+    api_issues = sanity_check_api_endpoints()
+    
+    all_issues.extend(db_issues)
+    all_issues.extend(hnsw_issues)
+    all_issues.extend(api_issues)
+    
+    # Summary
+    print(f"\n📊 SANITY CHECK SUMMARY")
+    print("=" * 23)
+    
+    if not all_issues:
+        print("🎉 ALL SANITY CHECKS PASSED")
+        print("Pipeline is fully operational and ready for TexasSolver expansion")
+        return True
+    else:
+        print("⚠️ ISSUES DETECTED:")
+        for i, issue in enumerate(all_issues, 1):
+            print(f"{i}. {issue}")
+        return False
 
 if __name__ == "__main__":
-    analyze_database_growth()
-    show_growth_in_action()
+    success = comprehensive_sanity_check()
+    exit(0 if success else 1)
