@@ -6,6 +6,7 @@ and automatically provides GTO recommendations when it's your turn to act.
 import asyncio
 import logging
 import time
+import random
 from typing import Dict, Any, Optional
 from threading import Thread, Event
 import json
@@ -13,6 +14,7 @@ import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 import numpy as np
+import cv2
 
 from app.scraper.intelligent_calibrator import IntelligentACRCalibrator
 from app.scraper.manual_trigger import ManualTriggerService
@@ -73,6 +75,10 @@ class AutoAdvisoryService:
         """Main monitoring loop that detects turns and provides advice."""
         logger.info("🔄 Starting ACR monitoring loop...")
         
+        # Create new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
         while self.monitoring and not self.stop_event.is_set():
             try:
                 # Check if it's your turn to act
@@ -81,7 +87,7 @@ class AutoAdvisoryService:
                 if turn_detected and not self.turn_detected:
                     # New turn detected - provide GTO advice
                     logger.info("🎯 Your turn detected - analyzing hand...")
-                    advice = self._get_automated_advice()
+                    advice = loop.run_until_complete(self._get_automated_advice())
                     
                     if advice:
                         self.latest_advice = advice
@@ -119,7 +125,6 @@ class AutoAdvisoryService:
                 if screen_mean < 5:
                     logger.debug("📱 Running in Replit environment (no ACR client) - using test detection")
                     # For testing purposes, simulate turn detection every 30 seconds
-                    import time
                     test_cycle = int(time.time()) % 60  # 60 second cycle
                     if 20 <= test_cycle <= 25:  # Simulate "your turn" for 5 seconds every minute
                         logger.info("🎯 TEST MODE: Simulating your turn detected")
@@ -155,7 +160,7 @@ class AutoAdvisoryService:
                 
             # Detect transition to active state
             was_inactive = self.last_button_state["active_buttons"] == 0
-            now_active = current_state["active_buttons"] >= 2  # At least 2 buttons (fold/call or call/raise)
+            now_active = current_state["active_buttons"] >= 2 and current_state["active_buttons"] <= 5  # 2-5 buttons (typical poker actions)
             
             self.last_button_state = current_state
             
@@ -178,31 +183,34 @@ class AutoAdvisoryService:
     
     def _detect_active_buttons(self, screenshot: np.ndarray) -> list:
         """Detect active/highlighted action buttons indicating your turn."""
-        # Simple button detection - look for bright colored rectangular regions
-        if len(screenshot.shape) == 3:
-            # Convert to HSV for better color detection
-            import cv2
-            hsv = cv2.cvtColor(screenshot, cv2.COLOR_RGB2HSV)
+        try:
+            # Simple button detection - look for bright colored rectangular regions
+            if len(screenshot.shape) == 3:
+                # Convert to HSV for better color detection
+                hsv = cv2.cvtColor(screenshot, cv2.COLOR_RGB2HSV)
+                
+                # Look for bright button colors (green for call, red for fold, blue for raise)
+                bright_mask = cv2.inRange(hsv, np.array([0, 50, 100]), np.array([180, 255, 255]))
+                
+                # Find contours (button regions)
+                contours, _ = cv2.findContours(bright_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                
+                # Filter for button-sized rectangles
+                buttons = []
+                for contour in contours:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    # Button size filters (typical poker client buttons)
+                    if 50 < w < 200 and 20 < h < 60:
+                        buttons.append({"x": x, "y": y, "w": w, "h": h})
+                
+                return buttons
             
-            # Look for bright button colors (green for call, red for fold, blue for raise)
-            bright_mask = cv2.inRange(hsv, np.array([0, 50, 100]), np.array([180, 255, 255]))
-            
-            # Find contours (button regions)
-            contours, _ = cv2.findContours(bright_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            # Filter for button-sized rectangles
-            buttons = []
-            for contour in contours:
-                x, y, w, h = cv2.boundingRect(contour)
-                # Button size filters (typical poker client buttons)
-                if 50 < w < 200 and 20 < h < 60:
-                    buttons.append({"x": x, "y": y, "w": w, "h": h})
-            
-            return buttons
-        
-        return []
+            return []
+        except Exception as e:
+            logger.error(f"Button detection error: {e}")
+            return []
     
-    def _get_automated_advice(self) -> Optional[Dict[str, Any]]:
+    async def _get_automated_advice(self) -> Optional[Dict[str, Any]]:
         """Get automated GTO advice for current hand."""
         try:
             # Prevent rapid-fire analysis
@@ -218,8 +226,7 @@ class AutoAdvisoryService:
             if screenshot is not None and np.mean(screenshot) < 5:
                 logger.info("🎲 TEST MODE: Generating sample GTO advice")
                 # Generate realistic test advice
-                import random
-                actions = ["CALL", "RAISE", "FOLD", "CHECK"]
+                chosen_action = random.choice(["CALL", "RAISE", "FOLD", "CHECK"])
                 bet_sizes = ["$15", "$25", "$45", "$pot", "1/2 pot"]
                 reasoning_options = [
                     "Strong hand with position advantage",
@@ -230,8 +237,8 @@ class AutoAdvisoryService:
                 ]
                 
                 advice = {
-                    "action": random.choice(actions),
-                    "bet_size": random.choice(bet_sizes) if random.choice(actions) in ["RAISE", "BET"] else "",
+                    "action": chosen_action,
+                    "bet_size": random.choice(bet_sizes) if chosen_action in ["RAISE", "BET"] else "",
                     "equity": round(random.uniform(25, 85), 1),
                     "confidence": random.choice(["HIGH", "MEDIUM", "LOW"]),
                     "reasoning": random.choice(reasoning_options),
@@ -244,7 +251,7 @@ class AutoAdvisoryService:
                 return advice
             
             # Use manual trigger service to analyze current table state
-            result = self.trigger_service.analyze_current_hand()
+            result = await self.trigger_service.analyze_current_hand()
             
             logger.debug(f"📊 Manual trigger result: {result}")
             
