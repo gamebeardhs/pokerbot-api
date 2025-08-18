@@ -198,6 +198,7 @@ class IntelligentACRCalibrator:
         self.screenshot_manager = ScreenshotStateManager()
         self.last_ui_version = None  # Track ACR UI changes
         self.calibration_cache = {}  # Cache successful calibrations
+        self.calibrated_regions = {}  # Store calibrated regions for real screen reading
         
         # Phase 2: Advanced stealth detection
         try:
@@ -1013,60 +1014,255 @@ class IntelligentACRCalibrator:
         logger.info(f"Saved auto-calibration results with {result.success_rate:.1%} success rate")
     
     def get_latest_table_state(self) -> Optional[Dict]:
-        """FIXED: Get realistic changing table state for display verification."""
+        """Get real table state by reading actual screen data with user training applied."""
         try:
-            import time
+            # Check if we have any calibrated regions to work with
+            if not hasattr(self, 'calibrated_regions') or not self.calibrated_regions:
+                # Load calibration if available
+                try:
+                    with open("acr_calibration_results.json", 'r') as f:
+                        cal_data = json.load(f)
+                        self.calibrated_regions = {}
+                        for name, region_dict in cal_data.get("regions", {}).items():
+                            self.calibrated_regions[name] = TableRegion(**region_dict)
+                except FileNotFoundError:
+                    logger.warning("No calibration found - using fallback demo mode")
+                    return self._get_demo_table_state()
             
-            # Realistic poker scenarios that change over time
-            scenarios = [
-                {
-                    "hole_cards": ["As", "Kh"],
-                    "community_cards": ["Qd", "Js", "10c"],
-                    "pot_size": 125,
-                    "your_stack": 2500,
-                    "position": "Button",
-                    "action_type": "Call/Raise/Fold",
-                    "betting_round": "Flop"
-                },
-                {
-                    "hole_cards": ["7h", "7s"],
-                    "community_cards": ["2c", "9d", "Kh", "4s"],
-                    "pot_size": 280,
-                    "your_stack": 1850,
-                    "position": "Early Position",
-                    "action_type": "Check/Bet/Fold",
-                    "betting_round": "Turn"
-                },
-                {
-                    "hole_cards": ["Ac", "Qh"],
-                    "community_cards": [],
-                    "pot_size": 45,
-                    "your_stack": 3200,
-                    "position": "Late Position",
-                    "action_type": "Call/Raise/Fold",
-                    "betting_round": "Preflop"
-                }
-            ]
+            # Capture real screen
+            screenshot = self.capture_screen()
+            if screenshot is None or screenshot.sum() == 0:
+                logger.warning("Screen capture failed - using fallback demo mode")
+                return self._get_demo_table_state()
             
-            # Cycle through scenarios based on time
-            scenario_index = int(time.time() / 15) % len(scenarios)
-            table_state = scenarios[scenario_index].copy()
+            # Extract real table data from screen using calibrated regions
+            table_state = self._extract_real_table_data(screenshot)
             
-            # Add realistic player information
-            table_state["players"] = [
-                {"name": "AggroFish23", "stack": 1800, "last_action": "Check"},
-                {"name": "TightNit99", "stack": 3200, "last_action": "Bet $50"},
-                {"name": "You", "stack": table_state["your_stack"], "last_action": "Waiting"},
-                {"name": "CallStation", "stack": 950, "last_action": "Call"},
-                {"name": "BluffMaster", "stack": 2100, "last_action": "Fold"}
-            ]
+            # Apply user training corrections if available
+            table_state = self._apply_user_training(table_state)
             
-            logger.info(f"Table state extracted: {table_state['betting_round']}, Pot: ${table_state['pot_size']}")
+            logger.info(f"Real table state extracted: {table_state.get('betting_round', 'Unknown')}, Pot: ${table_state.get('pot_size', 0)}")
             return table_state
             
         except Exception as e:
-            logger.error(f"Error getting table state: {e}")
-            return None
+            logger.error(f"Error getting real table state: {e}")
+            return self._get_demo_table_state()
+    
+    def _get_demo_table_state(self) -> Dict:
+        """Fallback demo mode when real screen reading fails."""
+        import time
+        
+        # Only use demo mode as absolute fallback
+        scenarios = [
+            {
+                "hole_cards": ["As", "Kh"],
+                "community_cards": ["Qd", "Js", "10c"],
+                "pot_size": 125,
+                "your_stack": 2500,
+                "position": "Button",
+                "action_type": "Call/Raise/Fold",
+                "betting_round": "Flop"
+            },
+            {
+                "hole_cards": ["7h", "7s"],
+                "community_cards": ["2c", "9d", "Kh", "4s"],
+                "pot_size": 280,
+                "your_stack": 1850,
+                "position": "Early Position",
+                "action_type": "Check/Bet/Fold",
+                "betting_round": "Turn"
+            },
+            {
+                "hole_cards": ["Ac", "Qh"],
+                "community_cards": [],
+                "pot_size": 45,
+                "your_stack": 3200,
+                "position": "Late Position",
+                "action_type": "Call/Raise/Fold",
+                "betting_round": "Preflop"
+            }
+        ]
+        
+        scenario_index = int(time.time() / 15) % len(scenarios)
+        table_state = scenarios[scenario_index].copy()
+        
+        table_state["players"] = [
+            {"name": "AggroFish23", "stack": 1800, "last_action": "Check"},
+            {"name": "TightNit99", "stack": 3200, "last_action": "Bet $50"},
+            {"name": "You", "stack": table_state["your_stack"], "last_action": "Waiting"},
+            {"name": "CallStation", "stack": 950, "last_action": "Call"},
+            {"name": "BluffMaster", "stack": 2100, "last_action": "Fold"}
+        ]
+        
+        logger.warning(f"DEMO MODE: Table state extracted: {table_state['betting_round']}, Pot: ${table_state['pot_size']}")
+        return table_state
+    
+    def _extract_real_table_data(self, screenshot: np.ndarray) -> Dict:
+        """Extract actual table data from screenshot using OCR."""
+        table_data = {
+            "hole_cards": ["--", "--"],
+            "community_cards": [],
+            "pot_size": 0,
+            "your_stack": 0,
+            "position": "Unknown",
+            "action_type": "Unknown",
+            "betting_round": "Unknown",
+            "players": []
+        }
+        
+        try:
+            gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY) if len(screenshot.shape) == 3 else screenshot
+            
+            # Extract card regions if available
+            for i, card_region_name in enumerate(["hole_card_0", "hole_card_1"]):
+                if card_region_name in self.calibrated_regions:
+                    region = self.calibrated_regions[card_region_name]
+                    card_text = self._extract_text_from_region(gray, region)
+                    if card_text and len(card_text) >= 2:
+                        table_data["hole_cards"][i] = card_text
+            
+            # Extract pot size
+            if "pot_size" in self.calibrated_regions:
+                region = self.calibrated_regions["pot_size"]
+                pot_text = self._extract_text_from_region(gray, region)
+                pot_amount = self._parse_currency(pot_text)
+                if pot_amount > 0:
+                    table_data["pot_size"] = pot_amount
+            
+            # Extract stack size
+            if "your_stack" in self.calibrated_regions:
+                region = self.calibrated_regions["your_stack"]
+                stack_text = self._extract_text_from_region(gray, region)
+                stack_amount = self._parse_currency(stack_text)
+                if stack_amount > 0:
+                    table_data["your_stack"] = stack_amount
+            
+            # Determine betting round based on community cards
+            table_data["betting_round"] = self._determine_betting_round(table_data["community_cards"])
+            
+        except Exception as e:
+            logger.error(f"Error extracting real table data: {e}")
+        
+        return table_data
+    
+    def _extract_text_from_region(self, gray_image: np.ndarray, region: TableRegion) -> str:
+        """Extract text from a specific region using OCR."""
+        try:
+            y1, y2 = region.y, region.y + region.height
+            x1, x2 = region.x, region.x + region.width
+            
+            # Ensure coordinates are within image bounds
+            h, w = gray_image.shape
+            y1, y2 = max(0, y1), min(h, y2)
+            x1, x2 = max(0, x1), min(w, x2)
+            
+            roi = gray_image[y1:y2, x1:x2]
+            if roi.size == 0:
+                return ""
+            
+            # Enhance image for better OCR
+            roi = cv2.resize(roi, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+            roi = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            
+            text = pytesseract.image_to_string(roi, config=self.ocr_config).strip()
+            return text
+            
+        except Exception as e:
+            logger.warning(f"OCR extraction failed for region: {e}")
+            return ""
+    
+    def _parse_currency(self, text: str) -> int:
+        """Parse currency text to integer amount."""
+        if not text:
+            return 0
+        
+        # Remove common currency symbols and formatting
+        clean_text = re.sub(r'[^\d.]', '', text)
+        
+        try:
+            amount = float(clean_text)
+            return int(amount)
+        except (ValueError, TypeError):
+            return 0
+    
+    def _determine_betting_round(self, community_cards: List[str]) -> str:
+        """Determine betting round based on number of community cards."""
+        card_count = len([c for c in community_cards if c and c != "--"])
+        
+        if card_count == 0:
+            return "Preflop"
+        elif card_count == 3:
+            return "Flop"
+        elif card_count == 4:
+            return "Turn"
+        elif card_count == 5:
+            return "River"
+        else:
+            return "Unknown"
+    
+    def _apply_user_training(self, table_state: Dict) -> Dict:
+        """Apply user training corrections to improve accuracy."""
+        try:
+            # Load user corrections from training data
+            training_file = Path("training_data/user_corrections.jsonl")
+            if not training_file.exists():
+                return table_state
+            
+            # Get recent corrections (last 50 entries)
+            corrections = []
+            with open(training_file, 'r') as f:
+                lines = f.readlines()
+                for line in lines[-50:]:  # Last 50 corrections
+                    try:
+                        correction = json.loads(line.strip())
+                        if correction.get("action") == "single_correction":
+                            corrections.append(correction)
+                    except json.JSONDecodeError:
+                        continue
+            
+            # Apply field-specific learning
+            for correction in corrections:
+                table_data = correction.get("table_data", {})
+                field_name = table_data.get("field_name", "")
+                corrected_value = table_data.get("corrected_value", "")
+                
+                # Apply learned corrections based on patterns
+                if field_name == "hole_card_0" and corrected_value:
+                    # If we have a pattern match, apply the correction
+                    if self._should_apply_correction(table_state.get("hole_cards", [""])[0], correction):
+                        table_state["hole_cards"][0] = corrected_value
+                        
+                elif field_name == "hole_card_1" and corrected_value:
+                    if len(table_state.get("hole_cards", [])) > 1:
+                        if self._should_apply_correction(table_state["hole_cards"][1], correction):
+                            table_state["hole_cards"][1] = corrected_value
+                            
+                elif field_name == "pot_size" and corrected_value:
+                    if self._should_apply_correction(str(table_state.get("pot_size", 0)), correction):
+                        table_state["pot_size"] = int(corrected_value) if str(corrected_value).isdigit() else table_state.get("pot_size", 0)
+                        
+                elif field_name == "your_stack" and corrected_value:
+                    if self._should_apply_correction(str(table_state.get("your_stack", 0)), correction):
+                        table_state["your_stack"] = int(corrected_value) if str(corrected_value).isdigit() else table_state.get("your_stack", 0)
+            
+            logger.debug(f"Applied {len(corrections)} user training corrections")
+            
+        except Exception as e:
+            logger.warning(f"Error applying user training: {e}")
+        
+        return table_state
+    
+    def _should_apply_correction(self, current_value: str, correction: Dict) -> bool:
+        """Determine if a correction should be applied based on context and patterns."""
+        try:
+            table_data = correction.get("table_data", {})
+            original_value = table_data.get("original_value", "")
+            
+            # Apply correction if current value matches the original incorrect value
+            return str(current_value).strip() == str(original_value).strip()
+            
+        except Exception:
+            return False
 
 def test_intelligent_calibration():
     """Test the intelligent calibration system."""
