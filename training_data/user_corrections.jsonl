@@ -1,0 +1,2 @@
+{"timestamp": "2025-08-18T01:22:00Z", "action": "correction", "table_data": {"hole_cards": ["As", "Kh"], "pot_size": 150}, "screenshot_at_time": null}
+{"timestamp": "2025-08-18T01:25:00Z", "action": "confirm", "table_data": {"hole_cards": ["7h", "7s"], "pot_size": 280, "betting_round": "Turn"}, "screenshot_at_time": null}

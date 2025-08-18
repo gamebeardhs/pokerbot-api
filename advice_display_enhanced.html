@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACR Poker Advisory - Live GTO Advice with Training</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        
+        .panel {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel h1 {
+            margin: 0 0 20px 0;
+            color: #fbbf24;
+            font-size: 1.5rem;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Training Interface Styles */
+        .training-status {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #10b981;
+            font-size: 0.85rem;
+        }
+        
+        .training-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-confirm {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-confirm:hover {
+            background: #059669;
+        }
+        
+        .btn-reset {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #4b5563;
+        }
+        
+        /* Editable fields styling */
+        .editable {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid transparent;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: text;
+            transition: all 0.2s;
+            min-height: 1.2em;
+            display: inline-block;
+            min-width: 60px;
+        }
+        
+        .editable:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.15);
+        }
+        
+        .editable:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        .editable.changed {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .editable.confirmed {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            animation: confirmFlash 0.5s ease-out;
+        }
+        
+        @keyframes confirmFlash {
+            0% { background: rgba(34, 197, 94, 0.3); }
+            100% { background: rgba(34, 197, 94, 0.1); }
+        }
+        
+        .advice-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .advice-action {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #10b981;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .advice-details {
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 6px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.active {
+            background: #10b981;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .table-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .info-card h3 {
+            margin: 0 0 10px 0;
+            color: #fbbf24;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-card .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+        
+        .cards {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .card {
+            background: #fff;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card.red {
+            color: #dc2626;
+        }
+        
+        .card.editable {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .card.editable:hover {
+            border-color: #3b82f6;
+        }
+        
+        /* Card selection dropdown */
+        .card-selector {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .card-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #1e293b;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            width: 200px;
+        }
+        
+        .card-dropdown.show {
+            display: grid;
+        }
+        
+        .card-option {
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.8rem;
+            background: #374151;
+            color: #e2e8f0;
+            border: 1px solid transparent;
+        }
+        
+        .card-option:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+        
+        .card-option.red {
+            color: #dc2626;
+        }
+        
+        .players-list {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .player:last-child {
+            border-bottom: none;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+        
+        .player-stack {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .player-action {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        
+        .refresh-status {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 15px;
+        }
+        
+        .error {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #ef4444;
+            margin: 10px 0;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #64748b;
+            padding: 40px 20px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .table-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: GTO Advice -->
+        <div class="panel">
+            <h1>GTO Advisory</h1>
+            
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting to advisory system...</span>
+            </div>
+            
+            <div id="adviceContent">
+                <div class="no-data">
+                    Waiting for your turn to act...
+                </div>
+            </div>
+            
+            <div class="refresh-status" id="refreshStatus">
+                Last updated: Never
+            </div>
+        </div>
+        
+        <!-- Right Panel: Table Information with Training -->
+        <div class="panel">
+            <h1>Table Information & Training</h1>
+            
+            <div class="training-status" id="trainingStatus">
+                Training Mode: Active - Click any value to correct and improve recognition
+            </div>
+            
+            <div id="tableContent">
+                <div class="no-data">
+                    Loading table data...
+                </div>
+            </div>
+            
+            <div class="training-controls">
+                <button class="btn btn-confirm" onclick="confirmAllData()">Confirm All Correct</button>
+                <button class="btn btn-reset" onclick="resetChanges()">Reset Changes</button>
+            </div>
+            
+            <div class="refresh-status" id="tableRefreshStatus">
+                Last updated: Never
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adviceRefreshInterval;
+        let tableRefreshInterval;
+        let currentTableData = {};
+        let changedFields = new Set();
+        let originalData = {};
+        
+        // Card definitions
+        const suits = ['h', 'd', 'c', 's'];
+        const ranks = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const allCards = [];
+        
+        // Generate all possible cards
+        suits.forEach(suit => {
+            ranks.forEach(rank => {
+                allCards.push(rank + suit);
+            });
+        });
+        
+        // Make field editable
+        function makeEditable(element, field, type = 'text') {
+            element.contentEditable = true;
+            element.classList.add('editable');
+            
+            element.addEventListener('focus', function() {
+                originalData[field] = element.textContent.trim();
+            });
+            
+            element.addEventListener('input', function() {
+                const newValue = element.textContent.trim();
+                if (newValue !== originalData[field]) {
+                    changedFields.add(field);
+                    element.classList.add('changed');
+                } else {
+                    changedFields.delete(field);
+                    element.classList.remove('changed');
+                }
+                updateTrainingStatus();
+            });
+            
+            element.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    element.blur();
+                }
+            });
+        }
+        
+        // Make card clickable for selection
+        function makeCardSelectable(element, field) {
+            element.addEventListener('click', function(e) {
+                e.stopPropagation();
+                showCardSelector(element, field);
+            });
+        }
+        
+        // Show card selection dropdown
+        function showCardSelector(element, field) {
+            // Remove any existing dropdowns
+            document.querySelectorAll('.card-dropdown').forEach(d => d.remove());
+            
+            const selector = document.createElement('div');
+            selector.className = 'card-selector';
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'card-dropdown show';
+            
+            allCards.forEach(card => {
+                const option = document.createElement('div');
+                option.className = 'card-option';
+                if (card.includes('h') || card.includes('d')) {
+                    option.classList.add('red');
+                }
+                option.textContent = card;
+                
+                option.addEventListener('click', function() {
+                    const originalValue = element.textContent.trim();
+                    element.textContent = card;
+                    
+                    // Update styling
+                    element.className = 'card editable';
+                    if (card.includes('h') || card.includes('d')) {
+                        element.classList.add('red');
+                    }
+                    
+                    // Track change
+                    if (card !== originalValue) {
+                        changedFields.add(field);
+                        element.classList.add('changed');
+                    } else {
+                        changedFields.delete(field);
+                        element.classList.remove('changed');
+                    }
+                    
+                    updateTrainingStatus();
+                    dropdown.remove();
+                });
+                
+                dropdown.appendChild(option);
+            });
+            
+            selector.appendChild(dropdown);
+            element.parentNode.insertBefore(selector, element.nextSibling);
+            
+            // Close dropdown when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown() {
+                    dropdown.remove();
+                    document.removeEventListener('click', closeDropdown);
+                });
+            }, 100);
+        }
+        
+        // Update training status
+        function updateTrainingStatus() {
+            const statusEl = document.getElementById('trainingStatus');
+            if (changedFields.size > 0) {
+                statusEl.textContent = `${changedFields.size} field(s) modified - Click confirm to train AI`;
+                statusEl.style.background = 'rgba(251, 191, 36, 0.1)';
+                statusEl.style.borderColor = 'rgba(251, 191, 36, 0.3)';
+                statusEl.style.color = '#fbbf24';
+            } else {
+                statusEl.textContent = 'Training Mode: Active - Click any value to correct and improve recognition';
+                statusEl.style.background = 'rgba(16, 185, 129, 0.1)';
+                statusEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                statusEl.style.color = '#10b981';
+            }
+        }
+        
+        // Confirm all data and send to training
+        async function confirmAllData() {
+            if (changedFields.size === 0) {
+                // No changes - just confirm the current data as correct
+                await sendTrainingData(currentTableData, 'confirm');
+                showConfirmationFeedback();
+                return;
+            }
+            
+            // Collect all current values
+            const updatedData = { ...currentTableData };
+            
+            // Update changed fields
+            changedFields.forEach(field => {
+                const element = document.querySelector(`[data-field="${field}"]`);
+                if (element) {
+                    if (field.includes('card')) {
+                        updatedData[field] = element.textContent.trim();
+                    } else if (field.includes('size') || field.includes('stack')) {
+                        updatedData[field] = parseInt(element.textContent.replace(/[^0-9]/g, '')) || 0;
+                    } else {
+                        updatedData[field] = element.textContent.trim();
+                    }
+                }
+            });
+            
+            // Send training data
+            await sendTrainingData(updatedData, 'correction');
+            
+            // Clear changes and show confirmation
+            changedFields.clear();
+            document.querySelectorAll('.changed').forEach(el => {
+                el.classList.remove('changed');
+                el.classList.add('confirmed');
+                setTimeout(() => el.classList.remove('confirmed'), 500);
+            });
+            
+            updateTrainingStatus();
+            showConfirmationFeedback();
+        }
+        
+        // Reset all changes
+        function resetChanges() {
+            changedFields.clear();
+            refreshTableData(); // Reload original data
+        }
+        
+        // Send training data to backend
+        async function sendTrainingData(data, action) {
+            try {
+                const response = await fetch('/auto/train', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action, // 'confirm' or 'correction'
+                        table_data: data,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('Training data sent successfully');
+                } else {
+                    console.error('Failed to send training data');
+                }
+            } catch (error) {
+                console.error('Error sending training data:', error);
+            }
+        }
+        
+        // Show confirmation feedback
+        function showConfirmationFeedback() {
+            const statusEl = document.getElementById('trainingStatus');
+            const originalText = statusEl.textContent;
+            const originalStyle = statusEl.style.cssText;
+            
+            statusEl.textContent = 'Training data sent - AI learning improved!';
+            statusEl.style.background = 'rgba(34, 197, 94, 0.2)';
+            statusEl.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+            statusEl.style.color = '#22c55e';
+            
+            setTimeout(() => {
+                statusEl.textContent = originalText;
+                statusEl.style.cssText = originalStyle;
+            }, 2000);
+        }
+        
+        // Refresh advice data
+        async function refreshAdvice() {
+            try {
+                const response = await fetch('/auto/latest-advice');
+                const data = await response.json();
+                
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                const adviceContent = document.getElementById('adviceContent');
+                
+                if (data.action) {
+                    statusDot.classList.add('active');
+                    statusText.textContent = 'Your turn - GTO advice available';
+                    
+                    adviceContent.innerHTML = `
+                        <div class="advice-section">
+                            <div class="advice-action">${data.action}</div>
+                            <div class="advice-details">
+                                <strong>Reasoning:</strong> ${data.reasoning || 'Optimal play based on current situation'}<br>
+                                ${data.bet_size ? `<strong>Bet Size:</strong> ${data.bet_size}<br>` : ''}
+                                <strong>Equity:</strong> ${data.equity || 'N/A'}%<br>
+                                <strong>Confidence:</strong> ${data.confidence || 'MEDIUM'}<br>
+                                <strong>Time:</strong> ${data.timestamp || 'Just now'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusDot.classList.remove('active');
+                    statusText.textContent = 'Monitoring for your turn...';
+                    
+                    adviceContent.innerHTML = `
+                        <div class="no-data">
+                            Waiting for your turn to act...
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('refreshStatus').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Error fetching advice:', error);
+                document.getElementById('adviceContent').innerHTML = `
+                    <div class="error">
+                        Error fetching advice: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Refresh table data
+        async function refreshTableData() {
+            try {
+                const response = await fetch('/auto/table-data');
+                const data = await response.json();
+                currentTableData = data;
+                
+                const tableContent = document.getElementById('tableContent');
+                
+                if (data.hole_cards && data.hole_cards.length > 0) {
+                    tableContent.innerHTML = `
+                        <div class="table-info">
+                            <div class="info-card">
+                                <h3>Your Cards</h3>
+                                <div class="cards">
+                                    ${data.hole_cards.map((card, index) => {
+                                        const isRed = card.includes('h') || card.includes('d');
+                                        return `<div class="card editable ${isRed ? 'red' : ''}" data-field="hole_card_${index}">${card}</div>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h3>Community Cards</h3>
+                                <div class="cards">
+                                    ${data.community_cards && data.community_cards.length > 0 
+                                        ? data.community_cards.map((card, index) => {
+                                            const isRed = card.includes('h') || card.includes('d');
+                                            return `<div class="card editable ${isRed ? 'red' : ''}" data-field="community_card_${index}">${card}</div>`;
+                                        }).join('')
+                                        : '<span style="color: #64748b;">None yet</span>'
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h3>Pot Size</h3>
+                                <div class="value editable" data-field="pot_size">$${data.pot_size || 0}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h3>Your Stack</h3>
+                                <div class="value editable" data-field="your_stack">$${data.your_stack || 0}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h3>Position</h3>
+                                <div class="value editable" data-field="position">${data.position || 'Unknown'}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h3>Betting Round</h3>
+                                <div class="value editable" data-field="betting_round">${data.betting_round || 'Unknown'}</div>
+                            </div>
+                        </div>
+                        
+                        ${data.players && data.players.length > 0 ? `
+                            <div class="info-card">
+                                <h3>Players</h3>
+                                <div class="players-list">
+                                    ${data.players.map((player, index) => `
+                                        <div class="player">
+                                            <div>
+                                                <div class="player-name editable" data-field="player_${index}_name">${player.name}</div>
+                                                <div class="player-action editable" data-field="player_${index}_action">${player.last_action}</div>
+                                            </div>
+                                            <div class="player-stack editable" data-field="player_${index}_stack">$${player.stack}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    // Make fields editable
+                    document.querySelectorAll('.editable[data-field]').forEach(element => {
+                        const field = element.getAttribute('data-field');
+                        
+                        if (field.includes('card')) {
+                            makeCardSelectable(element, field);
+                        } else {
+                            makeEditable(element, field);
+                        }
+                    });
+                    
+                } else {
+                    tableContent.innerHTML = `
+                        <div class="no-data">
+                            No table data available
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('tableRefreshStatus').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Error fetching table data:', error);
+                document.getElementById('tableContent').innerHTML = `
+                    <div class="error">
+                        Error fetching table data: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Start monitoring
+        function startMonitoring() {
+            refreshAdvice();
+            refreshTableData();
+            
+            adviceRefreshInterval = setInterval(refreshAdvice, 2000);
+            tableRefreshInterval = setInterval(refreshTableData, 5000); // Slower refresh for editing
+        }
+        
+        // Stop monitoring
+        function stopMonitoring() {
+            if (adviceRefreshInterval) clearInterval(adviceRefreshInterval);
+            if (tableRefreshInterval) clearInterval(tableRefreshInterval);
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', startMonitoring);
+        window.addEventListener('beforeunload', stopMonitoring);
+        
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopMonitoring();
+            } else {
+                startMonitoring();
+            }
+        });
+    </script>
+</body>
+</html>

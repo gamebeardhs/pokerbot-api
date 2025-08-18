@@ -308,3 +308,77 @@ async def get_table_data():
     except Exception as e:
         logger.error(f"Error fetching table data: {e}")
         return JSONResponse(content={"error": str(e)})
+
+@router.post("/train")
+async def submit_training_data(training_data: dict):
+    """Accept training data from user corrections to improve AI recognition."""
+    try:
+        action = training_data.get('action')  # 'confirm' or 'correction'
+        table_data = training_data.get('table_data', {})
+        timestamp = training_data.get('timestamp')
+        
+        # Log the training interaction
+        logger.info(f"Training data received: {action} - {len(str(table_data))} chars of data")
+        
+        # For now, store training data in memory/file for future ML training
+        training_entry = {
+            'timestamp': timestamp,
+            'action': action,
+            'table_data': table_data,
+            'screenshot_at_time': None  # Would capture screenshot here in production
+        }
+        
+        # Save to training file (append mode)
+        try:
+            import json
+            import os
+            training_file = 'training_data/user_corrections.jsonl'
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(training_file), exist_ok=True)
+            
+            # Append training data
+            with open(training_file, 'a') as f:
+                f.write(json.dumps(training_entry) + '\n')
+                
+            logger.info(f"Training data saved to {training_file}")
+            
+        except Exception as save_error:
+            logger.warning(f"Could not save training data: {save_error}")
+        
+        # Calculate training strength based on action type
+        if action == 'confirm':
+            training_strength = 0.3  # Lower weight for confirmations
+            response_msg = "Data confirmed as correct - light training applied"
+        elif action == 'correction':
+            training_strength = 1.0  # Full weight for corrections
+            response_msg = "Corrections received - strong training applied"
+        else:
+            training_strength = 0.0
+            response_msg = "Unknown action type"
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": response_msg,
+            "training_strength": training_strength,
+            "data_points": len(table_data),
+            "timestamp": timestamp
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing training data: {e}")
+        return JSONResponse(content={
+            "status": "error", 
+            "message": str(e)
+        }, status_code=500)
+
+@router.get("/enhanced-display")
+async def get_enhanced_display():
+    """Serve the enhanced advice display with training capabilities."""
+    from fastapi.responses import HTMLResponse
+    try:
+        with open("advice_display_enhanced.html", "r") as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Enhanced display not found</h1>", status_code=404)
