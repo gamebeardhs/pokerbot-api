@@ -771,17 +771,19 @@
                 // Test with a sample hand
                 const testHand = {
                     table_id: "test-table",
-                    hand_id: "test-hand",
+                    hand_id: "test-hand", 
                     room: "ACR",
                     variant: "holdem",
                     max_seats: 6,
                     hero_seat: 1,
-                    stakes: [1.0, 2.0],
+                    stakes: {"sb": 1.0, "bb": 2.0},
                     street: "FLOP",
                     board: ["As", "Kh", "Qd"],
                     hero_hole: ["Js", "Tc"],
                     pot: 47.0,
+                    round_pot: 47.0,
                     to_call: 15.0,
+                    bet_min: 4.0,
                     seats: [
                         {
                             seat: 1,
