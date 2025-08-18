@@ -796,49 +796,83 @@ async def health_check():
 
 @app.post("/test/gto")
 async def test_gto_solver():
-    """Test endpoint using real GTO solver with sample scenario."""
+    """Test endpoint that runs real GTO analysis on mock ACR table data."""
     try:
-        # Create a simple test response without complex model instantiation
-        test_scenario = {
-            "description": "JTs vs As-Kh-Qd (straight draw on coordinated board)",
-            "hero_cards": ["Js", "Tc"],
-            "board": ["As", "Kh", "Qd"],
-            "position": "Button",
-            "pot_size": 47.0,
-            "bet_to_call": 15.0
-        }
+        # Create realistic ACR table data as if scraped from live table
+        from app.api.models import TableState, Stakes, Seat, Position
         
-        # Return a working test response that demonstrates the concept
+        test_table_state = TableState(
+            table_id="gto-test-table",
+            hand_id="test-hand-001",
+            room="ACR",
+            variant="holdem",
+            max_seats=6,
+            hero_seat=1,
+            stakes=Stakes(sb=1.0, bb=2.0),
+            street="FLOP",
+            board=["As", "Kh", "Qd"],
+            hero_hole=["Js", "Tc"],
+            pot=47.0,
+            round_pot=47.0,
+            to_call=15.0,
+            bet_min=4.0,
+            seats=[
+                Seat(seat=1, is_hero=True, stack=200.0, position=Position.BTN, in_hand=True),
+                Seat(seat=2, is_hero=False, stack=185.0, position=Position.SB, in_hand=True),
+                Seat(seat=3, is_hero=False, stack=220.0, position=Position.BB, in_hand=True)
+            ]
+        )
+        
+        # Run the actual Enhanced GTO Service analysis
         start_time = datetime.now()
-        computation_time = int((datetime.now() - start_time).total_seconds() * 1000) + 150  # Simulate some computation
         
-        return {
-            "success": True,
-            "test_scenario": test_scenario,
-            "gto_decision": {
-                "action": "BET",
-                "size": 32.5,
-                "confidence": 0.72,
-                "reasoning": "Nutted straight draw with position advantage on coordinated board",
-                "detailed_explanation": "Test Analysis: JTs on As-Kh-Qd creates open-ended straight draw (9-high) | Draw-heavy coordinated board requires protection betting | Button position allows for aggressive play with equity | Betting for value and fold equity | Strong draw warrants continued aggression"
-            },
-            "mathematical_analysis": {
-                "equity": 0.68,
-                "ev_fold": -15.0,
-                "ev_call": 8.2,
-                "ev_raise": 24.1,
-                "pot_odds": round(15.0 / (47.0 + 15.0), 3)
-            },
-            "analysis_metadata": {
-                "computation_time_ms": computation_time,
-                "strategy_used": "test_scenario_analysis",
-                "cfr_based": True,
-                "openspiel_powered": True,
-                "timestamp": datetime.now().isoformat(),
-                "authentic_gto": False,
-                "note": "Test endpoint - demonstrates reasoning engine without full CFR computation"
+        if gto_service and gto_service.is_available():
+            # Use real GTO service with CFR solver
+            gto_result = await gto_service.compute_gto_decision(test_table_state, "default_cash6max")
+            
+            computation_time = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            return {
+                "success": True,
+                "test_scenario": {
+                    "description": "JTo on As-Kh-Qd flop (realistic ACR table simulation)",
+                    "hero_cards": test_table_state.hero_hole,
+                    "board": test_table_state.board,
+                    "position": "Button",
+                    "pot_size": test_table_state.pot,
+                    "bet_to_call": test_table_state.to_call
+                },
+                "gto_decision": {
+                    "action": gto_result.decision.action,
+                    "size": getattr(gto_result.decision, 'size', 0),
+                    "confidence": gto_result.decision.confidence,
+                    "reasoning": gto_result.decision.reasoning,
+                    "detailed_explanation": getattr(gto_result.decision, 'detailed_explanation', gto_result.decision.reasoning)
+                },
+                "mathematical_analysis": {
+                    "equity": getattr(gto_result, 'equity', 0.0),
+                    "ev_analysis": getattr(gto_result, 'ev_breakdown', {}),
+                    "board_texture": getattr(gto_result, 'board_texture', {}),
+                    "pot_odds": round(test_table_state.to_call / (test_table_state.pot + (test_table_state.to_call or 0)), 3)
+                },
+                "analysis_metadata": {
+                    "computation_time_ms": computation_time,
+                    "strategy_used": "default_cash6max",
+                    "cfr_based": True,
+                    "openspiel_powered": gto_service.is_cfr_ready(),
+                    "timestamp": datetime.now().isoformat(),
+                    "authentic_gto": True,
+                    "note": "Real CFR analysis using Enhanced GTO Service"
+                }
             }
-        }
+        else:
+            return {
+                "success": False,
+                "error": "GTO service not available",
+                "message": "Enhanced GTO Service is not initialized or OpenSpiel is not available",
+                "openspiel_available": gto_service.is_available() if gto_service else False,
+                "cfr_ready": gto_service.is_cfr_ready() if gto_service else False
+            }
         
     except Exception as e:
         logger.error(f"GTO test failed: {str(e)}")
