@@ -4,6 +4,7 @@ API endpoints for card recognition training system.
 
 import io
 import base64
+import time
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
@@ -23,6 +24,9 @@ neural_trainer = NeuralCardTrainer()
 template_manager = TemplateManager()
 
 router = APIRouter(prefix="/training", tags=["training"])
+
+# Import auto-advisory service to get current table data
+from app.api.auto_advisory_endpoints import auto_advisory
 
 # Pydantic models for requests/responses
 class TrainingSessionRequest(BaseModel):
@@ -219,6 +223,88 @@ async def clear_training_data() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to clear training data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/capture-current-table")
+async def capture_current_table() -> Dict[str, Any]:
+    """Capture current ACR table from auto-advisory system for training."""
+    try:
+        # Get current screenshot from auto-advisory calibrator
+        if not hasattr(auto_advisory, 'calibrator'):
+            raise HTTPException(status_code=500, detail="Auto-advisory calibrator not available")
+        
+        # Capture current screen
+        screenshot = auto_advisory.calibrator.capture_screen()
+        if screenshot is None:
+            raise HTTPException(status_code=500, detail="Failed to capture screenshot")
+        
+        # Convert to PIL Image
+        from PIL import Image
+        import cv2
+        screenshot_rgb = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(screenshot_rgb)
+        
+        # Convert to base64 for frontend
+        import io
+        import base64
+        buffered = io.BytesIO()
+        pil_image.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        # Get current table regions from calibrator
+        regions = {}
+        if hasattr(auto_advisory.calibrator, 'regions') and auto_advisory.calibrator.regions:
+            for region_name, coords in auto_advisory.calibrator.regions.items():
+                if coords and len(coords) >= 4:
+                    regions[region_name] = list(coords[:4])  # x1, y1, x2, y2
+        
+        # Get current table state for context
+        table_state = auto_advisory.calibrator.get_latest_table_state()
+        
+        return {
+            "success": True,
+            "image_base64": f"data:image/png;base64,{img_base64}",
+            "regions": regions,
+            "table_state": table_state,
+            "timestamp": time.time(),
+            "message": "Current ACR table captured successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to capture current table: {e}")
+        raise HTTPException(status_code=500, detail=f"Capture failed: {str(e)}")
+
+@router.get("/current-session-data")
+async def get_current_session_data() -> Dict[str, Any]:
+    """Get current ACR session data for training interface."""
+    try:
+        # Get status from auto-advisory
+        status = auto_advisory.get_status()
+        
+        # Get latest table state
+        table_state = None
+        if hasattr(auto_advisory, 'calibrator'):
+            table_state = auto_advisory.calibrator.get_latest_table_state()
+        
+        return {
+            "auto_advisory_active": status.get("monitoring", False),
+            "screenshot_status": status.get("screenshot_status", "unknown"),
+            "latest_advice": status.get("latest_advice"),
+            "table_state": table_state,
+            "environment": status.get("environment", "unknown"),
+            "can_capture": status.get("screenshot_status") not in ["failed", "error"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get session data: {e}")
+        return {
+            "auto_advisory_active": False,
+            "screenshot_status": "error",
+            "latest_advice": None,
+            "table_state": None,
+            "environment": "unknown",
+            "can_capture": False,
+            "error": str(e)
+        }
 
 @router.post("/add-template")
 async def add_card_template(request: TemplateRequest) -> Dict[str, Any]:

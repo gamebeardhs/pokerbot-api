@@ -186,12 +186,30 @@
         <!-- Interactive Training Tab -->
         <div id="interactive" class="tab-content active">
             <h2>Interactive Training</h2>
-            <p>Upload a poker table screenshot and correct the app's card interpretations.</p>
+            <p>Train the card recognition system using current ACR table or upload a screenshot.</p>
             
-            <div class="upload-area" onclick="document.getElementById('screenshot-input').click()">
-                <input type="file" id="screenshot-input" accept="image/*" style="display: none;" onchange="loadScreenshot(this)">
-                <p>Click to upload a poker table screenshot</p>
-                <p style="color: #666; font-size: 14px;">Supported formats: PNG, JPG, JPEG</p>
+            <!-- Live Capture Section -->
+            <div class="container" style="background-color: #e8f5e9; border-left: 4px solid #4caf50; margin-bottom: 20px;">
+                <h3>🎯 Live ACR Table Capture</h3>
+                <div id="live-status" style="margin-bottom: 15px;">
+                    <span id="advisory-status">Checking auto-advisory status...</span>
+                </div>
+                <button class="btn" id="capture-table-btn" onclick="captureCurrentTable()" style="background-color: #4caf50;">
+                    📸 Capture Current ACR Table
+                </button>
+                <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                    This captures the current ACR table that the auto-advisory system is monitoring.
+                </p>
+            </div>
+            
+            <!-- Manual Upload Section -->
+            <div style="margin-top: 20px;">
+                <h3>📁 Manual Screenshot Upload</h3>
+                <div class="upload-area" onclick="document.getElementById('screenshot-input').click()">
+                    <input type="file" id="screenshot-input" accept="image/*" style="display: none;" onchange="loadScreenshot(this)">
+                    <p>Click to upload a poker table screenshot</p>
+                    <p style="color: #666; font-size: 14px;">Supported formats: PNG, JPG, JPEG</p>
+                </div>
             </div>
 
             <div id="screenshot-preview" class="hidden">
@@ -797,6 +815,113 @@
             // This would allow testing template matching against uploaded images
             showMessage('Template matching test - upload an image and select a card to test', 'success');
         }
+
+        // Live ACR Table Capture Functions
+        async function checkLiveStatus() {
+            try {
+                const response = await fetch('/training/current-session-data');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('advisory-status');
+                const captureButton = document.getElementById('capture-table-btn');
+                
+                if (data.can_capture && data.auto_advisory_active) {
+                    statusElement.innerHTML = '🟢 Auto-advisory active - Ready to capture';
+                    statusElement.style.color = '#4caf50';
+                    captureButton.disabled = false;
+                } else if (data.screenshot_status === 'replit_mode (no ACR client)') {
+                    statusElement.innerHTML = '🟡 Demo mode - Will capture test screenshot';
+                    statusElement.style.color = '#ff9800';
+                    captureButton.disabled = false;
+                } else {
+                    statusElement.innerHTML = '🔴 Auto-advisory not active - Start monitoring first';
+                    statusElement.style.color = '#f44336';
+                    captureButton.disabled = true;
+                }
+                
+                // Update status every 5 seconds
+                setTimeout(checkLiveStatus, 5000);
+            } catch (error) {
+                console.error('Failed to check live status:', error);
+                document.getElementById('advisory-status').innerHTML = '❌ Connection error';
+                document.getElementById('capture-table-btn').disabled = true;
+            }
+        }
+        
+        async function captureCurrentTable() {
+            const button = document.getElementById('capture-table-btn');
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '⏳ Capturing...';
+                button.disabled = true;
+                
+                const response = await fetch('/training/capture-current-table', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Load the captured image into training interface
+                    const previewImage = document.getElementById('preview-image');
+                    previewImage.src = result.image_base64;
+                    currentImage = result.image_base64;
+                    
+                    // Show preview section
+                    document.getElementById('screenshot-preview').classList.remove('hidden');
+                    
+                    // Populate regions if available
+                    if (result.regions && Object.keys(result.regions).length > 0) {
+                        populateRegions(result.regions);
+                    }
+                    
+                    showMessage('✅ Current ACR table captured successfully!', 'success');
+                    
+                    // Auto-start training session
+                    setTimeout(() => {
+                        startTrainingSession();
+                    }, 1000);
+                } else {
+                    showMessage('❌ Failed to capture table: ' + (result.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Capture error:', error);
+                showMessage('❌ Error capturing table: ' + error.message, 'error');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        function populateRegions(regions) {
+            const container = document.getElementById('regions-container');
+            container.innerHTML = '';
+            
+            Object.entries(regions).forEach(([regionName, coords]) => {
+                const regionDiv = document.createElement('div');
+                regionDiv.className = 'region-card';
+                regionDiv.innerHTML = `
+                    <h4>${regionName.replace('_', ' ').toUpperCase()}</h4>
+                    <div class="predicted-cards" id="predicted-${regionName}">
+                        <em>Ready for training session...</em>
+                    </div>
+                    <div class="correction-area">
+                        <input type="text" class="correction-input" id="correction-${regionName}" 
+                               placeholder="Enter correct cards (e.g., As Kh)">
+                        <button class="btn btn-small" onclick="submitCorrection('${regionName}')">Submit</button>
+                    </div>
+                `;
+                container.appendChild(regionDiv);
+            });
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            showTab('interactive');
+            loadStats();
+            checkLiveStatus();
+        });
     </script>
 </body>
 </html>
