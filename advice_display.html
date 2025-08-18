@@ -149,6 +149,97 @@
         .confidence-HIGH { border-left-color: #28a745; }
         .confidence-MEDIUM { border-left-color: #ffc107; }
         .confidence-LOW { border-left-color: #dc3545; }
+        
+        .table-view {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .table-view h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .table-section {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .table-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+        }
+        
+        .card-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            font-family: monospace;
+        }
+        
+        .value-display {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .players-section {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .players-section h3 {
+            margin: 0 0 15px 0;
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+            text-align: center;
+        }
+        
+        .players-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .player-card {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: white;
+        }
+        
+        .player-stack {
+            color: #ffd700;
+            font-size: 0.8em;
+        }
+        
+        .player-action {
+            color: #66ccff;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -169,6 +260,42 @@
             <div class="no-advice">
                 <h2>Waiting for your turn...</h2>
                 <p>Monitoring ACR table for action buttons</p>
+            </div>
+        </div>
+        
+        <div class="table-view">
+            <h2>🃏 Table Information</h2>
+            <div class="table-grid">
+                <div class="table-section">
+                    <h3>Your Cards</h3>
+                    <div id="holeCards" class="card-display">--</div>
+                </div>
+                <div class="table-section">
+                    <h3>Community Cards</h3>
+                    <div id="communityCards" class="card-display">--</div>
+                </div>
+                <div class="table-section">
+                    <h3>Pot Size</h3>
+                    <div id="potSize" class="value-display">$--</div>
+                </div>
+                <div class="table-section">
+                    <h3>Your Stack</h3>
+                    <div id="yourStack" class="value-display">$--</div>
+                </div>
+                <div class="table-section">
+                    <h3>Position</h3>
+                    <div id="position" class="value-display">--</div>
+                </div>
+                <div class="table-section">
+                    <h3>Action Type</h3>
+                    <div id="actionType" class="value-display">--</div>
+                </div>
+            </div>
+            <div class="players-section">
+                <h3>Active Players</h3>
+                <div id="activePlayers" class="players-display">
+                    Loading player information...
+                </div>
             </div>
         </div>
     </div>
@@ -207,6 +334,59 @@
                     `Last check: ${new Date(status.last_check).toLocaleTimeString()}`;
             } catch (error) {
                 updateStatus(false, 'API Unavailable');
+            }
+        }
+        
+        async function fetchTableData() {
+            try {
+                const response = await fetch('/auto/table-data');
+                const data = await response.json();
+                
+                if (data && !data.error) {
+                    updateTableDisplay(data);
+                }
+            } catch (error) {
+                console.error('Error fetching table data:', error);
+            }
+        }
+        
+        function updateTableDisplay(data) {
+            // Update hole cards
+            document.getElementById('holeCards').textContent = 
+                data.hole_cards ? data.hole_cards.join(' ') : '--';
+            
+            // Update community cards
+            document.getElementById('communityCards').textContent = 
+                data.community_cards ? data.community_cards.join(' ') : '--';
+            
+            // Update pot size
+            document.getElementById('potSize').textContent = 
+                data.pot_size ? `$${data.pot_size}` : '$--';
+            
+            // Update your stack
+            document.getElementById('yourStack').textContent = 
+                data.your_stack ? `$${data.your_stack}` : '$--';
+            
+            // Update position
+            document.getElementById('position').textContent = 
+                data.position || '--';
+            
+            // Update action type
+            document.getElementById('actionType').textContent = 
+                data.action_type || '--';
+            
+            // Update active players
+            const playersContainer = document.getElementById('activePlayers');
+            if (data.players && data.players.length > 0) {
+                playersContainer.innerHTML = data.players.map(player => `
+                    <div class="player-card">
+                        <div class="player-name">${player.name || 'Unknown'}</div>
+                        <div class="player-stack">$${player.stack || '0'}</div>
+                        <div class="player-action">${player.last_action || 'Waiting'}</div>
+                    </div>
+                `).join('');
+            } else {
+                playersContainer.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.6);">No table data available</div>';
             }
         }
         
@@ -249,10 +429,12 @@
         // Start monitoring
         fetchStatus();
         fetchAdvice();
+        fetchTableData();
         
         // Poll for updates every 2 seconds
         setInterval(fetchAdvice, 2000);
         setInterval(fetchStatus, 5000);
+        setInterval(fetchTableData, 3000);
     </script>
 </body>
 </html>

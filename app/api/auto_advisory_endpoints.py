@@ -359,3 +359,40 @@ async def get_advice_history():
 async def get_advice_display():
     """Serve the live advice display web interface."""
     return FileResponse("advice_display.html")
+
+@router.get("/table-data")
+async def get_table_data():
+    """Get current table information for display verification."""
+    try:
+        # Get the latest table state from the trigger service
+        table_state = auto_advisory.trigger_service.scraper.get_latest_table_state()
+        
+        if table_state:
+            # Format the data for display
+            formatted_data = {
+                "hole_cards": table_state.get("hole_cards", []),
+                "community_cards": table_state.get("community_cards", []),
+                "pot_size": table_state.get("pot_size", 0),
+                "your_stack": table_state.get("your_stack", 0),
+                "position": table_state.get("position", "Unknown"),
+                "action_type": table_state.get("action_type", "Unknown"),
+                "players": table_state.get("players", []),
+                "betting_round": table_state.get("betting_round", "Unknown")
+            }
+            return JSONResponse(content=formatted_data)
+        else:
+            # Return empty state when no table data available
+            return JSONResponse(content={
+                "hole_cards": [],
+                "community_cards": [],
+                "pot_size": 0,
+                "your_stack": 0,
+                "position": "Unknown",
+                "action_type": "Unknown",
+                "players": [],
+                "betting_round": "Unknown",
+                "message": "No table data available"
+            })
+    except Exception as e:
+        logger.error(f"Error fetching table data: {e}")
+        return JSONResponse(content={"error": str(e)})
