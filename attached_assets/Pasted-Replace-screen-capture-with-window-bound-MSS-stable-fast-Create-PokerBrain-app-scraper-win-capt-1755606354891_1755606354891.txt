@@ -1,0 +1,318 @@
+Replace screen capture with window‑bound MSS (stable & fast)
+
+Create PokerBrain/app/scraper/win_capture.py:
+
+# PokerBrain/app/scraper/win_capture.py
+import mss
+import win32gui, win32con
+
+def _find_window_rect(title_contains="Americas Cardroom"):
+    hwnd_found = []
+
+    def _enum(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd):
+            t = win32gui.GetWindowText(hwnd) or ""
+            if title_contains.lower() in t.lower():
+                hwnd_found.append(hwnd)
+
+    win32gui.EnumWindows(_enum, None)
+    if not hwnd_found:
+        return None
+
+    hwnd = hwnd_found[0]
+    # Client rect (exclude borders)
+    left, top, right, bottom = win32gui.GetClientRect(hwnd)
+    # Convert client origin to screen coords
+    x, y = win32gui.ClientToScreen(hwnd, (0, 0))
+    w, h = right - left, bottom - top
+    return {"hwnd": hwnd, "x": x, "y": y, "w": w, "h": h}
+
+class WindowCapturer:
+    def __init__(self, title_contains="Americas Cardroom"):
+        self.rect = _find_window_rect(title_contains)
+        self.sct = mss.mss() if self.rect else None
+
+    def grab(self, rel_box=None):
+        """
+        rel_box: (rx, ry, rw, rh) in 0..1 relative to the ACR client area.
+        Returns (frame_bgr, (tbl_w, tbl_h)) or (None, None) if not available.
+        """
+        if not self.rect:
+            return None, None
+        x, y, w, h = self.rect["x"], self.rect["y"], self.rect["w"], self.rect["h"]
+
+        if rel_box:
+            rx, ry, rw, rh = rel_box
+            mon = {"left": int(x + rx * w), "top": int(y + ry * h),
+                   "width": int(rw * w), "height": int(rh * h)}
+        else:
+            mon = {"left": x, "top": y, "width": w, "height": h}
+
+        img = self.sct.grab(mon)
+
+        import numpy as np, cv2
+        frame = np.array(img)
+        if frame.shape[2] == 4:
+            frame = frame[:, :, :3]
+        frame = frame[:, :, ::-1]  # BGRA/RGBA → BGR if needed
+        return frame, (w, h)
+
+
+Dependencies: ensure pyproject.toml has:
+
+[project.optional-dependencies]
+scraper = ["mss", "pywin32", "pytesseract", "easyocr", "opencv-python"]
+
+2) Use relative regions (percentages) everywhere
+
+Add REGIONS_ACR in PokerBrain/app/scraper/acr_scraper.py (tune later via calibration):
+
+# Percentages of the ACR client rect (rx, ry, rw, rh)
+REGIONS_ACR = {
+    "pot":        (0.43, 0.38, 0.14, 0.06),
+    "hero_stack": (0.46, 0.82, 0.12, 0.07),
+    "board":      (0.30, 0.30, 0.40, 0.12),
+    "hero_cards": (0.36, 0.72, 0.28, 0.10),
+    "buttons":    (0.35, 0.88, 0.30, 0.10),
+    "hero_timer_arc": (0.48, 0.86, 0.04, 0.04),
+}
+
+
+Integrate the capturer:
+
+# top of acr_scraper.py
+from app.scraper.win_capture import WindowCapturer
+from app.scraper.enhanced_ocr_engine import EnhancedOCREngine  # ensure exists
+
+class ACRScraper(...):
+    def __init__(self, ...):
+        ...
+        self.capturer = WindowCapturer(title_contains="Americas Cardroom")
+        self.ocr = EnhancedOCREngine()
+
+
+Replace any ImageGrab.grab(...) usage with:
+
+frame, (tbl_w, tbl_h) = self.capturer.grab()  # full table
+roi_img, _ = self.capturer.grab(rel_box=REGIONS_ACR["pot"])  # a region
+
+
+Calibration should save/consume percentages, not pixels.
+
+3) Make the calibration tool DPI‑aware and percentage‑based
+
+Edit PokerBrain/app/scraper/interactive_calibration.py:
+
+At the top, add DPI awareness:
+
+# High-DPI awareness (Windows)
+try:
+    import ctypes
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-monitor v2
+except Exception:
+    pass
+
+# Set Tk scaling to actual DPI
+try:
+    import tkinter as tk
+    _r = tk.Tk()
+    dpi = _r.winfo_fpixels('1i')  # pixels/inch
+    _r.tk.call('tk', 'scaling', dpi / 72.0)
+    _r.destroy()
+except Exception:
+    pass
+
+
+When the user draws the table bounding box once, convert all subregions to (rx, ry, rw, rh) relative to that box and save JSON with percentages only.
+
+Add a live preview panel that shows the clipped image for each region to verify what OCR will see.
+
+4) Field‑specific OCR + money normalization
+
+Edit PokerBrain/app/scraper/enhanced_ocr_engine.py:
+
+Force Tesseract path on Windows in __init__:
+
+import os, pytesseract, logging
+logger = logging.getLogger(__name__)
+
+if os.name == "nt":
+    exe = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if os.path.exists(exe):
+        pytesseract.pytesseract.tesseract_cmd = exe
+    tdp = r"C:\Program Files\Tesseract-OCR\tessdata"
+    if os.path.exists(tdp):
+        os.environ["TESSDATA_PREFIX"] = tdp
+
+
+Per-field settings:
+
+PSM = {"money":"7","stack":"7","timer":"7","name":"7","general":"6"}
+WHITELIST = {
+    "money":"0123456789.$,",
+    "stack":"0123456789.$,",
+    "timer":"0123456789:",
+    "name":"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_ ",
+    "general":None,
+}
+
+def _preprocess_basic(img_bgr):
+    import cv2
+    g = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    g = cv2.resize(g, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    g = cv2.bilateralFilter(g, 7, 75, 75)
+    th = cv2.threshold(g, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+    return th
+
+def _ocr_pytesseract(img_bgr, region_type="general"):
+    import pytesseract
+    th = _preprocess_basic(img_bgr)
+    cfg = [f"--psm {PSM.get(region_type,'6')}"]
+    wl = WHITELIST.get(region_type)
+    if wl:
+        cfg.append(f'-c tessedit_char_whitelist="{wl}"')
+    txt = pytesseract.image_to_string(th, config=" ".join(cfg)) or ""
+    return txt.strip()
+
+
+Normalization helpers:
+
+import re
+def normalize_money(txt: str) -> str:
+    s = (txt or "").replace('O','0').replace('o','0').replace('l','1')
+    s = re.sub(r'[^0-9\.\,]', '', s).replace(',,', ',')
+    return s
+
+def normalize_name(txt: str) -> str:
+    return (txt or "").strip()
+
+
+PNG helper (optional):
+
+def extract_text_multimethod_png(self, png_bytes: bytes, region_type="general"):
+    import numpy as np, cv2
+    arr = np.frombuffer(png_bytes, np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    return self.extract_text_multimethod(img, region_type)
+
+
+Use like:
+
+pot_img, _ = self.capturer.grab(rel_box=REGIONS_ACR["pot"])
+pot_raw = self.ocr._ocr_pytesseract(pot_img, "money")
+pot_val = normalize_money(pot_raw)
+
+5) ACR turn detection: buttons OCR → timer arc color (fallback)
+
+Edit PokerBrain/app/core/turn_detection.py (or implement in acr_scraper.py and call it):
+
+import cv2
+import numpy as np
+
+BUTTON_KEYWORDS = ("CALL","CHECK","RAISE","BET","FOLD")
+
+def is_our_turn(frame_bgr, capturer, ocr, regions):
+    # 1) Buttons OCR
+    btn_img, _ = capturer.grab(rel_box=regions["buttons"])
+    btn_txt = (ocr._ocr_pytesseract(btn_img, "name") or "").upper()
+    if any(k in btn_txt for k in BUTTON_KEYWORDS):
+        return True
+
+    # 2) Timer arc color fallback
+    arc_img, _ = capturer.grab(rel_box=regions["hero_timer_arc"])
+    hsv = cv2.cvtColor(arc_img, cv2.COLOR_BGR2HSV)
+    mask = (
+        cv2.inRange(hsv, (90,120,140), (110,255,255)) |  # cyan/blue
+        cv2.inRange(hsv, (70,120,140), (89,255,255))  |  # green
+        cv2.inRange(hsv, (40,120,140), (69,255,255))     # yellow-green
+    )
+    return (mask.mean() > 5.0)  # >5% of pixels active
+
+
+Call this before attempting decision logic.
+
+6) Card detection tweaks (ACR)
+
+Edit PokerBrain/app/scraper/card_recognition.py:
+
+Pre‑mask felt:
+
+hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+felt = cv2.inRange(hsv, (35, 40, 40), (85, 255, 255))  # broad green
+inv = cv2.bitwise_not(felt)
+# find contours on inv; approxPolyDP ~4 corners; filter by aspect ratio range ~ (0.65..0.75)
+
+
+For rank/suit, prefer template matching of small glyphs over OCR (OCR is unreliable at card-corner size). Keep your existing contour pipeline; add 2× upscaling and slight blur before matching.
+
+7) Debounce + pacing + anti‑detection
+
+Limit capture to 2–5 FPS with jitter: time.sleep(random.uniform(0.18, 0.42)).
+
+Debounce OCR: require 2 consecutive identical reads before emitting state changes (pot, hero stack, board).
+
+Keep scraper read‑only. No input events from this process.
+
+8) Debug bundle for every hand (actionable diagnostics)
+
+Create PokerBrain/app/scraper/debug_saver.py:
+
+import os, json, cv2, time
+from datetime import datetime
+
+def new_session_dir(root="captures"):
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = os.path.join(root, ts)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def save_roi(path, name, img_bgr):
+    cv2.imwrite(os.path.join(path, f"{name}.png"), img_bgr)
+
+def save_json(path, name, data):
+    with open(os.path.join(path, f"{name}.json"), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+Use in acr_scraper.py whenever you extract:
+
+from app.scraper.debug_saver import new_session_dir, save_roi, save_json
+dbg_dir = getattr(self, "_dbg", None) or new_session_dir()
+self._dbg = dbg_dir
+
+tbl_img, _ = self.capturer.grab()
+save_roi(dbg_dir, "table_full", tbl_img)
+
+pot_img, _ = self.capturer.grab(rel_box=REGIONS_ACR["pot"])
+save_roi(dbg_dir, "pot", pot_img)
+
+# After OCR:
+save_json(dbg_dir, "ocr", {
+  "pot_raw": pot_raw, "pot_norm": pot_val,
+  "buttons_txt": btn_txt,
+  # add more fields as you wire them
+})
+
+9) Remove tesserocr expectations; ensure pytesseract is configured
+
+Do not install/use tesserocr. This codebase uses pytesseract.
+
+Confirm Tesseract-OCR exists on Windows (C:\Program Files\Tesseract-OCR\). The path override above handles it.
+
+10) Execution order / smoke test
+
+Launch ACR, open a single table, 100% Windows scaling, 100% in‑game scaling.
+
+Run the interactive calibration once → save percentage regions.
+
+Start scraper; expect:
+
+Debug folder created with table_full.png.
+
+OCR for pot and hero_stack to stabilize within 2 frames.
+
+is_our_turn to go True when action buttons appear.
+
+If OCR fails on pot/stack, open captures/.../pot.png & ocr.json and adjust REGIONS or try a different threshold (already handled by _preprocess_basic).
+
+Implement the above exactly. After this, I will review one captured debug bundle (table_full + pot/stack + ocr.json) and provide precise region tweaks.
