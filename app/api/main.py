@@ -136,8 +136,10 @@ async def root():
         "name": "Poker GTO Advisory Service",
         "version": __version__,
         "description": "OpenSpiel CFR-based GTO poker decision service",
-        "quick_start": "Visit /gui for poker analysis or /training-interface for card recognition",
+        "quick_start": "Visit /unified for unified advisor, /manual for manual analysis, or /gui for testing",
         "main_endpoints": {
+            "unified": "/unified - Unified advisory interface",
+            "manual": "/manual - Manual analysis interface",
             "gui": "/gui - Interactive poker analysis interface",  
             "training": "/training-interface - Card recognition trainer",
             "manual_analyze": "/manual/analyze (POST with auth) - Live ACR hand analysis",
@@ -147,6 +149,160 @@ async def root():
         "guide": "See COMPLETE_USER_GUIDE.md for step-by-step instructions"
     }
 
+
+@app.get("/manual", response_class=HTMLResponse)
+async def manual_interface():
+    """Manual poker analysis interface."""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🔧 Manual Poker Analysis</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f0f0f; color: white; margin: 40px; }
+            .form-section { background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .form-group { margin: 15px 0; }
+            label { display: block; margin-bottom: 5px; color: #ffffff; font-weight: bold; }
+            input, select { padding: 8px; background-color: #333; color: white; border: 1px solid #555; margin-right: 10px; }
+            button { background-color: #00BFFF; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background-color: #0099CC; }
+            .results { background-color: #222; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .decision { font-size: 24px; color: #00BFFF; margin-bottom: 10px; }
+            .error { color: #ff6666; }
+            h1 { color: #ffffff; }
+        </style>
+    </head>
+    <body>
+        <h1>🔧 Manual Poker Analysis</h1>
+        
+        <div class="form-section">
+            <h3>Analyze Poker Situation</h3>
+            <form id="analysisForm">
+                <div class="form-group">
+                    <label>Hole Cards:</label>
+                    <input type="text" id="hole1" placeholder="As" maxlength="2" style="width: 50px;">
+                    <input type="text" id="hole2" placeholder="Kd" maxlength="2" style="width: 50px;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Board Cards (leave empty for preflop):</label>
+                    <input type="text" id="board1" placeholder="" maxlength="2" style="width: 50px;">
+                    <input type="text" id="board2" placeholder="" maxlength="2" style="width: 50px;">
+                    <input type="text" id="board3" placeholder="" maxlength="2" style="width: 50px;">
+                    <input type="text" id="board4" placeholder="" maxlength="2" style="width: 50px;">
+                    <input type="text" id="board5" placeholder="" maxlength="2" style="width: 50px;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Position:</label>
+                    <select id="position">
+                        <option value="BTN">Button</option>
+                        <option value="CO">Cutoff</option>
+                        <option value="MP">Middle Position</option>
+                        <option value="UTG">Under The Gun</option>
+                        <option value="SB">Small Blind</option>
+                        <option value="BB">Big Blind</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Pot Size: $</label>
+                    <input type="number" id="potSize" value="15.0" step="0.01" min="0">
+                    <label style="display: inline; margin-left: 20px;">Bet to Call: $</label>
+                    <input type="number" id="betToCall" value="0.0" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Stack Size: $</label>
+                    <input type="number" id="stackSize" value="100.0" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Betting Round:</label>
+                    <select id="bettingRound">
+                        <option value="preflop">Preflop</option>
+                        <option value="flop">Flop</option>
+                        <option value="turn">Turn</option>
+                        <option value="river">River</option>
+                    </select>
+                </div>
+                
+                <button type="button" onclick="analyzeHand()">Analyze Hand</button>
+            </form>
+        </div>
+        
+        <div id="results" class="results" style="display: none;">
+            <h3>GTO Analysis Results</h3>
+            <div id="analysisResults"></div>
+        </div>
+        
+        <script>
+            async function analyzeHand() {
+                const hole_cards = [
+                    document.getElementById('hole1').value,
+                    document.getElementById('hole2').value
+                ].filter(card => card.trim() !== '');
+                
+                const board_cards = [
+                    document.getElementById('board1').value,
+                    document.getElementById('board2').value,
+                    document.getElementById('board3').value,
+                    document.getElementById('board4').value,
+                    document.getElementById('board5').value
+                ].filter(card => card.trim() !== '');
+                
+                const data = {
+                    hole_cards: hole_cards,
+                    board_cards: board_cards,
+                    position: document.getElementById('position').value,
+                    pot_size: parseFloat(document.getElementById('potSize').value),
+                    bet_to_call: parseFloat(document.getElementById('betToCall').value),
+                    stack_size: parseFloat(document.getElementById('stackSize').value),
+                    betting_round: document.getElementById('bettingRound').value,
+                    num_players: 6
+                };
+                
+                if (hole_cards.length !== 2) {
+                    alert('Please enter exactly 2 hole cards');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/database/instant-gto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer test-token-123'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    document.getElementById('results').style.display = 'block';
+                    
+                    if (result.success && result.recommendation) {
+                        const rec = result.recommendation;
+                        document.getElementById('analysisResults').innerHTML = `
+                            <div class="decision">Recommended Action: ${rec.decision.toUpperCase()}</div>
+                            <p><strong>Equity:</strong> ${(rec.equity * 100).toFixed(1)}%</p>
+                            <p><strong>Confidence:</strong> ${(rec.cfr_confidence * 100).toFixed(1)}%</p>
+                            <p><strong>Reasoning:</strong> ${rec.reasoning}</p>
+                            <p><strong>Response Time:</strong> ${result.response_time_ms.toFixed(1)}ms</p>
+                        `;
+                    } else {
+                        document.getElementById('analysisResults').innerHTML = 
+                            '<div class="error">Analysis failed: ' + (result.error || 'Unknown error') + '</div>';
+                    }
+                } catch (error) {
+                    document.getElementById('results').style.display = 'block';
+                    document.getElementById('analysisResults').innerHTML = 
+                        '<div class="error">Request failed: ' + error.message + '</div>';
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """)
 
 @app.get("/unified", response_class=HTMLResponse)
 async def unified_advisor_interface():
@@ -759,9 +915,24 @@ async def gto_testing_gui():
     return html_content
 
 
-@app.get("/training-interface", response_class=HTMLResponse)
+@app.get("/training", response_class=HTMLResponse)
 async def training_interface():
     """Card recognition training interface."""
+    try:
+        static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+        training_file = os.path.join(static_dir, "training.html")
+        with open(training_file, "r") as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Failed to serve training interface: {e}")
+        return HTMLResponse(
+            content="<h1>Training Interface Unavailable</h1><p>Please check server configuration.</p>",
+            status_code=500
+        )
+
+@app.get("/training-interface", response_class=HTMLResponse)
+async def training_interface_legacy():
+    """Card recognition training interface (legacy endpoint)."""
     try:
         static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
         training_file = os.path.join(static_dir, "training.html")

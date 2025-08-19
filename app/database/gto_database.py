@@ -405,32 +405,44 @@ class GTODatabase:
             # Calculate pot odds
             pot_odds = situation.bet_to_call / (situation.pot_size + situation.bet_to_call) if (situation.pot_size + situation.bet_to_call) > 0 else 0
             
-            # Basic GTO decision tree
+            # Enhanced GTO decision tree with better logic
             decision = "fold"
             bet_size = 0
             equity = hand_strength
             confidence = 0.75
             
-            # Simple decision logic
-            if situation.bet_to_call == 0:  # No bet to call
-                if hand_strength > 0.6:
-                    decision = "raise" if situation.position.value >= 6 else "call"
+            # Calculate minimum calling equity needed
+            calling_equity_needed = pot_odds if pot_odds > 0 else 0.25
+            
+            # Enhanced decision logic
+            if situation.bet_to_call == 0:  # No bet to call - can check or bet
+                if hand_strength > 0.7:  # Very strong hands
+                    decision = "raise"
                     bet_size = situation.pot_size * 0.75
-                elif hand_strength > 0.4:
-                    decision = "call"
-                else:
+                elif hand_strength > 0.5:  # Medium strong hands
+                    decision = "call" if situation.position.value >= 6 else "check"
+                    bet_size = situation.pot_size * 0.5 if decision == "call" else 0
+                elif hand_strength > 0.3:  # Marginal hands
                     decision = "check"
-            else:  # Facing a bet
-                if hand_strength > pot_odds + 0.1:  # Good odds with margin
-                    if hand_strength > 0.7:
-                        decision = "raise"
-                        bet_size = situation.pot_size * 0.8
-                    else:
-                        decision = "call"
-                elif hand_strength > pot_odds - 0.05:  # Marginal
-                    decision = "call" if situation.position.value >= 5 else "fold"
+                else:  # Weak hands
+                    decision = "check"
+            else:  # Facing a bet - must call, raise, or fold
+                # Strong hands: raise for value
+                if hand_strength > 0.75:
+                    decision = "raise"
+                    bet_size = situation.bet_to_call + situation.pot_size * 0.8
+                # Good hands with proper odds: call
+                elif hand_strength > calling_equity_needed + 0.05:
+                    decision = "call"
+                    bet_size = situation.bet_to_call
+                # Marginal hands: position-dependent
+                elif hand_strength > calling_equity_needed - 0.05 and situation.position.value >= 6:
+                    decision = "call"
+                    bet_size = situation.bet_to_call
+                # Weak hands or poor odds: fold
                 else:
                     decision = "fold"
+                    bet_size = 0
             
             # Adjust for position
             if situation.position.value >= 7:  # Button/SB - more aggressive
@@ -462,7 +474,7 @@ class GTODatabase:
             return None
     
     def _calculate_hand_strength(self, hole_cards: List[str], board_cards: List[str]) -> float:
-        """Calculate normalized hand strength (0-1)."""
+        """Calculate accurate normalized hand strength (0-1) with proper equity ranges."""
         try:
             if len(hole_cards) != 2:
                 return 0.3
@@ -473,42 +485,85 @@ class GTODatabase:
             rank2 = self._card_rank_value(card2[0])
             suited = card1[1] == card2[1]
             
-            # Basic preflop strength
-            pair_bonus = 0.3 if rank1 == rank2 else 0
-            high_card_bonus = max(rank1, rank2) / 14.0 * 0.4
-            suited_bonus = 0.1 if suited else 0
-            connector_bonus = 0.05 if abs(rank1 - rank2) <= 2 else 0
-            
-            preflop_strength = min(pair_bonus + high_card_bonus + suited_bonus + connector_bonus, 0.9)
+            # Preflop hand strength with realistic ranges
+            if rank1 == rank2:  # Pocket pairs
+                if rank1 >= 13:  # AA, KK
+                    preflop_strength = 0.85
+                elif rank1 >= 11:  # QQ, JJ
+                    preflop_strength = 0.75
+                elif rank1 >= 8:   # TT, 99, 88
+                    preflop_strength = 0.65
+                elif rank1 >= 5:   # 77, 66, 55
+                    preflop_strength = 0.55
+                else:  # 44, 33, 22
+                    preflop_strength = 0.45
+            else:  # Unpaired hands
+                high_rank = max(rank1, rank2)
+                low_rank = min(rank1, rank2)
+                
+                # Premium suited/unsuited hands
+                if high_rank >= 13 and low_rank >= 11:  # AK, AQ, KQ
+                    preflop_strength = 0.70 if suited else 0.65
+                elif high_rank >= 13 and low_rank >= 9:  # AJ, AT, KJ, KT
+                    preflop_strength = 0.60 if suited else 0.50
+                elif high_rank >= 11 and low_rank >= 9:  # QJ, QT, JT
+                    preflop_strength = 0.55 if suited else 0.45
+                elif suited and abs(rank1 - rank2) <= 2:  # Suited connectors
+                    preflop_strength = min(0.50, high_rank / 14.0 + 0.15)
+                elif high_rank >= 13:  # Ace-rag
+                    preflop_strength = 0.35 if suited else 0.25
+                elif high_rank >= 10:  # Broadway cards
+                    preflop_strength = 0.40 if suited else 0.30
+                else:  # Weak hands like 72o
+                    preflop_strength = 0.15 if suited else 0.05
             
             # If no board, return preflop strength
             if not board_cards:
                 return preflop_strength
             
-            # Simple postflop evaluation
-            board_ranks = [self._card_rank_value(card[0]) for card in board_cards if len(card) >= 2]
+            # Postflop evaluation with proper hand rankings
             hole_ranks = [rank1, rank2]
-            
-            # Check for pairs
+            board_ranks = [self._card_rank_value(card[0]) for card in board_cards if len(card) >= 2]
             all_ranks = hole_ranks + board_ranks
+            
+            # Count ranks for pairs/trips/quads
             rank_counts = {}
             for rank in all_ranks:
                 rank_counts[rank] = rank_counts.get(rank, 0) + 1
             
-            # Strength modifiers
-            pair_strength = 0
+            # Determine hand strength based on made hands
+            hand_strength = preflop_strength
+            
+            # Check for made hands (using hole cards)
             for rank, count in rank_counts.items():
-                if count >= 2 and rank in hole_ranks:
-                    pair_strength = 0.6 + (count - 2) * 0.2  # Pair/trips/quads
-                    break
+                if rank in hole_ranks:
+                    if count == 4:  # Quads
+                        hand_strength = 0.98
+                        break
+                    elif count == 3:  # Trips/Set
+                        hand_strength = 0.85 if len([r for r in hole_ranks if r == rank]) == 2 else 0.75
+                        break
+                    elif count == 2:  # Pair
+                        # Pair strength depends on rank and kickers
+                        pair_strength = 0.45 + (rank / 14.0) * 0.3
+                        if len([r for r in hole_ranks if r == rank]) == 2:  # Pocket pair
+                            pair_strength += 0.1
+                        hand_strength = max(hand_strength, pair_strength)
             
-            # High card strength
-            high_card_strength = max(hole_ranks) / 14.0 * 0.3
+            # Check for two pair
+            hole_pairs = sum(1 for rank in hole_ranks if rank_counts.get(rank, 0) >= 2)
+            if hole_pairs == 2:
+                hand_strength = max(hand_strength, 0.70)
             
-            return min(max(preflop_strength, pair_strength) + high_card_strength, 1.0)
+            # Adjust for high cards if no pairs
+            if hand_strength < 0.4:
+                high_card_strength = max(hole_ranks) / 14.0 * 0.25
+                hand_strength = max(hand_strength, high_card_strength + 0.1)
+            
+            return min(hand_strength, 1.0)
             
         except Exception:
-            return 0.4  # Default moderate strength
+            return 0.35  # Default moderate strength
     
     def _card_rank_value(self, rank: str) -> int:
         """Convert card rank to numerical value."""

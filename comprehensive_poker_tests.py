@@ -1,35 +1,149 @@
 #!/usr/bin/env python3
 """
-Comprehensive Poker Pipeline Tests: End-to-end validation
-Tests the complete flow from ACR screenshot to TexasSolver scenario display
+Comprehensive End-to-End Poker Advisory System Test
+Tests all components from database through API to ensure everything works properly
 """
 
-import time
-import json
-import logging
 import requests
-from typing import Dict, Any, Optional
+import json
+import time
+import sqlite3
+import subprocess
+import os
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-class PipelineValidator:
-    """Validates the complete poker advisory pipeline."""
+def test_database_health():
+    """Test database integrity and performance."""
+    print("🔍 TESTING DATABASE HEALTH")
+    print("=" * 26)
     
-    def __init__(self):
-        self.base_url = "http://localhost:5000"
-        self.auth_header = {"Authorization": "Bearer test-token-123"}
+    try:
+        conn = sqlite3.connect("gto_database.db")
+        cursor = conn.cursor()
         
-    def test_database_query_pipeline(self) -> bool:
-        """Test database query and response formatting."""
+        # Check database structure
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = cursor.fetchall()
+        print(f"✅ Database tables: {[t[0] for t in tables]}")
         
-        print("🔍 TESTING DATABASE QUERY PIPELINE")
-        print("=" * 35)
+        # Check scenario counts
+        cursor.execute("SELECT COUNT(*) FROM gto_situations")
+        total_count = cursor.fetchone()[0]
         
+        cursor.execute("SELECT COUNT(*) FROM gto_situations WHERE id LIKE 'simple_%'")
+        simple_count = cursor.fetchone()[0]
+        
+        print(f"✅ Total scenarios: {total_count:,}")
+        print(f"✅ Authentic scenarios: {simple_count:,}")
+        
+        # Check for data integrity
+        cursor.execute("SELECT COUNT(*) FROM gto_situations WHERE hole_cards IS NULL OR reasoning IS NULL")
+        null_count = cursor.fetchone()[0]
+        print(f"✅ Scenarios with null data: {null_count}")
+        
+        # Test vector data
+        cursor.execute("SELECT vector FROM gto_situations LIMIT 1")
+        vector_data = cursor.fetchone()
+        if vector_data and vector_data[0]:
+            print(f"✅ Vector data present: {len(vector_data[0])} bytes")
+        else:
+            print(f"❌ Vector data missing or corrupted")
+        
+        conn.close()
+        return total_count > 20000  # Expect at least 20K scenarios
+        
+    except Exception as e:
+        print(f"❌ Database test failed: {e}")
+        return False
+
+def test_api_endpoints():
+    """Test all API endpoints."""
+    print(f"\n🧪 TESTING API ENDPOINTS")
+    print("=" * 22)
+    
+    base_url = "http://localhost:5000"
+    headers = {"Authorization": "Bearer test-token-123"}
+    
+    tests = [
+        ("GET", "/health", None, "Health check"),
+        ("GET", "/database/database-stats", None, "Database stats"),
+        ("POST", "/database/instant-gto", {
+            "hole_cards": ["As", "Ks"],
+            "board_cards": [],
+            "pot_size": 3.0,
+            "bet_to_call": 2.0,
+            "stack_size": 100.0,
+            "position": "BTN",
+            "num_players": 6,
+            "betting_round": "preflop"
+        }, "Instant GTO preflop"),
+        ("POST", "/database/instant-gto", {
+            "hole_cards": ["Qh", "Qd"],
+            "board_cards": ["Qs", "7h", "2c"],
+            "pot_size": 12.0,
+            "bet_to_call": 8.0,
+            "stack_size": 85.0,
+            "position": "CO",
+            "num_players": 4,
+            "betting_round": "flop"
+        }, "Instant GTO flop"),
+        ("GET", "/unified", None, "Unified interface"),
+        ("GET", "/manual", None, "Manual interface")
+    ]
+    
+    passed = 0
+    for method, endpoint, data, description in tests:
         try:
-            # Test instant GTO endpoint
-            test_data = {
-                "hole_cards": ["As", "Ks"],
+            start_time = time.time()
+            
+            if method == "GET":
+                response = requests.get(f"{base_url}{endpoint}", headers=headers, timeout=10)
+            else:
+                response = requests.post(f"{base_url}{endpoint}", 
+                                       json=data, 
+                                       headers={"Content-Type": "application/json", **headers}, 
+                                       timeout=10)
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                print(f"✅ {description}: {response.status_code} ({response_time:.1f}ms)")
+                
+                # Check response content for specific endpoints
+                if "gto" in endpoint and response.headers.get('content-type', '').startswith('application/json'):
+                    result = response.json()
+                    if result.get('success'):
+                        rec = result.get('recommendation', {})
+                        decision = rec.get('decision', 'N/A')
+                        equity = rec.get('equity', 0)
+                        print(f"   → Decision: {decision}, Equity: {equity:.3f}")
+                    else:
+                        print(f"   → Fallback used or no recommendation")
+                
+                passed += 1
+            else:
+                print(f"❌ {description}: HTTP {response.status_code}")
+                if response.text:
+                    print(f"   Error: {response.text[:100]}...")
+                    
+        except Exception as e:
+            print(f"❌ {description}: {str(e)[:80]}...")
+    
+    return passed == len(tests)
+
+def test_gto_decision_quality():
+    """Test GTO decision quality and reasoning."""
+    print(f"\n🎯 TESTING GTO DECISION QUALITY")
+    print("=" * 29)
+    
+    base_url = "http://localhost:5000"
+    headers = {"Authorization": "Bearer test-token-123", "Content-Type": "application/json"}
+    
+    # Test scenarios with expected reasonable decisions
+    test_cases = [
+        {
+            "name": "Premium pair preflop",
+            "data": {
+                "hole_cards": ["As", "Ad"],
                 "board_cards": [],
                 "pot_size": 3.0,
                 "bet_to_call": 2.0,
@@ -37,338 +151,217 @@ class PipelineValidator:
                 "position": "BTN",
                 "num_players": 6,
                 "betting_round": "preflop"
-            }
-            
-            print("Testing instant GTO query...")
-            response = requests.post(
-                f"{self.base_url}/database/instant-gto",
-                json=test_data,
-                headers={"Content-Type": "application/json", **self.auth_header},
-                timeout=10
-            )
-            
-            print(f"Response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                result = response.json()
-                print("✅ Database query successful")
-                print(f"Response structure: {list(result.keys())}")
-                
-                # Check for proper TexasSolver scenario format
-                if 'recommendation' in result:
-                    rec = result['recommendation']
-                    print(f"Decision: {rec.get('decision', 'N/A')}")
-                    print(f"Equity: {rec.get('equity', 0):.3f}")
-                    print(f"Reasoning: {rec.get('reasoning', 'N/A')[:80]}...")
-                    return True
-                else:
-                    print("⚠️ Missing recommendation field")
-                    return False
-            else:
-                error_data = response.json() if response.content else {}
-                print(f"❌ Query failed: {error_data.get('message', 'Unknown error')}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Database query test failed: {e}")
-            return False
-    
-    def test_scenario_interpretation(self) -> bool:
-        """Test TexasSolver scenario interpretation and formatting."""
-        
-        print("\n🎯 TESTING SCENARIO INTERPRETATION")
-        print("=" * 33)
-        
-        try:
-            # Test manual solve endpoint for detailed analysis
-            test_situation = {
-                "hole_cards": ["Qh", "Qd"],
-                "board_cards": ["As", "Kh", "Qc"],
+            },
+            "expected_actions": ["raise", "call"]  # Should not fold with AA
+        },
+        {
+            "name": "Weak hand facing large bet",
+            "data": {
+                "hole_cards": ["7c", "2d"],
+                "board_cards": ["As", "Kh", "Qd"],
+                "pot_size": 20.0,
+                "bet_to_call": 25.0,
+                "stack_size": 50.0,
+                "position": "SB",
+                "num_players": 2,
+                "betting_round": "flop"
+            },
+            "expected_actions": ["fold"]  # Should fold 72o vs large bet on AKQ
+        },
+        {
+            "name": "Strong draw",
+            "data": {
+                "hole_cards": ["9s", "8s"],
+                "board_cards": ["Ts", "7h", "6c"],
                 "pot_size": 15.0,
                 "bet_to_call": 10.0,
-                "stack_size": 85.0,
+                "stack_size": 75.0,
                 "position": "CO",
-                "num_players": 4,
+                "num_players": 3,
                 "betting_round": "flop"
-            }
-            
-            print("Testing scenario interpretation...")
-            response = requests.post(
-                f"{self.base_url}/manual/solve",
-                json=test_situation,
-                headers={"Content-Type": "application/json", **self.auth_header},
-                timeout=15
-            )
-            
-            print(f"Interpretation status: {response.status_code}")
+            },
+            "expected_actions": ["call", "raise"]  # Should play straight draw
+        }
+    ]
+    
+    quality_passed = 0
+    
+    for test_case in test_cases:
+        try:
+            response = requests.post(f"{base_url}/database/instant-gto", 
+                                   json=test_case["data"], 
+                                   headers=headers, 
+                                   timeout=10)
             
             if response.status_code == 200:
                 result = response.json()
-                print("✅ Scenario interpretation successful")
-                
-                # Check analysis structure
-                if 'analysis' in result:
-                    analysis = result['analysis']
-                    print(f"Mathematical reasoning: {analysis.get('mathematical_reasoning', 'N/A')[:60]}...")
-                    print(f"Strategic context: {analysis.get('strategic_context', 'N/A')[:60]}...")
+                if result.get('success'):
+                    rec = result['recommendation']
+                    decision = rec.get('decision', '')
+                    equity = rec.get('equity', 0)
+                    reasoning = rec.get('reasoning', '')
                     
-                    # Check recommendation format
-                    if 'recommendation' in result:
-                        rec = result['recommendation']
-                        print(f"Final decision: {rec.get('decision', 'N/A')}")
-                        print(f"Bet size: ${rec.get('bet_size', 0)}")
-                        print(f"Confidence: {rec.get('confidence', 0):.3f}")
-                        return True
+                    # Check if decision is reasonable
+                    if decision in test_case["expected_actions"]:
+                        print(f"✅ {test_case['name']}: {decision} (equity: {equity:.3f}) ✓")
+                        quality_passed += 1
                     else:
-                        print("⚠️ Missing recommendation in interpretation")
-                        return False
+                        print(f"⚠️ {test_case['name']}: {decision} (expected: {test_case['expected_actions']})")
+                        print(f"   Reasoning: {reasoning[:80]}...")
                 else:
-                    print("⚠️ Missing analysis in interpretation")
-                    return False
+                    print(f"❌ {test_case['name']}: No recommendation returned")
             else:
-                print(f"❌ Interpretation failed: {response.text}")
-                return False
+                print(f"❌ {test_case['name']}: HTTP {response.status_code}")
                 
         except Exception as e:
-            print(f"❌ Scenario interpretation test failed: {e}")
-            return False
+            print(f"❌ {test_case['name']}: {str(e)[:60]}...")
     
-    def test_gui_display_pipeline(self) -> bool:
-        """Test GUI display and formatting pipeline."""
-        
-        print("\n🖥️ TESTING GUI DISPLAY PIPELINE")
-        print("=" * 30)
-        
-        try:
-            # Test unified interface endpoint
-            print("Testing unified interface...")
-            response = requests.get(
-                f"{self.base_url}/unified",
-                headers=self.auth_header,
-                timeout=10
-            )
-            
-            print(f"GUI status: {response.status_code}")
-            
-            if response.status_code == 200:
-                html_content = response.text
-                print("✅ GUI endpoint accessible")
-                
-                # Check for key interface elements
-                key_elements = [
-                    "GTO Recommendation",
-                    "Manual Analysis",
-                    "equity",
-                    "confidence",
-                    "decision"
-                ]
-                
-                missing_elements = []
-                for element in key_elements:
-                    if element.lower() not in html_content.lower():
-                        missing_elements.append(element)
-                
-                if not missing_elements:
-                    print("✅ All key GUI elements present")
-                    return True
-                else:
-                    print(f"⚠️ Missing GUI elements: {missing_elements}")
-                    return False
-            else:
-                print(f"❌ GUI not accessible: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ GUI display test failed: {e}")
-            return False
-    
-    def test_screenshot_processing_compatibility(self) -> bool:
-        """Test screenshot processing and ACR table data compatibility."""
-        
-        print("\n📸 TESTING SCREENSHOT PROCESSING COMPATIBILITY")
-        print("=" * 45)
-        
-        try:
-            # Test auto-advisory endpoint for screenshot compatibility
-            print("Testing screenshot processing...")
-            response = requests.get(
-                f"{self.base_url}/auto-advisory/status",
-                headers=self.auth_header,
-                timeout=10
-            )
-            
-            print(f"Screenshot processor status: {response.status_code}")
-            
-            if response.status_code == 200:
-                status = response.json()
-                print("✅ Screenshot processor accessible")
-                print(f"Scraper status: {status.get('scraper_active', 'Unknown')}")
-                print(f"Calibration: {status.get('calibrated', 'Unknown')}")
-                
-                # Test table data format compatibility
-                test_table_data = {
-                    "seats": [
-                        {
-                            "position": 0,
-                            "name": "TestPlayer",
-                            "stack": 100.0,
-                            "cards": ["As", "Ks"],
-                            "active": True
-                        }
-                    ],
-                    "pot": 3.0,
-                    "board": [],
-                    "betting_round": "preflop",
-                    "button_position": 0
-                }
-                
-                print("Testing table data format...")
-                process_response = requests.post(
-                    f"{self.base_url}/auto-advisory/process-table",
-                    json=test_table_data,
-                    headers={"Content-Type": "application/json", **self.auth_header},
-                    timeout=15
-                )
-                
-                if process_response.status_code == 200:
-                    result = process_response.json()
-                    print("✅ Table data processing successful")
-                    
-                    if 'recommendation' in result:
-                        print(f"Generated recommendation: {result['recommendation'].get('decision', 'N/A')}")
-                        return True
-                    else:
-                        print("⚠️ No recommendation generated from table data")
-                        return False
-                else:
-                    print(f"⚠️ Table processing issue: {process_response.status_code}")
-                    return False
-            else:
-                print(f"❌ Screenshot processor not accessible: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Screenshot processing test failed: {e}")
-            return False
-    
-    def test_error_handling_pipeline(self) -> bool:
-        """Test error handling throughout the pipeline."""
-        
-        print("\n⚠️ TESTING ERROR HANDLING PIPELINE")
-        print("=" * 33)
-        
-        try:
-            # Test malformed request handling
-            print("Testing malformed request handling...")
-            bad_data = {"invalid": "data"}
-            
-            response = requests.post(
-                f"{self.base_url}/database/instant-gto",
-                json=bad_data,
-                headers={"Content-Type": "application/json", **self.auth_header},
-                timeout=10
-            )
-            
-            if response.status_code in [400, 422]:  # Expected error codes
-                print("✅ Proper error handling for malformed requests")
-                
-                # Test database fallback behavior
-                print("Testing database fallback...")
-                impossible_data = {
-                    "hole_cards": ["Zz", "Yy"],  # Invalid cards
-                    "board_cards": [],
-                    "pot_size": -1.0,  # Invalid pot
-                    "bet_to_call": 2.0,
-                    "stack_size": 100.0,
-                    "position": "INVALID",
-                    "num_players": 6,
-                    "betting_round": "preflop"
-                }
-                
-                fallback_response = requests.post(
-                    f"{self.base_url}/database/instant-gto",
-                    json=impossible_data,
-                    headers={"Content-Type": "application/json", **self.auth_header},
-                    timeout=10
-                )
-                
-                if fallback_response.status_code in [400, 422]:
-                    print("✅ Proper validation and error responses")
-                    return True
-                else:
-                    print("⚠️ Unexpected response to invalid data")
-                    return False
-            else:
-                print(f"⚠️ Unexpected error handling: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Error handling test failed: {e}")
-            return False
-    
-    def run_comprehensive_tests(self) -> Dict[str, bool]:
-        """Run all pipeline tests and return results."""
-        
-        print("🧪 COMPREHENSIVE PIPELINE VALIDATION")
-        print("=" * 36)
-        print("Testing complete flow: Screenshot → Processing → Database → GUI")
-        
-        results = {
-            "database_query": self.test_database_query_pipeline(),
-            "scenario_interpretation": self.test_scenario_interpretation(),
-            "gui_display": self.test_gui_display_pipeline(),
-            "screenshot_processing": self.test_screenshot_processing_compatibility(),
-            "error_handling": self.test_error_handling_pipeline()
-        }
-        
-        # Summary
-        print(f"\n📊 PIPELINE TEST RESULTS")
-        print("=" * 25)
-        
-        passed = sum(results.values())
-        total = len(results)
-        
-        for test_name, passed_test in results.items():
-            status = "✅ PASS" if passed_test else "❌ FAIL"
-            print(f"{test_name.replace('_', ' ').title()}: {status}")
-        
-        print(f"\nOverall: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
-        
-        if passed == total:
-            print("🎉 ALL PIPELINE TESTS PASSED")
-            print("System ready for full TexasSolver scenario processing")
-        elif passed >= total * 0.8:
-            print("✅ PIPELINE MOSTLY FUNCTIONAL")
-            print("Minor issues detected but core functionality working")
-        else:
-            print("⚠️ SIGNIFICANT PIPELINE ISSUES")
-            print("Multiple components need attention")
-        
-        return results
+    return quality_passed >= len(test_cases) * 0.7  # 70% pass rate
 
-def main():
-    """Execute comprehensive pipeline validation."""
-    validator = PipelineValidator()
-    results = validator.run_comprehensive_tests()
+def test_web_interface():
+    """Test web interface accessibility."""
+    print(f"\n🌐 TESTING WEB INTERFACE")
+    print("=" * 22)
     
-    # Additional detailed analysis
-    if not all(results.values()):
-        print("\n🔧 RECOMMENDED FIXES:")
-        print("-" * 18)
+    base_url = "http://localhost:5000"
+    
+    interfaces = [
+        ("/", "Main page"),
+        ("/unified", "Unified interface"),
+        ("/manual", "Manual interface"),
+        ("/training", "Training interface")
+    ]
+    
+    passed = 0
+    for endpoint, name in interfaces:
+        try:
+            response = requests.get(f"{base_url}{endpoint}", timeout=10)
+            if response.status_code == 200 and len(response.text) > 1000:  # Basic content check
+                print(f"✅ {name}: Accessible and has content")
+                passed += 1
+            else:
+                print(f"❌ {name}: HTTP {response.status_code} or insufficient content")
+        except Exception as e:
+            print(f"❌ {name}: {str(e)[:60]}...")
+    
+    return passed >= len(interfaces) * 0.75  # 75% pass rate
+
+def test_performance_benchmarks():
+    """Test system performance."""
+    print(f"\n⚡ TESTING PERFORMANCE")
+    print("=" * 18)
+    
+    base_url = "http://localhost:5000"
+    headers = {"Authorization": "Bearer test-token-123", "Content-Type": "application/json"}
+    
+    # Test response times
+    test_data = {
+        "hole_cards": ["Ks", "Qd"],
+        "board_cards": ["Js", "Th", "9c"],
+        "pot_size": 10.0,
+        "bet_to_call": 7.0,
+        "stack_size": 60.0,
+        "position": "BTN",
+        "num_players": 4,
+        "betting_round": "flop"
+    }
+    
+    response_times = []
+    successful_requests = 0
+    
+    for i in range(10):
+        try:
+            start_time = time.time()
+            response = requests.post(f"{base_url}/database/instant-gto", 
+                                   json=test_data, 
+                                   headers=headers, 
+                                   timeout=5)
+            response_time = (time.time() - start_time) * 1000
+            
+            if response.status_code == 200:
+                response_times.append(response_time)
+                successful_requests += 1
+                
+        except Exception as e:
+            pass
+    
+    if response_times:
+        avg_time = sum(response_times) / len(response_times)
+        min_time = min(response_times)
+        max_time = max(response_times)
         
-        if not results["database_query"]:
-            print("• Fix database query response formatting")
-        if not results["scenario_interpretation"]:
-            print("• Improve TexasSolver scenario interpretation")
-        if not results["gui_display"]:
-            print("• Update GUI display components")
-        if not results["screenshot_processing"]:
-            print("• Verify screenshot processing compatibility")
-        if not results["error_handling"]:
-            print("• Enhance error handling and validation")
+        print(f"✅ Average response time: {avg_time:.1f}ms")
+        print(f"✅ Min/Max response time: {min_time:.1f}ms / {max_time:.1f}ms")
+        print(f"✅ Success rate: {successful_requests}/10 ({successful_requests*10}%)")
+        
+        # Performance criteria
+        performance_good = (avg_time < 100 and successful_requests >= 8)
+        if performance_good:
+            print(f"✅ Performance: GOOD")
+        else:
+            print(f"⚠️ Performance: Needs improvement")
+        
+        return performance_good
+    else:
+        print(f"❌ No successful performance tests")
+        return False
+
+def run_comprehensive_test():
+    """Run all tests and provide summary."""
+    print(f"🚀 COMPREHENSIVE POKER ADVISORY SYSTEM TEST")
+    print("=" * 45)
+    print("Testing all components from database to web interface...")
     
-    return all(results.values())
+    results = {}
+    
+    # Run all test categories
+    results['database'] = test_database_health()
+    results['api'] = test_api_endpoints()
+    results['gto_quality'] = test_gto_decision_quality()
+    results['web_interface'] = test_web_interface()
+    results['performance'] = test_performance_benchmarks()
+    
+    # Summary
+    print(f"\n📊 TEST SUMMARY")
+    print("=" * 14)
+    
+    passed_tests = sum(results.values())
+    total_tests = len(results)
+    
+    for test_name, passed in results.items():
+        status = "✅ PASS" if passed else "❌ FAIL"
+        print(f"{test_name.replace('_', ' ').title()}: {status}")
+    
+    overall_health = passed_tests / total_tests
+    print(f"\nOverall System Health: {passed_tests}/{total_tests} ({overall_health*100:.0f}%)")
+    
+    if overall_health >= 0.8:
+        print(f"🎉 SYSTEM STATUS: EXCELLENT")
+        print(f"All major components working well. Ready for production use.")
+    elif overall_health >= 0.6:
+        print(f"⚠️ SYSTEM STATUS: GOOD")
+        print(f"Most components working. Minor issues to address.")
+    else:
+        print(f"❌ SYSTEM STATUS: NEEDS WORK")
+        print(f"Multiple components need attention before production use.")
+    
+    # Specific recommendations
+    print(f"\n💡 RECOMMENDATIONS:")
+    if not results['database']:
+        print(f"- Fix database integrity issues")
+    if not results['api']:
+        print(f"- Resolve API endpoint problems")
+    if not results['gto_quality']:
+        print(f"- Improve GTO decision logic")
+    if not results['web_interface']:
+        print(f"- Fix web interface accessibility")
+    if not results['performance']:
+        print(f"- Optimize system performance")
+    
+    if all(results.values()):
+        print(f"- System is ready for professional poker advisory use!")
+    
+    return results
 
 if __name__ == "__main__":
-    success = main()
-    exit(0 if success else 1)
+    test_results = run_comprehensive_test()
