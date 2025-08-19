@@ -1,12 +1,79 @@
 
-AUTHENTIC TEXASSOLVER INTEGRATION REQUIREMENTS:
-============================================
+# POKER ADVISORY SYSTEM - PRODUCTION REQUIREMENTS
+# Updated: August 19, 2025
 
-1. REAL TEXASSOLVER EXECUTABLE: Must connect to actual TexasSolver software
-2. NO SYNTHETIC DATA: Zero fallback scenarios or fake entries  
-3. AUTHENTIC CFR ANALYSIS: Real counterfactual regret minimization calculations
-4. VERIFIABLE SOLUTIONS: Each entry must be traceable to actual solver computation
-5. TRANSPARENT SOURCING: Clear indication when data comes from real vs synthetic sources
+# ==============================================
+# CORE DEPENDENCIES (Required for basic functionality)
+# ==============================================
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+websockets>=11.0.0
+requests>=2.30.0
 
-CURRENT STATUS: No database - awaiting authentic integration only
+# ==============================================
+# COMPUTER VISION & OCR (Required for table reading)
+# ==============================================
+opencv-python>=4.8.0
+pillow>=10.0.0
+numpy>=1.24.0
+pytesseract>=0.3.10
+mss>=9.0.0
+pyautogui>=0.9.54
+imagehash>=4.3.1
+
+# ==============================================
+# ENHANCED OCR (Optional - improves accuracy to 95%+)
+# ==============================================
+# easyocr>=1.7.0  # Uncomment for Windows deployment with GPU support
+# torch>=2.0.0    # Required by EasyOCR
+# torchvision>=0.15.0  # Required by EasyOCR
+
+# ==============================================
+# MACHINE LEARNING (Optional - for advanced features)
+# ==============================================
+scikit-learn>=1.3.0
+pandas>=2.0.0
+joblib>=1.3.0
+hnswlib>=0.7.0
+
+# ==============================================
+# GAME THEORY (Optional - for authentic GTO analysis)
+# ==============================================
+# open-spiel>=1.3.0  # Uncomment if GTO analysis needed
+# tensorflow>=2.13.0  # Required by open-spiel
+
+# ==============================================
+# WEB SCRAPING (Optional - for data collection)
+# ==============================================
+trafilatura>=1.6.0
+playwright>=1.40.0
+
+# ==============================================
+# TESTING & DEVELOPMENT
+# ==============================================
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+nest-asyncio>=1.5.6
+
+# ==============================================
+# INSTALLATION NOTES
+# ==============================================
+# 1. Run dependency_checker.py first to check what's already installed
+# 2. Install core dependencies first: pip install -r requirements.txt
+# 3. For Windows deployment with EasyOCR: uncomment easyocr lines above
+# 4. Tesseract OCR must be installed separately on system
+# 5. For GPU acceleration: ensure CUDA drivers are installed
+
+# ==============================================
+# AUTHENTIC INTEGRATION REQUIREMENTS
+# ==============================================
+# 1. REAL TEXASSOLVER EXECUTABLE: Must connect to actual TexasSolver software
+# 2. NO SYNTHETIC DATA: Zero fallback scenarios or fake entries  
+# 3. AUTHENTIC CFR ANALYSIS: Real counterfactual regret minimization calculations
+# 4. VERIFIABLE SOLUTIONS: Each entry must be traceable to actual solver computation
+# 5. TRANSPARENT SOURCING: Clear indication when data comes from real vs synthetic sources
+
+# CURRENT STATUS: EasyOCR integration ready for Windows deployment
 
