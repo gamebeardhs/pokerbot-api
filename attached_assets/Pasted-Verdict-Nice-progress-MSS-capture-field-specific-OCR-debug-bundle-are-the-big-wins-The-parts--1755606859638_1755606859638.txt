@@ -1,0 +1,166 @@
+Verdict
+
+Nice progress. MSS capture + field‑specific OCR + debug bundle are the big wins. The parts you skipped (DPI awareness and percentage‑based calibration) are exactly where ACR users typically break in Windows. Add the lite DPI and region % pieces below so coordinates don’t drift.
+
+Gaps / Risks to close
+
+Regions still absolute? If calibration stores pixels, any window resize/zoom/DPI change breaks OCR.
+
+No DPI normalization: Windows at 125–200% will offset captures; Tk and Win32 disagree on pixels.
+
+Turn detection robustness: Must be buttons‑first OCR → timer color fallback.
+
+Debounce & confidence: Emit state only after stable reads (2 consecutive matches or confidence threshold).
+
+FPS jitter: Fixed cadence can trip heuristics; add slight randomness.
+
+Do‑Now tasks (code drops)
+1) Store & use percent regions (independent of resolution/DPI)
+
+When saving calibration, convert to (rx, ry, rw, rh) relative to the ACR client rect.
+
+Before capture, compute absolute box from current window size.
+
+# utils/regions.py
+def abs_from_rel(rel, client_w, client_h, client_x, client_y):
+    rx, ry, rw, rh = rel
+    return {
+        "left":  int(client_x + rx * client_w),
+        "top":   int(client_y + ry * client_h),
+        "width": int(rw * client_w),
+        "height":int(rh * client_h),
+    }
+
+
+Use with your WindowCapturer.grab(rel_box=...).
+
+Acceptance check: resize the ACR window by ±20%; OCR should still work without recalibration.
+
+2) Lite DPI awareness (safe, non-invasive)
+
+Add once at app bootstrap (no Tk rewrite, no hard-coding):
+
+# bootstrap_dpi.py (import early in app start)
+def make_dpi_aware():
+    try:
+        import ctypes, sys
+        if sys.platform.startswith("win"):
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # per-monitor v2
+    except Exception:
+        pass
+make_dpi_aware()
+
+
+This aligns Win32 coordinates with actual screen pixels and helps MSS/ClientToScreen.
+
+3) Turn detection: buttons OCR → timer color fallback
+# core/turn_detection.py
+BUTTON_KEYWORDS = ("CALL","CHECK","RAISE","BET","FOLD")
+
+def is_our_turn(capturer, ocr, REGIONS):
+    btn_img, _ = capturer.grab(rel_box=REGIONS["buttons"])
+    btn_txt = (ocr.text(btn_img, "name") or "").upper()
+    if any(k in btn_txt for k in BUTTON_KEYWORDS):
+        return True
+
+    arc_img, _ = capturer.grab(rel_box=REGIONS["hero_timer_arc"])
+    import cv2, numpy as np
+    hsv = cv2.cvtColor(arc_img, cv2.COLOR_BGR2HSV)
+    mask = (
+        cv2.inRange(hsv,(90,120,140),(110,255,255)) |  # cyan/blue
+        cv2.inRange(hsv,(70,120,140),(89,255,255))  |  # green
+        cv2.inRange(hsv,(40,120,140),(69,255,255))     # yellow-green
+    )
+    return (mask.mean() > 5.0)
+
+
+Expose a config to tweak those HSV ranges per ACR theme.
+
+4) OCR API: add confidence + normalization
+
+In your EnhancedOCREngine, add:
+
+def text(self, img_bgr, region_type="general"):
+    th = self._preprocess(img_bgr, region_type)
+    raw = self._pytess(th, region_type)
+    norm = self._normalize(raw, region_type)
+    conf = self._confidence_estimate(th, raw)  # simple heuristic length/cleanliness
+    return norm if conf >= 0.6 else ""  # gate low-quality reads
+
+
+money/stack: whitelist 0123456789.$,; normalize O→0, l→1, strip junk.
+
+Return both raw & norm to the debug JSON.
+
+5) Debounce + FPS jitter
+# state_stabilizer.py
+import time, random
+class Stabilizer:
+    def __init__(self): self.prev = {}
+    def stable(self, key, val, k=2):
+        hist = self.prev.get(key, [])
+        hist = (hist + [val])[-k:]
+        self.prev[key] = hist
+        return len(hist)==k and all(v==val for v in hist)
+
+# loop pacing
+time.sleep(random.uniform(0.18, 0.42))
+
+
+Only publish pot/stack/board when stabilizer.stable("pot", pot_norm) is true.
+
+6) Debug bundle: ensure full triage
+
+Write every loop when a key field changes or on failure:
+
+captures/YYYY-mm-dd_HH-MM-SS/
+  table_full.png
+  pot.png, hero_stack.png, buttons.png, board1..5.png
+  ocr.json  # raw, norm, confidence, regions used, timings
+  env.json  # window size, DPI aware flag, tesseract version, FPS
+
+
+Also log:
+
+Tesseract path & version
+
+Effective client rect (x,y,w,h)
+
+Browser/ACR zoom (if detectable)
+
+Windows Test Plan (10 minutes)
+
+Set Windows display scaling to 100% (first run), ACR at default/table scale.
+
+Run calibration once → saves percent regions.
+
+Start scraper:
+
+Verify debug shows tesseract version, client rect, FPS.
+
+Confirm pot and hero stack stabilize (2 identical reads).
+
+Perform an action turn → is_our_turn == True when buttons visible.
+
+Resize ACR window by ~15%. Without recalibrating, readings should still be correct (percent regions working).
+
+Switch Windows scaling to 125%. With make_dpi_aware(), readings should remain correct. If not, send the latest capture folder.
+
+What to send back if anything still misreads
+
+The latest captures/... folder containing:
+
+table_full.png
+
+pot.png, hero_stack.png, buttons.png
+
+ocr.json, env.json
+I’ll give exact region tweaks (or threshold/PSM edits) from those artifacts.
+
+Notes for Replit
+
+You did right avoiding hard‑coded Tesseract paths. Keep the auto‑detect plus env overrides.
+
+“Cross‑platform” is fine for dev, but Windows is the production target. Guard Windows‑specific code with if os.name == "nt": and no‑op elsewhere.
+
+The above DPI & percent‑region changes are small but eliminate the #1 and #2 classes of ACR failures.

@@ -123,6 +123,72 @@ class EnhancedOCREngine:
             logger.error(f"OCR extraction failed for {field_type}: {e}")
             return ""
     
+    def text(self, img_bgr: np.ndarray, field_type: str = "general") -> str:
+        """Confidence-gated text extraction with normalization."""
+        # Get preprocessed image for confidence estimation
+        processed = self.preprocess_for_ocr(img_bgr, field_type)
+        
+        # Extract raw text
+        raw_text = self.extract_text(img_bgr, field_type)
+        
+        # Normalize based on field type
+        if field_type in ["money", "stack"]:
+            normalized = self.normalize_money(raw_text)
+        elif field_type == "name":
+            normalized = self.normalize_player_name(raw_text)
+        elif field_type == "timer":
+            normalized = self.normalize_timer(raw_text)
+        else:
+            normalized = raw_text.strip()
+        
+        # Estimate confidence
+        confidence = self._confidence_estimate(processed, raw_text, normalized)
+        
+        # Gate low-quality reads
+        if confidence >= 0.6:
+            return normalized
+        else:
+            logger.debug(f"Low confidence OCR result filtered: {confidence:.2f} for '{raw_text}'")
+            return ""
+    
+    def _confidence_estimate(self, processed_img: np.ndarray, raw_text: str, normalized_text: str) -> float:
+        """Estimate confidence based on image quality and text characteristics."""
+        confidence = 0.5  # Base confidence
+        
+        # Text length factor (longer text usually more reliable)
+        if len(normalized_text) > 0:
+            confidence += min(0.3, len(normalized_text) / 10.0)
+        
+        # Character diversity (mixed case, numbers often more reliable)  
+        if raw_text:
+            has_digits = any(c.isdigit() for c in raw_text)
+            has_letters = any(c.isalpha() for c in raw_text)
+            if has_digits and has_letters:
+                confidence += 0.1
+            elif has_digits or has_letters:
+                confidence += 0.05
+        
+        # Image quality factor (contrast, edges)
+        try:
+            # Check image contrast
+            if processed_img.std() > 50:  # Good contrast
+                confidence += 0.1
+            
+            # Check for clear edges (indicates good text boundaries)
+            edges = cv2.Canny(processed_img, 50, 150)
+            edge_density = np.count_nonzero(edges) / edges.size
+            if edge_density > 0.1:  # Good edge definition
+                confidence += 0.1
+                
+        except Exception:
+            pass  # Skip image analysis if it fails
+        
+        # Normalization success (if text was cleaned successfully)
+        if normalized_text and normalized_text != raw_text:
+            confidence += 0.05  # Successful normalization
+            
+        return min(1.0, confidence)
+    
     def normalize_money(self, raw_text: str) -> str:
         """Normalize money text to clean format."""
         if not raw_text:

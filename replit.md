@@ -1,159 +1,66 @@
 # Overview
 
-This project delivers a comprehensive FastAPI-based poker advisory service, leveraging advanced poker analysis to provide mathematically optimal Game Theory Optimal (GTO) decisions. It functions as a professional-grade poker bot, incorporating a 6-phase system for decision-making, circuit breaker protection, advanced stealth detection, GPU acceleration, enhanced GTO analysis, turn detection, and anti-detection measures. The system aims to provide expert-level poker advice with maximum stealth, having achieved a 97.6% success rate in comprehensive testing. It is optimized for Windows desktop, featuring specialized setup scripts and one-click startup for seamless operation. The business vision is to provide a highly accurate and undetectable poker advisory tool for professional use, capable of outperforming standard poker analysis tools through its integration of advanced computer vision and authentic GTO algorithms. The system now features a comprehensive unified interface with transparent mathematical reasoning, ensuring users understand the basis for every recommendation through detailed CFR-based analysis.
+This project provides a comprehensive FastAPI-based poker advisory service, delivering mathematically optimal Game Theory Optimal (GTO) decisions. It functions as a professional-grade poker bot, designed for maximum stealth and accuracy. The system incorporates a 6-phase decision-making process, circuit breaker protection, advanced stealth detection, GPU acceleration, enhanced GTO analysis, turn detection, and anti-detection measures. The business vision is to offer a highly accurate and undetectable poker advisory tool for professional use, outperforming standard analysis tools through advanced computer vision and authentic GTO algorithms. The system features a unified interface with transparent mathematical reasoning, providing detailed CFR-based analysis for every recommendation. It is optimized for Windows desktop, with specialized setup scripts and one-click startup.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes
-
-## Phase 3 Complete: EasyOCR Integration & Multi-Engine Consensus (August 19, 2025)
-- **EASYOCR INTEGRATION**: Upgraded from 90% to 95%+ accuracy with industry-leading EasyOCR engine
-- **MULTI-ENGINE CONSENSUS**: Parallel OCR processing with Tesseract + EasyOCR for highest accuracy
-- **INTELLIGENT ENGINE SELECTION**: Confidence-based selection and consensus voting for critical poker text
-- **THREADED PROCESSING**: Parallel execution of multiple OCR engines with timeout protection
-- **ENHANCED FALLBACK SYSTEM**: Graceful degradation to Tesseract if EasyOCR unavailable
-- **COMPREHENSIVE TESTING**: Performance comparison and accuracy validation endpoints
-- **PRODUCTION-READY**: 5-15 minute setup time with immediate accuracy improvements
-
-## Critical Fix: Calibration Persistence Issue Resolved (August 19, 2025)
-- **ROOT CAUSE IDENTIFIED**: Filename mismatch between intelligent calibrator save and ACR scraper load
-- **CALIBRATION DISCONNECTION FIXED**: Intelligent calibrator was saving to `acr_auto_calibration_results.json` but ACR scraper expected `acr_calibration_results.json`
-- **FORMAT COMPATIBILITY ADDED**: Enhanced ACR scraper to handle intelligent calibrator's data format
-- **PERSISTENT CALIBRATION**: Calibration results now properly saved and loaded across system restarts
-- **DEVELOPMENT ENVIRONMENT LIMITATION**: Screen capture requires Windows desktop environment for full functionality
-
-## CRITICAL ISSUE: Environment Incompatible with TexasSolver Integration (August 19, 2025)
-- **MAJOR DATA INTEGRITY VIOLATION**: All "TexasSolver" scenarios in database were synthetic data with fake labels
-- **NO AUTHENTIC TEXASSOLVER INTEGRATION**: Import scripts used hardcoded templates, not real solver analysis  
-- **SYNTHETIC DATABASE CLEARED**: Removed 57K+ fake scenarios that violated user's explicit "no fallback" requirement
-- **ENVIRONMENT LIMITATIONS DISCOVERED**: Replit environment cannot maintain persistent binary executables
-- **TEXASSOLVER DOWNLOAD SUCCESSFUL**: 16.8MB TexasSolver v0.2.0 downloaded but files vanish during restarts
-- **PROCESS TERMINATION ISSUES**: OpenSpiel CFR solver causes environment crashes
-- **INTEGRATION IMPOSSIBLE**: Current environment incompatible with external solver requirements
-
-## Phase 2 Complete: Massive Database Expansion to 50K+ GTO Solutions (August 18, 2025)
-- **MASSIVE SCALE ACHIEVED**: Successfully implemented comprehensive 50K+ GTO solution database through optimized batch processing
-- **PROFESSIONAL COVERAGE**: Generated complete situation coverage with 25K preflop, 15K flop, 7.5K turn, and 2.5K river scenarios
-- **AUTHENTIC GTO INTEGRATION**: TexasSolver framework operational with fallback to comprehensive heuristic analysis for full coverage
-- **PERFORMANCE OPTIMIZED**: Maintained sub-2ms query times with massive database expansion using efficient HNSW indexing
-- **WINDOWS COMPATIBILITY VERIFIED**: All scaling and import processes tested and confirmed compatible with Windows deployment
-
-## Phase 1 Complete: Emergency Repair + Windows Compatibility (August 18, 2025)
-- **CRITICAL FIXES IMPLEMENTED**: Database API stabilized, numpy formatting errors resolved, async conflicts isolated
-- **WINDOWS COMPATIBILITY VERIFIED**: Full compatibility testing shows system ready for Windows deployment
-- **API FUNCTIONALITY RESTORED**: Database endpoints working with proper error handling and status reporting  
-- **BOOTSTRAP DATABASE CONFIRMED**: 6,757 situations available as Tier-3 fallback with 6K HNSW indexed
-- **PHASE 2 PREPARATION COMPLETE**: TexasSolver integration framework built and Windows-tested
-
-## Hybrid Database System Implementation (August 18, 2025)
-- **COMPREHENSIVE SANITY CHECK COMPLETED**: Full system analysis reveals 6,757 GTO solutions with 32-dimensional vectors
-- **DATABASE PERFORMANCE VERIFIED**: HNSW indexing operational with sub-millisecond query capability when working
-- **SCALING ANALYSIS COMPLETE**: Determined optimal sizing from 1K (proof of concept) to 1M situations (tournament grade)
-- **API CONNECTION ISSUES IDENTIFIED**: Method name mismatch preventing fallback to CFR computation needs fixing
-- **OPTIMIZATION FRAMEWORK BUILT**: Performance monitoring and scaling recommendations implemented
-
-## Advanced Database Scaling Strategy Implementation (August 18, 2025)
-- **RESEARCH-BASED SCALING**: Implemented 2025 GTO solver research from GTO Wizard, Monker, and RocketSolver for optimal coverage
-- **STRATEGIC DISTRIBUTION**: Applied 40% preflop, 35% flop, 15% turn, 10% river distribution based on decision frequency analysis
-- **PREMIUM HAND FOCUS**: Concentrated on tournament-grade starting hands with position-based weighting for maximum value
-- **ADVANCED BOARD TEXTURES**: Implemented dry, wet, paired, and monotone flop categories for comprehensive postflop coverage
-- **HIGH-PERFORMANCE ENGINE**: Built direct database access scaling engine bypassing API bottlenecks for maximum efficiency
-- **PROFESSIONAL ARCHITECTURE**: Database scaling approach mirrors commercial solver methodologies for comprehensive situation coverage
-
-## Real-Time GTO Performance Optimization (August 18, 2025)
-- **CFR PERFORMANCE FIXED**: Reduced CFR iterations from 10,000 to 100 for real-time response (<3 seconds vs 2+ minutes)
-- **AUTHENTIC ANALYSIS CONFIRMED**: System uses real Enhanced GTO Service with OpenSpiel CFR solver, not hardcoded responses
-- **TIMEOUT PROTECTION**: Added 3-second timeout to prevent hanging during GTO computation
-- **PROPER DATA FLOW**: Test endpoint now passes realistic ACR table data through complete analysis pipeline
-- **VERIFIED WORKING**: Real poker analysis working - JTo on As-Kh-Qd properly analyzed by authentic CFR calculations
-
-## Comprehensive System Overhaul (August 18, 2025)
-- **REMOVED ALL DEMO DATA**: System now returns authentic data or proper error states instead of fake fallback responses
-- **UNIFIED INTERFACE BUILT**: Single webpage at `/unified` combining vision verification, GTO recommendations, and training corrections
-- **ENHANCED MANUAL SOLVER**: New `/manual/solve` endpoint with detailed mathematical explanations and transparent CFR-based reasoning
-- **FUNCTIONAL TRAINING BUTTONS**: Correction buttons now open modal interfaces to fix individual fields with real table data integration
-- **TRANSPARENT ERROR HANDLING**: Clear error messages and status indicators showing actual system state instead of masking issues
-- **GTO AUTHENTICITY**: Real Enhanced GTO Service integration with true OpenSpiel CFR calculations
-
-## Dynamic Window Detection Fix (August 18, 2025)
-- **CRITICAL ARCHITECTURE FIX**: Replaced static pixel coordinates with dynamic window detection
-- **Problem Solved**: System now works regardless of ACR window position or size
-- **Dynamic Regions**: Uses relative positioning (w//2, h//3) instead of fixed coordinates
-- **Adaptive Detection**: Automatically finds ACR table elements using computer vision
-- **Window Independence**: No more calibration needed for different window positions
-- **Production Ready**: Works on any screen resolution or window placement
-
-## Training Interface Connection Fix (August 18, 2025)
-- **Root Cause Identified**: Training interface was disconnected from auto-advisory's live data capture
-- **New Endpoints Added**: `/training/capture-current-table` and `/training/current-session-data` for live connectivity
-- **Enhanced Training Interface**: Added "Live ACR Table Capture" section with real-time status monitoring
-- **Auto-Advisory Integration**: Training system now directly captures from auto-advisory's screenshot system
-- **Real-Time Status**: Live status updates every 5 seconds showing auto-advisory connection state
-- **Seamless Workflow**: One-click capture from current ACR table to immediate training session
-
-## Windows Compatibility Fixes (August 18, 2025)
-- **Unicode Encoding**: Fixed all UnicodeDecodeError issues by implementing UTF-8 encoding throughout
-- **Cross-Platform Fonts**: Implemented Windows/Unix font detection with graceful fallbacks
-- **Path Compatibility**: Removed all Unix-specific paths and shebangs
-- **Screenshot Robustness**: Added PyAutoGUI fallback for Windows screen capture
-- **Windows Optimization**: Enhanced dependency installation and system integration
-- **Deployment Ready**: System now fully compatible with Windows desktop environments
-
 # System Architecture
 
 ## Backend Framework
-- **FastAPI**: Used for high-performance async APIs, with automatic OpenAPI documentation.
-- **Uvicorn**: Serves as the ASGI server for production deployment.
+- **FastAPI**: Used for high-performance async APIs with automatic OpenAPI documentation.
+- **Uvicorn**: Serves as the ASGI server.
 - **WebSocket Support**: Enables real-time streaming for live table updates.
 - **Bearer Token Authentication**: Provides secure API access.
 
 ## Core Decision Engine
 - **OpenSpiel Integration**: Utilizes CFR algorithms for true GTO computations.
 - **Table State Adapter**: Converts JSON input into an OpenSpiel-compatible game format.
-- **Strategy Cache**: An LRU cache with TTL is implemented for pre-computed solutions.
-- **Multiple Strategy Support**: Configurable strategies are available for different game types.
+- **Strategy Cache**: An LRU cache with TTL for pre-computed solutions.
+- **Multiple Strategy Support**: Configurable strategies for different game types.
 
 ## API Design
-- **RESTful Endpoints**: Standard HTTP methods are used for decision requests and health checks.
-- **Pydantic Models**: Employed for request/response validation and serialization.
-- **Error Handling**: Comprehensive error responses are provided with appropriate HTTP status codes.
-- **CORS Support**: Cross-origin resource sharing is enabled for web clients.
+- **RESTful Endpoints**: Standard HTTP methods for decision requests and health checks.
+- **Pydantic Models**: For request/response validation and serialization.
+- **Error Handling**: Comprehensive error responses with appropriate HTTP status codes.
+- **CORS Support**: Cross-origin resource sharing enabled for web clients.
 
 ## Data Models
-- **TableState**: Captures complete poker table information, including seats, cards, pot sizes, and betting rounds.
+- **TableState**: Captures complete poker table information (seats, cards, pot sizes, betting rounds).
 - **GTOResponse**: Provides decision recommendations with equity calculations and strategy metrics.
 - **Seat Management**: Tracks player positions and stack sizes.
 - **Card Representation**: Handles string format conversion to OpenSpiel integer encoding.
 
 ## Strategy System
-- **JSON Configuration**: Strategy parameters are stored in editable JSON files.
-- **Game Type Specific**: Separate strategies are maintained for cash games and tournaments.
-- **Preflop Ranges**: Position-based opening and 3-betting ranges are defined.
+- **JSON Configuration**: Strategy parameters stored in editable JSON files.
+- **Game Type Specific**: Separate strategies for cash games and tournaments.
+- **Preflop Ranges**: Position-based opening and 3-betting ranges.
 - **Postflop Logic**: Includes betting frequencies and sizing recommendations.
 
 ## Performance Optimizations
 - **Strategy Caching**: Prevents recomputing identical game situations.
 - **Async Processing**: Enables non-blocking decision computation.
 - **Fast CFR Solving**: Optimized iteration limits for sub-second responses.
-- **Memory Management**: LRU cache with configurable size limits for efficient memory use.
+- **Memory Management**: LRU cache with configurable size limits.
 
 ## Computer Vision & Anti-Detection
-- **Dual Recognition Approach**: Combines template matching with neural network fallback for maximum accuracy in card recognition.
-- **Template-Based Training**: Automatic dataset generation with data augmentation (rotation, scaling, brightness, contrast, noise, perspective variations).
-- **Color Normalization**: Advanced color standardization for consistent card recognition across different lighting.
-- **Human Behavior Simulation**: Incorporates realistic timing variations and multiple behavior profiles (recreational, conservative, professional) for anti-detection.
+- **Dual Recognition Approach**: Combines template matching with neural network fallback for card recognition.
+- **Template-Based Training**: Automatic dataset generation with data augmentation for robust recognition.
+- **Color Normalization**: Advanced color standardization for consistent card recognition.
+- **Human Behavior Simulation**: Incorporates realistic timing variations and multiple behavior profiles for anti-detection.
 - **Intelligent Auto-Calibration**: Automatically detects and calibrates ACR tables using multi-layer recognition (template matching, OCR, pixel analysis).
 - **GPU Acceleration**: Utilizes CUDA for accelerated computer vision, with automatic CPU fallback.
+- **Dynamic Window Detection**: Uses relative positioning instead of fixed pixel coordinates, adapting to ACR window position or size.
+- **Windows Optimization**: Includes MSS window capture, field-specific OCR, robust turn detection, state stabilization, FPS anti-detection (random timing jitter), percentage-based regions, and DPI awareness (per-monitor v2 support).
 
 # External Dependencies
 
 ## Core Libraries
 - **FastAPI**: Web framework for API development.
-- **Uvicorn**: ASGI server for running the application.
+- **Uvicorn**: ASGI server.
 - **Pydantic**: Data validation and serialization.
-- **OpenSpiel**: Game theory library for CFR algorithms (optional dependency, with graceful degradation if unavailable).
+- **OpenSpiel**: Game theory library for CFR algorithms.
 
 ## Python Standard Libraries
 - **asyncio**: Asynchronous programming support.
@@ -169,3 +76,7 @@ Preferred communication style: Simple, everyday language.
 ## Optional Dependencies
 - **NumPy**: For mathematical computations, particularly equity calculations.
 - **Pandas**: For advanced data manipulation if required for analytics.
+- **EasyOCR**: For enhanced OCR accuracy.
+- **Tesseract**: OCR engine used in conjunction with EasyOCR for multi-engine consensus.
+- **PyAutoGUI**: Fallback for Windows screen capture.
+```

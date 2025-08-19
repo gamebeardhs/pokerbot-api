@@ -1,5 +1,9 @@
 """FastAPI main application for GTO poker advisory service."""
 
+# Initialize DPI awareness early (before any window operations)
+from app.utils.bootstrap_dpi import make_dpi_aware
+make_dpi_aware()
+
 import os
 import logging
 import asyncio
@@ -79,7 +83,9 @@ app.include_router(live_poker_router, prefix="/live", tags=["live-monitoring"])
 
 # Include enhanced extraction endpoints
 from app.api.enhanced_extraction_endpoints import router as extraction_router
+from app.api.production_test_endpoints import router as production_router
 app.include_router(extraction_router, prefix="/extraction", tags=["enhanced-extraction"])
+app.include_router(production_router)
 
 # Mount static files
 import os
