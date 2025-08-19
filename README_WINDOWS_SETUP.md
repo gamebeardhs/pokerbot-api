@@ -1,8 +1,16 @@
 # Windows Setup Guide - OpenSpiel Installation Issue
 
-## Quick Solution
+## Common Issues & Solutions
 
-**OpenSpiel installation failed because it requires C++ compilation tools.**
+### Issue 1: "Visual Studio Build Tools installation failed" (even when manually installed)
+
+**Root Cause:** The script can't detect manually installed Visual Studio components.
+
+**Solution:** The updated `setup_windows_advanced.bat` now has improved detection and will continue installation even if detection fails.
+
+### Issue 2: OpenSpiel installation failed
+
+**Root Cause:** Missing C++ compilation tools.
 
 ### Option 1: Use Basic Setup (Recommended)
 ```

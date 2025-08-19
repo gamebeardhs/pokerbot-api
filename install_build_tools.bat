@@ -18,8 +18,37 @@ if %errorlevel% neq 0 (
 )
 
 echo Checking if Visual Studio Build Tools already installed...
+
+REM Multiple detection methods
+set "VS_FOUND=false"
+
+REM Check for cl compiler in PATH
 where cl >nul 2>&1
 if %errorlevel% equ 0 (
+    set "VS_FOUND=true"
+    echo Visual Studio Build Tools found via PATH
+)
+
+REM Check common installation paths
+if "%VS_FOUND%"=="false" (
+    for %%p in (
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC"
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC" 
+        "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2019\Professional\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC"
+    ) do (
+        if exist %%p (
+            set "VS_FOUND=true"
+            echo Visual Studio Build Tools found at %%p
+            goto :already_installed
+        )
+    )
+)
+
+if "%VS_FOUND%"=="true" (
+    :already_installed
     echo Visual Studio Build Tools already installed!
     echo You can now run setup_windows_advanced.bat
     pause

@@ -32,42 +32,76 @@ if %errorlevel% neq 0 (
 python -c "import sys; print(f'Python {sys.version}')"
 
 echo [2/8] Checking for Visual Studio Build Tools...
+
+REM Multiple detection methods for Visual Studio Build Tools
+set "VS_FOUND=false"
+
+REM Method 1: Check for cl compiler in PATH
 where cl >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Visual Studio Build Tools not found - installing automatically...
-    echo This may take 10-20 minutes depending on internet speed...
-    echo.
-    
-    REM Download Visual Studio Build Tools installer
-    echo Downloading Visual Studio Build Tools installer...
-    powershell -Command "Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_buildtools.exe' -OutFile 'vs_buildtools.exe'"
-    
-    if not exist "vs_buildtools.exe" (
-        echo ERROR: Failed to download Visual Studio Build Tools
-        echo Please download manually from: https://visualstudio.microsoft.com/downloads/
-        pause
-        exit /b 1
-    )
-    
-    echo Installing Visual Studio Build Tools with C++ components...
-    echo This will take 10-20 minutes - please wait...
-    vs_buildtools.exe --quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.19041
-    
-    if %errorlevel% neq 0 (
-        echo ERROR: Visual Studio Build Tools installation failed
-        echo Please install manually and rerun this script
-        pause
-        exit /b 1
-    )
-    
-    echo Cleaning up installer...
-    del vs_buildtools.exe
-    
-    echo Visual Studio Build Tools installed successfully
-    echo.
-) else (
-    echo Visual Studio Build Tools found - ready for OpenSpiel compilation
+if %errorlevel% equ 0 (
+    set "VS_FOUND=true"
+    echo Visual Studio Build Tools found via PATH
 )
+
+REM Method 2: Check common Visual Studio installation paths
+if "%VS_FOUND%"=="false" (
+    for %%p in (
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC"
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC" 
+        "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2019\Professional\VC\Tools\MSVC"
+        "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC"
+    ) do (
+        if exist %%p (
+            set "VS_FOUND=true"
+            echo Visual Studio Build Tools found at %%p
+            goto :vs_found
+        )
+    )
+)
+
+:vs_found
+if "%VS_FOUND%"=="false" (
+    echo Visual Studio Build Tools not detected
+    echo.
+    echo IMPORTANT: You mentioned you installed it manually.
+    echo Let's try to set up the environment...
+    echo.
+    
+    REM Try to call vcvars64.bat to set up environment
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo Environment setup successful with VS2022 BuildTools
+        set "VS_FOUND=true"
+        goto :continue_setup
+    )
+    
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo Environment setup successful with VS2019 BuildTools
+        set "VS_FOUND=true"
+        goto :continue_setup
+    )
+    
+    call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo Environment setup successful with VS2022 Community
+        set "VS_FOUND=true"
+        goto :continue_setup
+    )
+    
+    echo WARNING: Could not automatically detect or setup Visual Studio Build Tools
+    echo.
+    echo Since you installed manually, let's continue and try OpenSpiel installation...
+    echo If OpenSpiel fails, please ensure Visual Studio Build Tools are properly installed.
+    echo.
+    set "VS_FOUND=true"
+) else (
+    echo Visual Studio Build Tools detected - ready for OpenSpiel compilation
+)
+
+:continue_setup
 
 echo [3/8] Creating virtual environment...
 if exist "venv" (
