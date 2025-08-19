@@ -17,6 +17,13 @@ Preferred communication style: Simple, everyday language.
 - **COMPREHENSIVE TESTING**: Performance comparison and accuracy validation endpoints
 - **PRODUCTION-READY**: 5-15 minute setup time with immediate accuracy improvements
 
+## Critical Fix: Calibration Persistence Issue Resolved (August 19, 2025)
+- **ROOT CAUSE IDENTIFIED**: Filename mismatch between intelligent calibrator save and ACR scraper load
+- **CALIBRATION DISCONNECTION FIXED**: Intelligent calibrator was saving to `acr_auto_calibration_results.json` but ACR scraper expected `acr_calibration_results.json`
+- **FORMAT COMPATIBILITY ADDED**: Enhanced ACR scraper to handle intelligent calibrator's data format
+- **PERSISTENT CALIBRATION**: Calibration results now properly saved and loaded across system restarts
+- **DEVELOPMENT ENVIRONMENT LIMITATION**: Screen capture requires Windows desktop environment for full functionality
+
 ## CRITICAL ISSUE: Environment Incompatible with TexasSolver Integration (August 19, 2025)
 - **MAJOR DATA INTEGRITY VIOLATION**: All "TexasSolver" scenarios in database were synthetic data with fake labels
 - **NO AUTHENTIC TEXASSOLVER INTEGRATION**: Import scripts used hardcoded templates, not real solver analysis  

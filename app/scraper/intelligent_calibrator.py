@@ -1007,8 +1007,9 @@ class IntelligentACRCalibrator:
             "success_rate": result.success_rate
         }
         
-        # Save to file
-        with open("acr_auto_calibration_results.json", 'w', encoding='utf-8') as f:
+        # Save to file (use same filename as ACR scraper expects)
+        calibration_file = "acr_calibration_results.json"
+        with open(calibration_file, 'w', encoding='utf-8') as f:
             json.dump(save_data, f, indent=2)
         
         logger.info(f"Saved auto-calibration results with {result.success_rate:.1%} success rate")

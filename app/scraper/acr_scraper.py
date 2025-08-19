@@ -42,16 +42,26 @@ class ACRScraper(BaseScraper):
                 with open(self.calibration_file, 'r') as f:
                     calibration_data = json.load(f)
                 
-                # Convert calibration data to UI regions
-                self.ui_regions = {}
-                for region_name, coords in calibration_data.items():
-                    if isinstance(coords, (list, tuple)) and len(coords) == 4:
-                        self.ui_regions[region_name] = tuple(coords)
-                    elif isinstance(coords, dict) and 'coordinates' in coords:
-                        # Handle format from calibration tool
-                        self.ui_regions[region_name] = tuple(coords['coordinates'])
+                # Handle intelligent calibrator format
+                if 'regions' in calibration_data:
+                    regions_data = calibration_data['regions']
+                    self.ui_regions = {}
+                    
+                    for region_name, region_info in regions_data.items():
+                        if isinstance(region_info, dict) and all(k in region_info for k in ['x', 'y', 'width', 'height']):
+                            # Convert from intelligent calibrator format
+                            x, y, w, h = region_info['x'], region_info['y'], region_info['width'], region_info['height']
+                            self.ui_regions[region_name] = (x, y, x + w, y + h)
+                else:
+                    # Handle legacy format
+                    self.ui_regions = {}
+                    for region_name, coords in calibration_data.items():
+                        if isinstance(coords, (list, tuple)) and len(coords) == 4:
+                            self.ui_regions[region_name] = tuple(coords)
+                        elif isinstance(coords, dict) and 'coordinates' in coords:
+                            self.ui_regions[region_name] = tuple(coords['coordinates'])
                 
-                self.logger.info(f"Loaded {len(self.ui_regions)} calibrated regions")
+                self.logger.info(f"Loaded {len(self.ui_regions)} calibrated regions from intelligent calibrator")
                 return True
         except Exception as e:
             self.logger.error(f"Failed to load calibration: {e}")
