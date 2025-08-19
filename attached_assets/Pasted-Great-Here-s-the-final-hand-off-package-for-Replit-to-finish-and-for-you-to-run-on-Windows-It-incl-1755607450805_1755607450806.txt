@@ -1,0 +1,183 @@
+Great. Here’s the final hand‑off package for Replit to finish and for you to run on Windows. It includes a 10‑minute test plan, a regression harness (works without ACR using saved frames), and a short troubleshooting matrix. All phrased so they can implement directly.
+
+A. Add a regression harness (no ACR needed)
+
+Goal: Prove OCR + turn detection + debouncing works against saved images; gives you repeatable tests and prevents regressions.
+
+1) Folder layout (example)
+tests/acr_golden/
+  table_full.png
+  pot.png
+  hero_stack.png
+  buttons.png
+  board1.png ... board5.png
+  meta.json
+
+
+meta.json (example):
+
+{
+  "regions": {
+    "pot":        [0.43, 0.38, 0.14, 0.06],
+    "hero_stack": [0.46, 0.82, 0.12, 0.07],
+    "buttons":    [0.35, 0.88, 0.30, 0.10],
+    "hero_timer_arc": [0.48, 0.86, 0.04, 0.04]
+  },
+  "expected": {
+    "pot": "$12.50",
+    "hero_stack": "$1,497.00",
+    "buttons_present": true,
+    "is_our_turn": true,
+    "board": ["Ts","Jh","2c"]   // use whatever format your recognizer returns
+  }
+}
+
+2) CLI test runner
+
+Create PokerBrain/app/tools/run_offline_ocr_test.py:
+
+import json, os, sys, cv2
+from app.scraper.enhanced_ocr_engine import EnhancedOCREngine
+
+def crop_rel(img, rel):
+    h, w = img.shape[:2]
+    rx, ry, rw, rh = rel
+    x1 = int(rx * w); y1 = int(ry * h); x2 = int((rx+rw) * w); y2 = int((ry+rh) * h)
+    return img[y1:y2, x1:x2]
+
+def main(folder):
+    meta = json.load(open(os.path.join(folder, "meta.json"), "r", encoding="utf-8"))
+    regions = meta["regions"]; exp = meta.get("expected", {})
+    eng = EnhancedOCREngine()
+
+    tbl = cv2.imread(os.path.join(folder, "table_full.png"))
+    assert tbl is not None, "table_full.png missing"
+
+    pot_img = crop_rel(tbl, regions["pot"])
+    pot_raw = eng._ocr_pytesseract(pot_img, "money")
+    from app.scraper.enhanced_ocr_engine import normalize_money
+    pot_norm = normalize_money(pot_raw)
+
+    hero_img = crop_rel(tbl, regions["hero_stack"])
+    hero_raw = eng._ocr_pytesseract(hero_img, "stack")
+    hero_norm = normalize_money(hero_raw)
+
+    btn_img = crop_rel(tbl, regions["buttons"])
+    btn_txt = (eng._ocr_pytesseract(btn_img, "name") or "").upper()
+    buttons_present = any(k in btn_txt for k in ("CALL","CHECK","RAISE","BET","FOLD"))
+
+    # is_our_turn fallback via timer arc
+    arc_img = crop_rel(tbl, regions["hero_timer_arc"])
+    hsv = cv2.cvtColor(arc_img, cv2.COLOR_BGR2HSV)
+    mask = (
+        cv2.inRange(hsv,(90,120,140),(110,255,255)) |
+        cv2.inRange(hsv,(70,120,140),(89,255,255))  |
+        cv2.inRange(hsv,(40,120,140),(69,255,255))
+    )
+    is_our_turn = buttons_present or (mask.mean() > 5.0)
+
+    result = {
+        "pot_raw": pot_raw, "pot_norm": pot_norm,
+        "hero_raw": hero_raw, "hero_norm": hero_norm,
+        "buttons_present": buttons_present,
+        "is_our_turn": is_our_turn,
+        "btn_txt": btn_txt
+    }
+    print(json.dumps(result, indent=2))
+
+    # Basic assertions if expectations exist
+    failures = []
+    if "pot" in exp and exp["pot"] != pot_norm: failures.append(("pot", exp["pot"], pot_norm))
+    if "hero_stack" in exp and exp["hero_stack"] != hero_norm: failures.append(("hero_stack", exp["hero_stack"], hero_norm))
+    if "buttons_present" in exp and exp["buttons_present"] != buttons_present: failures.append(("buttons_present", exp["buttons_present"], buttons_present))
+    if "is_our_turn" in exp and exp["is_our_turn"] != is_our_turn: failures.append(("is_our_turn", exp["is_our_turn"], is_our_turn))
+
+    if failures:
+        print("\nASSERTION FAILURES:")
+        for k, want, got in failures:
+            print(f"- {k}: expected {want} got {got}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    folder = sys.argv[1] if len(sys.argv) > 1 else "tests/acr_golden"
+    main(folder)
+
+
+Usage:
+
+python -m app.tools.run_offline_ocr_test tests/acr_golden
+
+
+This lets you regression‑test OCR/turn detection anytime without launching ACR.
+
+B. 10‑minute Windows smoke test (real ACR)
+
+Before run
+
+Windows Display Scaling: 100% (first pass).
+
+ACR single table, default theme, default table scale.
+
+Confirm Tesseract installed (win path auto‑detect already implemented).
+
+Calibrate once
+
+Run your calibration tool; ensure it saves percentage regions.
+
+Verify live previews show readable crops (pot/stack/buttons).
+
+Run scraper
+
+Expect logs: tesseract version, client rect, FPS.
+
+Verify pot and hero stack stabilize after 2 identical reads (debouncer).
+
+During action, is_our_turn → True (buttons OCR), timer arc acts as fallback.
+
+Resilience checks
+
+Resize the ACR window by ~15%; readings should remain correct (percent regions).
+
+Change Windows scaling to 125%; with DPI awareness, readings should remain correct.
+
+Artifacts
+
+Inspect captures/<timestamp>/... (table_full.png, crops, ocr.json, env.json) if anything looks off.
+
+C. Config surfaces (so you can tweak without code)
+
+Expose in a single config file (e.g., config/acr_runtime.json):
+
+{
+  "fps_min": 0.18,
+  "fps_max": 0.42,
+  "debounce_k": 2,
+  "hsv_ranges": [
+    [90,120,140, 110,255,255],
+    [70,120,140,  89,255,255],
+    [40,120,140,  69,255,255]
+  ],
+  "ocr": {
+    "money_psm": 7,
+    "stack_psm": 7,
+    "name_psm": 7
+  }
+}
+
+
+Have the scraper load this at startup. This avoids rebuilds to adjust thresholds.
+
+D. Troubleshooting matrix (fast)
+Symptom	Likely Cause	Fix
+Pot/stack reads jump around	Crop includes chips/graphics; threshold too aggressive	Adjust region a bit smaller; keep solid background; verify pot.png in captures; try median blur 3
+Buttons not detected but it’s your turn	Theme font weak / low contrast	Temporarily enlarge buttons region; try psm 7 and confirm whitelist includes letters
+All crops offset after moving window	Percent regions not used / DPI not applied	Ensure percent regions are in saved JSON; env.json should show DPI aware true
+Black/empty frames	Grabbing wrong monitor/rect	Log client rect; ensure ClientToScreen path; confirm table_full.png not black
+Confusing 1O vs 10	OCR misclassifying chars	The normalization already maps O→0,l→1; verify in ocr.json that pot_norm is clean
+E. Guardrails
+
+Keep scraper read‑only (no inputs).
+
+2–5 FPS with jitter is enough; don’t hammer ACR.
+
+Always write debug bundles when a value changes or fails confidence gating.

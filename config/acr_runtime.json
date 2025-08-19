@@ -1,0 +1,59 @@
+{
+  "fps_timing": {
+    "min_delay": 0.18,
+    "max_delay": 0.42,
+    "base_fps": 3.0,
+    "description": "Random timing jitter to prevent detection patterns"
+  },
+  "state_stabilization": {
+    "debounce_readings": 2,
+    "confidence_threshold": 0.6,
+    "description": "Require N consecutive identical readings before emitting changes"
+  },
+  "timer_detection": {
+    "hsv_ranges": [
+      {"name": "cyan_blue", "lower": [90, 120, 140], "upper": [110, 255, 255]},
+      {"name": "green", "lower": [70, 120, 140], "upper": [89, 255, 255]},
+      {"name": "yellow_green", "lower": [40, 120, 140], "upper": [69, 255, 255]},
+      {"name": "orange", "lower": [10, 120, 140], "upper": [25, 255, 255]}
+    ],
+    "pixel_threshold": 5.0,
+    "description": "HSV color ranges for ACR timer arc detection"
+  },
+  "ocr_settings": {
+    "money_psm": 7,
+    "stack_psm": 7, 
+    "name_psm": 7,
+    "button_psm": 6,
+    "general_psm": 6,
+    "description": "Tesseract Page Segmentation Mode per field type"
+  },
+  "regions_acr": {
+    "pot": [0.43, 0.38, 0.14, 0.06],
+    "hero_stack": [0.46, 0.82, 0.12, 0.07],
+    "board": [0.30, 0.30, 0.40, 0.12],
+    "hero_cards": [0.36, 0.72, 0.28, 0.10],
+    "buttons": [0.35, 0.88, 0.30, 0.10],
+    "hero_timer_arc": [0.48, 0.86, 0.04, 0.04],
+    "villain_1_name": [0.20, 0.15, 0.15, 0.05],
+    "villain_1_stack": [0.20, 0.20, 0.15, 0.05],
+    "villain_2_name": [0.65, 0.15, 0.15, 0.05],
+    "villain_2_stack": [0.65, 0.20, 0.15, 0.05],
+    "description": "Default ACR table regions as percentages (rx, ry, rw, rh)"
+  },
+  "debug_options": {
+    "save_captures_on_change": true,
+    "save_captures_on_error": true,
+    "max_debug_sessions": 10,
+    "capture_full_table": true,
+    "capture_individual_regions": true,
+    "description": "Debug capture and logging configuration"
+  },
+  "anti_detection": {
+    "max_fps": 5.0,
+    "min_fps": 2.0,
+    "human_behavior_simulation": true,
+    "read_only_mode": true,
+    "description": "Anti-detection measures and behavioral constraints"
+  }
+}
