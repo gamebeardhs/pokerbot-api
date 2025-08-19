@@ -11,6 +11,17 @@ Double-click: setup_windows_basic.bat
 This installs everything except OpenSpiel and works immediately.
 
 ### Option 2: Install Visual Studio Build Tools (Advanced)
+
+**Automated Installation:**
+```
+1. Right-click: install_build_tools.bat
+2. Select: "Run as administrator"
+3. Wait 10-20 minutes for installation
+4. Restart computer
+5. Run: setup_windows_advanced.bat
+```
+
+**Manual Installation:**
 1. Download **Visual Studio Build Tools** from: https://visualstudio.microsoft.com/downloads/
 2. During installation, select:
    - ✅ C++ build tools
@@ -57,6 +68,7 @@ If you need advanced live CFR calculations later, install Visual Studio Build To
 ## File Usage
 
 - **setup_windows_basic.bat**: Core system (works immediately)
+- **install_build_tools.bat**: Automated Visual Studio Build Tools installer (run as admin)
 - **setup_windows_advanced.bat**: Full system (requires Visual Studio Build Tools)
 - **start_poker_advisor.bat**: Daily launcher (handles OpenSpiel gracefully)
 - **quick_start.bat**: Fast restart (no dependency checks)

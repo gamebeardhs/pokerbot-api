@@ -10,9 +10,11 @@ echo.
 REM Check administrator privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo WARNING: Running without administrator privileges
-    echo Some installations may require elevated permissions
+    echo ERROR: Administrator privileges required for Visual Studio Build Tools installation
+    echo Please right-click this batch file and select "Run as administrator"
     echo.
+    pause
+    exit /b 1
 )
 
 echo [1/8] Checking Python installation...
@@ -29,7 +31,45 @@ if %errorlevel% neq 0 (
 
 python -c "import sys; print(f'Python {sys.version}')"
 
-echo [2/8] Creating virtual environment...
+echo [2/8] Checking for Visual Studio Build Tools...
+where cl >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Visual Studio Build Tools not found - installing automatically...
+    echo This may take 10-20 minutes depending on internet speed...
+    echo.
+    
+    REM Download Visual Studio Build Tools installer
+    echo Downloading Visual Studio Build Tools installer...
+    powershell -Command "Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_buildtools.exe' -OutFile 'vs_buildtools.exe'"
+    
+    if not exist "vs_buildtools.exe" (
+        echo ERROR: Failed to download Visual Studio Build Tools
+        echo Please download manually from: https://visualstudio.microsoft.com/downloads/
+        pause
+        exit /b 1
+    )
+    
+    echo Installing Visual Studio Build Tools with C++ components...
+    echo This will take 10-20 minutes - please wait...
+    vs_buildtools.exe --quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.19041
+    
+    if %errorlevel% neq 0 (
+        echo ERROR: Visual Studio Build Tools installation failed
+        echo Please install manually and rerun this script
+        pause
+        exit /b 1
+    )
+    
+    echo Cleaning up installer...
+    del vs_buildtools.exe
+    
+    echo Visual Studio Build Tools installed successfully
+    echo.
+) else (
+    echo Visual Studio Build Tools found - ready for OpenSpiel compilation
+)
+
+echo [3/8] Creating virtual environment...
 if exist "venv" (
     echo Removing existing virtual environment...
     rmdir /s /q venv
@@ -38,22 +78,22 @@ if exist "venv" (
 python -m venv venv
 call venv\Scripts\activate.bat
 
-echo [3/8] Upgrading pip...
+echo [4/8] Upgrading pip...
 python -m pip install --upgrade pip
 
-echo [4/8] Installing core Python dependencies...
+echo [5/8] Installing core Python dependencies...
 pip install fastapi uvicorn pydantic python-multipart websockets requests
 pip install opencv-python pillow numpy pandas scikit-learn joblib
 pip install pytesseract easyocr mss pyautogui imagehash
 pip install hnswlib trafilatura pytest pytest-asyncio nest-asyncio
 
-echo [5/8] Installing optional advanced dependencies...
+echo [6/8] Installing optional advanced dependencies...
 pip install open-spiel tensorflow playwright
 
-echo [6/8] Setting up Playwright browsers...
+echo [7/8] Setting up Playwright browsers...
 playwright install chromium
 
-echo [7/8] Checking external dependencies...
+echo [8/8] Checking external dependencies...
 echo.
 echo Checking Tesseract OCR...
 tesseract --version >nul 2>&1
