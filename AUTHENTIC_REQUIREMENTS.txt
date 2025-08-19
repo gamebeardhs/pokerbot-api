@@ -1,0 +1,12 @@
+
+AUTHENTIC TEXASSOLVER INTEGRATION REQUIREMENTS:
+============================================
+
+1. REAL TEXASSOLVER EXECUTABLE: Must connect to actual TexasSolver software
+2. NO SYNTHETIC DATA: Zero fallback scenarios or fake entries  
+3. AUTHENTIC CFR ANALYSIS: Real counterfactual regret minimization calculations
+4. VERIFIABLE SOLUTIONS: Each entry must be traceable to actual solver computation
+5. TRANSPARENT SOURCING: Clear indication when data comes from real vs synthetic sources
+
+CURRENT STATUS: No database - awaiting authentic integration only
+
