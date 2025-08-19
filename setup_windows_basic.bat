@@ -80,13 +80,7 @@ if %errorlevel% neq 0 (
 
 echo [6/6] Running system test...
 echo Testing basic imports...
-python -c "
-import fastapi
-import cv2
-import numpy as np
-import easyocr
-print('✓ All core dependencies working')
-"
+python -c "import fastapi; import cv2; import numpy as np; import easyocr; print('All core dependencies working')"
 
 if %errorlevel% neq 0 (
     echo ERROR: Some dependencies failed to import

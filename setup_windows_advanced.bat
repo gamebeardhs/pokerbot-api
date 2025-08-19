@@ -149,14 +149,10 @@ if %errorlevel% neq 0 (
 )
 
 echo [8/8] Running system test...
-echo Testing basic imports...
-python -c "
-import fastapi
-import cv2
-import numpy as np
-import easyocr
-print('✓ All core dependencies working')
-"
+echo Testing core imports...
+python -c "import fastapi; import cv2; import numpy as np; import easyocr; print('Core dependencies working')"
+echo Testing OpenSpiel...
+python -c "import open_spiel; print('OpenSpiel working - advanced GTO enabled')" 2>nul || echo "OpenSpiel failed - using database fallback"
 
 if %errorlevel% neq 0 (
     echo ERROR: Some dependencies failed to import
