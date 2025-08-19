@@ -23,6 +23,8 @@ from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+
 class AutoAdvisoryService:
     """FIXED: Automated turn detection and GTO advisory service."""
     
@@ -42,6 +44,7 @@ class AutoAdvisoryService:
         # Advisory results
         self.latest_advice = None
         self.advice_history = []
+        self.latest_table_data = None
         
     def start_monitoring(self):
         """Start continuous ACR table monitoring."""
@@ -287,10 +290,22 @@ async def get_auto_advisory_status():
 @router.get("/latest-advice")
 async def get_latest_advice():
     """Get the most recent automated advice."""
-    if auto_advisory.latest_advice:
-        return JSONResponse(content=auto_advisory.latest_advice)
-    else:
-        return JSONResponse(content={"error": "No GTO advice available - connect to ACR table"}, status_code=404)
+    try:
+        if auto_advisory.latest_advice:
+            return JSONResponse(content={
+                "status": "success",
+                "advice": auto_advisory.latest_advice,
+                "timestamp": time.time()
+            })
+        else:
+            return JSONResponse(content={
+                "status": "no_advice", 
+                "message": "No recent advice available",
+                "timestamp": time.time()
+            })
+    except Exception as e:
+        logger.error(f"Error getting latest advice: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)})
 
 @router.post("/train")
 async def submit_training_correction(request: dict):
@@ -338,18 +353,21 @@ async def get_table_data():
         # Get the latest table state from the calibrator
         table_state = auto_advisory.calibrator.get_latest_table_state()
         
-        # REMOVED: All demo data - return real data or explicit error
-        if table_state and "error" in table_state:
-            return JSONResponse(content=table_state, status_code=400)
-        
-        if table_state:
-            return JSONResponse(content=table_state)
+        if table_state and "error" not in table_state:
+            return JSONResponse(content={
+                "status": "success",
+                "table_data": table_state,
+                "timestamp": time.time()
+            })
         else:
-            # Return error when no real table data available
-            return JSONResponse(content={"error": "No ACR table detected"}, status_code=404)
+            return JSONResponse(content={
+                "status": "no_data",
+                "message": "No table data available",
+                "timestamp": time.time()
+            })
     except Exception as e:
         logger.error(f"Error fetching table data: {e}")
-        return JSONResponse(content={"error": str(e)})
+        return JSONResponse(content={"status": "error", "message": str(e)})
 
 @router.post("/train")
 async def submit_training_data(training_data: dict):
