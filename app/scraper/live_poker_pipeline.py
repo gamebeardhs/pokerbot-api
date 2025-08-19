@@ -14,6 +14,7 @@ import logging
 
 from .optimized_capture import OptimizedScreenCapture, WindowDetector, CaptureRegion
 from .red_button_detector import RedButtonDetector, ButtonDetection, ButtonType
+from .complete_table_state_extractor import CompleteTableStateExtractor, ExtractedTableState
 from ..advisor.enhanced_gto_service import EnhancedGTODecisionService
 # from ..api.models import TableState, Seat  # Import when needed
 
@@ -41,6 +42,7 @@ class LivePokerPipeline:
         # Core components
         self.capture_system = OptimizedScreenCapture()
         self.button_detector = RedButtonDetector()
+        self.table_extractor = CompleteTableStateExtractor()
         self.decision_service = EnhancedGTODecisionService()
         
         # State tracking
@@ -62,6 +64,11 @@ class LivePokerPipeline:
     async def initialize(self) -> bool:
         """Initialize all pipeline components."""
         try:
+            # Initialize table state extractor
+            if not await self.table_extractor.initialize():
+                logger.error("Failed to initialize table state extractor")
+                return False
+            
             # Detect poker table regions
             self.regions = WindowDetector.get_optimal_regions()
             
@@ -172,28 +179,28 @@ class LivePokerPipeline:
             return None
     
     async def capture_full_table_state(self) -> Optional[Dict[str, Any]]:
-        """Capture complete table state including cards, pot, stacks."""
+        """Capture complete table state including cards, pot, stacks using enhanced extraction."""
         try:
-            if not self.regions:
+            # Use complete table state extractor
+            extracted_state = await self.table_extractor.extract_complete_table_state()
+            
+            if extracted_state is None:
                 return None
             
-            # Capture different regions
-            full_table = self.capture_system.capture_region_sync(self.regions['full_table'])
-            hero_cards = self.capture_system.capture_region_sync(self.regions['hero_cards'])
-            board_cards = self.capture_system.capture_region_sync(self.regions['board_cards'])
-            pot_area = self.capture_system.capture_region_sync(self.regions['pot_area'])
-            
-            # TODO: Add OCR processing for text extraction
-            # TODO: Add card recognition
-            # TODO: Add stack/pot size parsing
-            
             return {
-                'timestamp': time.time(),
-                'full_table_captured': full_table is not None,
-                'hero_cards_captured': hero_cards is not None,
-                'board_cards_captured': board_cards is not None,
-                'pot_area_captured': pot_area is not None,
-                'regions_available': list(self.regions.keys())
+                'timestamp': extracted_state.timestamp,
+                'pot_size': extracted_state.pot_size,
+                'hero_stack': extracted_state.hero_stack,
+                'hero_cards': extracted_state.hero_cards,
+                'board_cards': extracted_state.board_cards,
+                'current_street': extracted_state.current_street,
+                'active_players': extracted_state.active_players,
+                'blinds': extracted_state.blinds,
+                'is_hero_turn': extracted_state.is_hero_turn,
+                'action_buttons': [asdict(btn) for btn in extracted_state.action_buttons],
+                'extraction_confidence': extracted_state.extraction_confidence,
+                'errors': extracted_state.errors,
+                'performance': self.table_extractor.get_extraction_performance()
             }
             
         except Exception as e:

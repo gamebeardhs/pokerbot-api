@@ -74,6 +74,10 @@ app.include_router(database_router, prefix="/database", tags=["instant-gto"])
 from app.api.live_poker_endpoints import router as live_poker_router
 app.include_router(live_poker_router, prefix="/live", tags=["live-monitoring"])
 
+# Include enhanced extraction endpoints
+from app.api.enhanced_extraction_endpoints import router as extraction_router
+app.include_router(extraction_router, prefix="/extraction", tags=["enhanced-extraction"])
+
 # Mount static files
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
