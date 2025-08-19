@@ -8,7 +8,13 @@
 
 **Solution:** The updated `setup_windows_advanced.bat` now has improved detection and will continue installation even if detection fails.
 
-### Issue 2: OpenSpiel installation failed
+### Issue 2: "ModuleNotFoundError: No module named 'playwright'"
+
+**Root Cause:** Playwright missing from basic setup.
+
+**Solution:** Updated `setup_windows_basic.bat` now includes Playwright. Re-run the setup.
+
+### Issue 3: OpenSpiel installation failed
 
 **Root Cause:** Missing C++ compilation tools.
 

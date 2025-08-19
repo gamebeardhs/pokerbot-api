@@ -3,7 +3,12 @@
 import asyncio
 import logging
 from typing import Optional, Dict, Any
-from app.scraper.clubwpt_scraper import ClubWPTGoldScraper
+try:
+    from app.scraper.clubwpt_scraper import ClubWPTGoldScraper
+    CLUBWPT_AVAILABLE = True
+except ImportError:
+    CLUBWPT_AVAILABLE = False
+    ClubWPTGoldScraper = None
 from app.scraper.acr_scraper import ACRScraper
 from app.advisor.enhanced_gto_service import EnhancedGTODecisionService
 
@@ -17,9 +22,16 @@ class ScraperManager:
         """Initialize scraper manager with GTO service."""
         self.gto_service = gto_service
         self.scrapers = {
-            'clubwpt': ClubWPTGoldScraper(),
             'acr': ACRScraper()
         }
+        
+        # Only add ClubWPT scraper if Playwright is available
+        if CLUBWPT_AVAILABLE and ClubWPTGoldScraper is not None:
+            self.scrapers['clubwpt'] = ClubWPTGoldScraper()
+            logger.info("ClubWPT scraper enabled")
+        else:
+            logger.warning("ClubWPT scraper disabled (Playwright not available)")
+            
         self.active_scraper = None
         self.is_running = False
         

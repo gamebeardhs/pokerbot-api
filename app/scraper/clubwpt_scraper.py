@@ -3,7 +3,14 @@
 import asyncio
 import re
 from typing import Optional, Dict, Any, List
-from playwright.async_api import async_playwright, Browser, Page
+try:
+    from playwright.async_api import async_playwright, Browser, Page
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    async_playwright = None
+    Browser = None
+    Page = None
 from app.scraper.base_scraper import BaseScraper
 
 class ClubWPTGoldScraper(BaseScraper):
@@ -18,6 +25,10 @@ class ClubWPTGoldScraper(BaseScraper):
         
     async def setup(self) -> bool:
         """Setup browser and navigate to ClubWPT Gold."""
+        if not PLAYWRIGHT_AVAILABLE:
+            self.logger.warning("Playwright not available - ClubWPT scraper disabled")
+            return False
+            
         try:
             playwright = await async_playwright().start()
             
