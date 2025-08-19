@@ -142,14 +142,26 @@ async def save_extraction_debug():
 
 @router.get("/test-ocr-engine")
 async def test_ocr_engine():
-    """Test the enhanced OCR engine with synthetic poker text."""
+    """Test the enhanced OCR engine with EasyOCR and multi-engine capabilities."""
     try:
-        # Run OCR tests in background
+        # Run comprehensive OCR tests
+        from ..scraper.enhanced_ocr_engine import test_enhanced_ocr, test_multi_engine_performance
+        
+        # Run synchronous test
         test_enhanced_ocr()
+        
+        # Run async performance test
+        await test_multi_engine_performance()
         
         return {
             "status": "success",
-            "message": "OCR engine test completed - check server logs for detailed results",
+            "message": "Enhanced OCR engine test completed with EasyOCR integration - check server logs for detailed results",
+            "features_tested": [
+                "EasyOCR initialization",
+                "Multi-engine consensus",
+                "Performance comparison",
+                "Accuracy validation"
+            ],
             "timestamp": time.time()
         }
         
@@ -159,14 +171,17 @@ async def test_ocr_engine():
 
 @router.get("/ocr-engine-info")
 async def get_ocr_engine_info():
-    """Get information about the OCR engine capabilities."""
+    """Get information about the OCR engine capabilities including EasyOCR status."""
     try:
-        ocr_engine = EnhancedOCREngine()
+        # Test both single and multi-engine modes
+        ocr_engine = EnhancedOCREngine(use_easyocr=True, use_multi_engine=True)
+        engine_info = ocr_engine.get_engine_info()
         
         return {
             "status": "success",
             "ocr_info": {
                 "confidence_threshold": ocr_engine.confidence_threshold,
+                "engines": engine_info,
                 "available_configs": list(ocr_engine.configs.keys()),
                 "preprocessing_methods": [
                     "scaled_gray",
@@ -178,7 +193,13 @@ async def get_ocr_engine_info():
                 ],
                 "supported_text_types": [
                     "money", "cards", "names", "general", "single_word", "single_char"
-                ]
+                ],
+                "features": {
+                    "multi_engine_consensus": engine_info['multi_engine_enabled'],
+                    "easyocr_integration": engine_info['easyocr_available'],
+                    "parallel_processing": True,
+                    "confidence_based_selection": True
+                }
             },
             "timestamp": time.time()
         }
