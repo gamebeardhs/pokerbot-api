@@ -70,6 +70,10 @@ app.include_router(auto_advisory_router, prefix="/auto-advisory", tags=["automat
 from app.api.database_endpoints import router as database_router
 app.include_router(database_router, prefix="/database", tags=["instant-gto"])
 
+# Include live poker monitoring endpoints
+from app.api.live_poker_endpoints import router as live_poker_router
+app.include_router(live_poker_router, prefix="/live", tags=["live-monitoring"])
+
 # Mount static files
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

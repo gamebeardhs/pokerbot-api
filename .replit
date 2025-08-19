@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["freetype", "gitFull", "glibcLocales", "jq", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "pkg-config", "playwright-driver", "tcl", "tesseract", "tk", "unzip", "xsimd", "zlib"]
+packages = ["freetype", "gitFull", "glibcLocales", "jq", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "pkg-config", "playwright-driver", "scrot", "tcl", "tesseract", "tk", "unzip", "xsimd", "xvfb-run", "zlib"]
 
 [workflows]
 runButton = "Project"

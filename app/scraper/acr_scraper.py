@@ -121,7 +121,7 @@ class ACRScraper(BaseScraper):
             return False
     
     async def scrape_table_state(self) -> Optional[Dict[str, Any]]:
-        """Scrape enhanced table state using screen capture and OCR."""
+        """Scrape enhanced table state using optimized screen capture and OCR."""
         if not self.is_table_active():
             return None
             
