@@ -237,4 +237,4 @@ class SimpleAuthenticImporter:
 
 if __name__ == "__main__":
     importer = SimpleAuthenticImporter()
-    importer.run_simple_import(25000)
+    importer.run_simple_import(50000)  # Increased target for comprehensive coverage
