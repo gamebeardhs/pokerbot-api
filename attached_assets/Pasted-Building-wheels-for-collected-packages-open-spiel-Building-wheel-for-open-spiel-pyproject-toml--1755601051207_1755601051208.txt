@@ -1,0 +1,717 @@
+Building wheels for collected packages: open-spiel
+  Building wheel for open-spiel (pyproject.toml) ... error
+  error: subprocess-exited-with-error
+
+  × Building wheel for open-spiel (pyproject.toml) did not run successfully.
+  │ exit code: 1
+  ╰─> [682 lines of output]
+      running bdist_wheel
+      running build
+      running build_py
+      creating build\lib.win-amd64-cpython-311\open_spiel
+      copying open_spiel\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel
+      creating build\lib.win-amd64-cpython-311\open_spiel\integration_tests
+      copying open_spiel\integration_tests\api_test.py -> build\lib.win-amd64-cpython-311\open_spiel\integration_tests
+      copying open_spiel\integration_tests\playthrough_test.py -> build\lib.win-amd64-cpython-311\open_spiel\integration_tests
+      copying open_spiel\integration_tests\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\integration_tests
+      creating build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\observation.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\rl_agent.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\rl_agent_policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\rl_environment.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\rl_tools.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\simple_nets.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\test_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\vector_env.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      copying open_spiel\python\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\action_value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\action_value_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\action_value_vs_best_response.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\action_value_vs_best_response_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\adidas.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\adidas_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\async_mcts.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\async_mcts_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\best_response.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\best_response_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\boltzmann_tabular_qlearner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\boltzmann_tabular_qlearner_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\cfr_br.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\cfr_br_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\cfr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\discounted_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\discounted_cfr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\double_oracle.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\double_oracle_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\efr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\efr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\elo.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\elo_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\evaluate_bots.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\evaluate_bots_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\expected_game_score.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\expected_game_score_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\exploitability.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\exploitability_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\external_sampling_mccfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\external_sampling_mccfr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\fictitious_play.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\fictitious_play_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\gambit.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\gambit_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\generate_playthrough.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\generate_playthrough_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\get_all_states.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\get_all_states_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\ismcts.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\ismcts_agent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\ismcts_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\jpsro.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\jpsro_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\lp_solver.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\lp_solver_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\matrix_nash.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mccfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mcts.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mcts_agent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mcts_agent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mcts_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\minimax.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\minimax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mip_nash.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mip_nash_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mmd_dilated.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\mmd_dilated_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\nash_averaging.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\nash_averaging_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\nfg_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\nfg_utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\noisy_policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\noisy_policy_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\outcome_sampling_mccfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\outcome_sampling_mccfr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\policy_aggregator.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\policy_aggregator_joint.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\policy_aggregator_joint_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\policy_aggregator_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\policy_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\projected_replicator_dynamics.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\projected_replicator_dynamics_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\random_agent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\random_agent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\regret_matching.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\regret_matching_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\response_graph_ucb.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\response_graph_ucb_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\response_graph_ucb_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sample_some_states.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sample_some_states_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sequence_form_lp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sequence_form_lp_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sequence_form_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\sequence_form_utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\stackelberg_lp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\stackelberg_lp_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\tabular_multiagent_qlearner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\tabular_multiagent_qlearner_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\tabular_qlearner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\tabular_qlearner_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\value_iteration.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\value_iteration_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\wolf_phc.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\wolf_phc_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      copying open_spiel\python\algorithms\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\bluechip_bridge.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\bluechip_bridge_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\bluechip_bridge_uncontested_bidding.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\bluechip_bridge_uncontested_bidding_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\gtp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\human.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\is_mcts_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\scenarios.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\uniform_random.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\uniform_random_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      copying open_spiel\python\bots\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\bots
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\basic_games.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\coalitional_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\deon_larson20_games.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\least_core_lagrangian.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\least_core_lagrangian_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\least_core_lp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\least_core_lp_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\shapley_values.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\shapley_values_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\util.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\wvg.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\wvg_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      copying open_spiel\python\coalitional_games\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\coalitional_games
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\alpharank.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\alpharank_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\alpharank_visualizer.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\alpharank_visualizer_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\dynamics.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\dynamics_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\heuristic_payoff_table.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\heuristic_payoff_table_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\visualization.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\visualization_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      copying open_spiel\python\egt\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\catch.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\catch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\cliff_walking.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\cliff_walking_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\iterated_matrix_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      copying open_spiel\python\environments\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\environments
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\benchmark_games.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\breakthrough_dqn.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\bridge_supervised_learning.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\bridge_uncontested_bidding_bluechip.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\bridge_wb5.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\catch_jax_policy_gradient.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\catch_pytorch_policy_gradient.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\cfr_cpp_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\cfr_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\chat_game_cfr_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\chat_game_psro_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\deep_cfr_jax.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\deep_cfr_pytorch.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\deep_cfr_tf2.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\discounted_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\dots_and_boxes_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\eva.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\exploitability_descent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\fictitious_play_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\gambit_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\game_tree_traversal_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\get_all_states.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\hearts_supervised_learning.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\independent_tabular_qlearning.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\is_mcts_exploitability.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\jpsro.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\kuhn_poker_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\lewis_signaling_qlearner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\lp_solve_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\marl_nashq_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\matrix_game_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\matrix_nash_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mccfr_cpp_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mccfr_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mcts.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mmd_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mmd_matrix_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\mmd_nash_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\nego_nbs_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\nfg_writer_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\nfsp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\playthrough.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\play_scenarios.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\play_tarok_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\play_via_console_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\poker_fcpa_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\policy_aggregator_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\ppo_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\psro_v2_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\query_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\response_graph_ucb_2x2_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\response_graph_ucb_sample_complexity.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\rl_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\rl_main_loop.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\rl_response.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\roshambo_population_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\single_agent_cliff_walking.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\tic_tac_toe_dqn_vs_tabular.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\tic_tac_toe_qlearner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\treeviz_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\twenty_forty_eight_td_n_tuple_network.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\uniform_policy_exploitability.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\universal_poker_cfr_cpp_load_from_acpc_gamedef_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\value_iteration.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      copying open_spiel\python\examples\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\examples
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\atari.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\block_dominoes.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\block_dominoes_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\chat_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\chat_game_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\data.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\data_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_data.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_to_mean_field_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_to_mean_field_game_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\dynamic_routing_utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\iterated_prisoners_dilemma.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\iterated_prisoners_dilemma_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\kuhn_poker.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\kuhn_poker_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\liars_poker.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\liars_poker_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\team_dominoes.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\team_dominoes_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\tic_tac_toe.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\tic_tac_toe_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      copying open_spiel\python\games\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\boltzmann_dqn.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\boltzmann_dqn_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\deep_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\deep_cfr_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\dqn.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\dqn_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\nfsp.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\nfsp_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\opponent_shaping.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\opponent_shaping_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\policy_gradient.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\policy_gradient_jax_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      copying open_spiel\python\jax\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      copying open_spiel\python\mfg\distribution.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      copying open_spiel\python\mfg\tabular_distribution.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      copying open_spiel\python\mfg\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      copying open_spiel\python\mfg\value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      copying open_spiel\python\mfg\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\deep_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\deep_cfr_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\dqn.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\dqn_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\eva.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\eva_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\neurd.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\neurd_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\policy_gradient.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\policy_gradient_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\ppo.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\ppo_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\rcfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\rcfr_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      copying open_spiel\python\pytorch\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\bot_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_bargaining_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_blackjack_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_bridge_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_chess_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_connect_four_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_crazy_eights_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_euchre_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_gin_rummy_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_go_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_sim_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\games_tic_tac_toe_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\game_transforms_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\matrix_game_utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\nfg_game_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\nfg_writer_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\observation_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\policy_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\pyspiel_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\rl_environment_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\sampled_stochastic_games_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\tensor_game_utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      copying open_spiel\python\tests\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\app.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\data_logger.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\file_logger.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\file_logger_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\file_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\gfile.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\lru_cache.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\lru_cache_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\metrics.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\metrics_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\replay_buffer.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\replay_buffer_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\reservoir_buffer.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\shared_value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\spawn.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\spawn_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\stats.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\training.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      copying open_spiel\python\utils\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\utils
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\visualizations
+      copying open_spiel\python\visualizations\treeviz.py -> build\lib.win-amd64-cpython-311\open_spiel\python\visualizations
+      copying open_spiel\python\visualizations\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\visualizations
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\approval.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\approval_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\base.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\base_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\borda.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\borda_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\copeland.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\copeland_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\elo.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\elo_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\kemeny_young.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\kemeny_young_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\maximal_lotteries.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\maximal_lotteries_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\pairwise_helpers.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\plurality.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\plurality_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\preflib_util.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\preflib_util_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\ranked_pairs.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\ranked_pairs_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\schulze.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\schulze_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\soft_condorcet_optimization.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\soft_condorcet_optimization_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\stv.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\stv_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      copying open_spiel\python\voting\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils
+      copying open_spiel\python\algorithms\adidas_utils\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\alpha_zero.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\analysis.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\evaluator.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\evaluator_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\export_model.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\model.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\model_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      copying open_spiel\python\algorithms\alpha_zero\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\alpha_zero
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\abstract_meta_trainer.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\best_response_oracle.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\best_response_oracle_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\meta_strategies.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\optimization_oracle.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\psro_v2.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\rl_oracle.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\rl_policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\strategy_selectors.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\strategy_selectors_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      copying open_spiel\python\algorithms\psro_v2\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\psro_v2
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\big.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\gamut.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\pyspiel_tensor_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\small.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\small_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      copying open_spiel\python\algorithms\adidas_utils\games\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\games
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers
+      copying open_spiel\python\algorithms\adidas_utils\helpers\misc.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers
+      copying open_spiel\python\algorithms\adidas_utils\helpers\simplex.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers
+      copying open_spiel\python\algorithms\adidas_utils\helpers\simplex_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers
+      copying open_spiel\python\algorithms\adidas_utils\helpers\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers
+      copying open_spiel\python\algorithms\adidas_utils\solvers\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric\exploitability.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric\exploitability_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric\game_runner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric\updates.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\nonsymmetric
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\exploitability.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\exploitability_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\game_runner.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\updates.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\utils_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\helpers\symmetric\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\helpers\symmetric
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\adam.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\adam_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\ate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\ate_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\ate_poly.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\ate_regmatch.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\ped.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\pg.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\qre.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\qre_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\regmatch.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\sgd.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\solvers_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\nonsymmetric
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\adam.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\adam_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\ate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\ate_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\ped.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\pg.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\qre.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\qre_anneal.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\qre_anneal_noaux.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\regmatch.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\sgd.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\solvers_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      copying open_spiel\python\algorithms\adidas_utils\solvers\symmetric\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\algorithms\adidas_utils\solvers\symmetric
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\egt\examples
+      copying open_spiel\python\egt\examples\alpharank_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt\examples
+      copying open_spiel\python\egt\examples\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\egt\examples
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games
+      copying open_spiel\python\games\chat_games\chat_game_base.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games
+      copying open_spiel\python\games\chat_games\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_debate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_debate_fixed.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_fixed_mock.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_rnd_mock.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_rwneg.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_schedule_meeting.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_schedule_meeting_w_dow.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_schedule_meeting_w_dow_fixed.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_schedule_meeting_w_tone.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_schedule_meeting_w_tone_fixed.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_trade_fruit.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_trade_fruit_w_tone.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\config_trade_fruit_w_tone_fixed.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      copying open_spiel\python\games\chat_games\configs\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\configs
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs
+      copying open_spiel\python\games\chat_games\envs\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\utils
+      copying open_spiel\python\games\chat_games\utils\logging_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\utils
+      copying open_spiel\python\games\chat_games\utils\test_utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\utils
+      copying open_spiel\python\games\chat_games\utils\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\utils
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\base_envs_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\debate_with_style_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\email_plain.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\email_with_tone.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\email_with_tone_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\schedule_meeting_with_dow_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\schedule_meeting_with_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\schedule_meeting_with_tone_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\trade_fruit_with_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\trade_fruit_with_tone_info.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      copying open_spiel\python\games\chat_games\envs\base_envs\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\base_envs
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      copying open_spiel\python\games\chat_games\envs\comm_substrates\debates.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      copying open_spiel\python\games\chat_games\envs\comm_substrates\emails.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      copying open_spiel\python\games\chat_games\envs\comm_substrates\schedules.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      copying open_spiel\python\games\chat_games\envs\comm_substrates\trades.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      copying open_spiel\python\games\chat_games\envs\comm_substrates\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\comm_substrates
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\observations
+      copying open_spiel\python\games\chat_games\envs\observations\summary.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\observations
+      copying open_spiel\python\games\chat_games\envs\observations\summary_debate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\observations
+      copying open_spiel\python\games\chat_games\envs\observations\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\observations
+      copying open_spiel\python\games\chat_games\envs\observations\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\observations
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\debate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\schedule_meeting.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\sentiment.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\trade_fruit.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      copying open_spiel\python\games\chat_games\envs\payoffs\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\payoffs
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios
+      copying open_spiel\python\games\chat_games\envs\scenarios\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\termination
+      copying open_spiel\python\games\chat_games\envs\termination\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\termination
+      copying open_spiel\python\games\chat_games\envs\termination\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\termination
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\utils
+      copying open_spiel\python\games\chat_games\envs\utils\header.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\utils
+      copying open_spiel\python\games\chat_games\envs\utils\text.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\utils
+      copying open_spiel\python\games\chat_games\envs\utils\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\utils
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\actions
+      copying open_spiel\python\games\chat_games\envs\scenarios\actions\arguments.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\actions
+      copying open_spiel\python\games\chat_games\envs\scenarios\actions\tones.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\actions
+      copying open_spiel\python\games\chat_games\envs\scenarios\actions\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\actions
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      copying open_spiel\python\games\chat_games\envs\scenarios\domains\debate.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      copying open_spiel\python\games\chat_games\envs\scenarios\domains\real_world_negotiations.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      copying open_spiel\python\games\chat_games\envs\scenarios\domains\schedule_meeting.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      copying open_spiel\python\games\chat_games\envs\scenarios\domains\trade_fruit.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      copying open_spiel\python\games\chat_games\envs\scenarios\domains\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\domains
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\players
+      copying open_spiel\python\games\chat_games\envs\scenarios\players\names.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\players
+      copying open_spiel\python\games\chat_games\envs\scenarios\players\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\games\chat_games\envs\scenarios\players
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\jax\cfr
+      copying open_spiel\python\jax\cfr\compare_cfr_with_jax.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax\cfr
+      copying open_spiel\python\jax\cfr\jax_cfr.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax\cfr
+      copying open_spiel\python\jax\cfr\jax_cfr_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax\cfr
+      copying open_spiel\python\jax\cfr\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\jax\cfr
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\average_network_fictitious_play.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\average_network_fictitious_play_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\bandit_regret.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\benchmark.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\best_response_value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\best_response_value_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\boltzmann_policy_iteration.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\boltzmann_policy_iteration_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\correlated_equilibrium.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\distribution.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\distribution_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\fictitious_play.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\fictitious_play_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\fixed_point.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\fixed_point_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\greedy_policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\greedy_policy_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\joint_best_response_value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\mf_psro.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\mirror_descent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\mirror_descent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\munchausen_deep_mirror_descent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\munchausen_deep_mirror_descent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\munchausen_mirror_descent.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\munchausen_mirror_descent_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\nash_conv.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\nash_conv_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\policy_value.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\policy_value_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\softmax_policy.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\softmax_policy_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\utils.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      copying open_spiel\python\mfg\algorithms\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_avoidance.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_avoidance_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_modelling.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_modelling_2d.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_modelling_2d_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\crowd_modelling_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\dynamic_routing.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\dynamic_routing_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\factory.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\factory_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\linear_quadratic.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\linear_quadratic_example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\linear_quadratic_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\normal_form_game.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\normal_form_game_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\periodic_aversion.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\periodic_aversion_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\predator_prey.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\predator_prey_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      copying open_spiel\python\mfg\games\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\games
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms\pytorch
+      copying open_spiel\python\mfg\algorithms\pytorch\mfg_proximal_policy_optimization.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms\pytorch
+      copying open_spiel\python\mfg\algorithms\pytorch\mfg_proximal_policy_optimization_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms\pytorch
+      copying open_spiel\python\mfg\algorithms\pytorch\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\mfg\algorithms\pytorch
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\pytorch\losses
+      copying open_spiel\python\pytorch\losses\rl_losses.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch\losses
+      copying open_spiel\python\pytorch\losses\rl_losses_pytorch_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch\losses
+      copying open_spiel\python\pytorch\losses\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\pytorch\losses
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\tests\mfg_implementation_test
+      copying open_spiel\python\tests\mfg_implementation_test\mfg_test.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests\mfg_implementation_test
+      copying open_spiel\python\tests\mfg_implementation_test\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\tests\mfg_implementation_test
+      creating build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      copying open_spiel\python\voting\examples\atari.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      copying open_spiel\python\voting\examples\atari_datasets.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      copying open_spiel\python\voting\examples\chatbot_arena.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      copying open_spiel\python\voting\examples\example.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      copying open_spiel\python\voting\examples\__init__.py -> build\lib.win-amd64-cpython-311\open_spiel\python\voting\examples
+      running build_ext
+      Traceback (most recent call last):
+        File "<string>", line 54, in _check_build_environment
+        File "C:\Users\gameb\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 408, in check_call
+          retcode = call(*popenargs, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 389, in call
+          with Popen(*popenargs, **kwargs) as p:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 1026, in __init__
+          self._execute_child(args, executable, preexec_fn, close_fds,
+        File "C:\Users\gameb\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 1538, in _execute_child
+          hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+      The above exception was the direct cause of the following exception:
+
+      Traceback (most recent call last):
+        File "C:\Users\gameb\Downloads\PokerBrain\venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 389, in <module>
+          main()
+        File "C:\Users\gameb\Downloads\PokerBrain\venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 373, in main
+          json_out["return_val"] = hook(**hook_input["kwargs"])
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\Downloads\PokerBrain\venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 280, in build_wheel
+          return _build_backend().build_wheel(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\build_meta.py", line 435, in build_wheel
+          return _build(['bdist_wheel', '--dist-info-dir', str(metadata_directory)])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\build_meta.py", line 423, in _build
+          return self._build_with_temp_dir(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\build_meta.py", line 404, in _build_with_temp_dir
+          self.run_setup()
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\build_meta.py", line 512, in run_setup
+          super().run_setup(setup_script=setup_script)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\build_meta.py", line 317, in run_setup
+          exec(code, locals())
+        File "<string>", line 125, in <module>
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\__init__.py", line 115, in setup
+          return distutils.core.setup(**attrs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\core.py", line 186, in setup
+          return run_commands(dist)
+                 ^^^^^^^^^^^^^^^^^^
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\core.py", line 202, in run_commands
+          dist.run_commands()
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1002, in run_commands
+          self.run_command(cmd)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\dist.py", line 1102, in run_command
+          super().run_command(command)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\command\bdist_wheel.py", line 370, in run
+          self.run_command("build")
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\cmd.py", line 357, in run_command
+          self.distribution.run_command(command)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\dist.py", line 1102, in run_command
+          super().run_command(command)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\command\build.py", line 135, in run
+          self.run_command(cmd_name)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\cmd.py", line 357, in run_command
+          self.distribution.run_command(command)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\dist.py", line 1102, in run_command
+          super().run_command(command)
+        File "C:\Users\gameb\AppData\Local\Temp\pip-build-env-9q_d8sgs\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "<string>", line 47, in run
+        File "<string>", line 57, in _check_build_environment
+      RuntimeError: CMake must be installed to buildthe following extensions: pyspiel
+      [end of output]
+
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for open-spiel
+Failed to build open-spiel
+error: failed-wheel-build-for-install
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> open-spiel
+[6/8] Setting up Playwright browsers...
+[7/8] Checking external dependencies...
+
+Checking Tesseract OCR...
+Tesseract OCR found and working
+[8/8] Running system test...
+Testing basic imports...
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+Unable to initialize device PRN
+'"' is not recognized as an internal or external command,
+operable program or batch file.
+ERROR: Some dependencies failed to import

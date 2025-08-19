@@ -59,7 +59,15 @@ echo Installing screen capture dependencies...
 pip install --quiet mss pyautogui imagehash
 
 echo Installing optional dependencies...
-pip install --quiet playwright trafilatura pytest pytest-asyncio nest-asyncio open-spiel tensorflow
+pip install --quiet playwright trafilatura pytest pytest-asyncio nest-asyncio tensorflow
+
+echo Installing OpenSpiel (advanced GTO - may fail without Visual Studio Build Tools)...
+pip install --quiet open-spiel 2>nul
+if %errorlevel% neq 0 (
+    echo WARNING: OpenSpiel installation failed - advanced GTO features disabled
+    echo System will use database fallback for GTO recommendations
+    echo To enable full GTO: Install Visual Studio Build Tools, then run setup_windows_advanced.bat
+)
 
 echo [5/6] Installing Playwright browsers (if needed)...
 playwright install chromium --with-deps >nul 2>&1
