@@ -1,0 +1,28 @@
+{
+  "table_id": "t1",
+  "hand_id": "h123",
+  "room": "ClubWPT",
+  "variant": "NLHE",
+  "max_seats": 6,
+  "hero_seat": 2,
+  "stakes": { "sb": 0.5, "bb": 1, "currency": "USD" },
+  "street": "FLOP",
+  "board": ["Qs","Jh","2h"],
+  "hero_hole": ["As","Kd"],
+  "pot": 4.5,
+  "to_call": 0.0,
+  "bet_min": 1.5,
+  "seats": [
+    { "seat": 0, "name": "UTG",  "stack": 100, "in_hand": true, "acted": false, "position": "LJ" },
+    { "seat": 1, "name": "HJ",   "stack": 120, "in_hand": true, "acted": false, "position": "HJ" },
+    { "seat": 2, "name": "HERO", "stack": 95,  "in_hand": true, "acted": false, "position": "CO", "is_hero": true },
+    { "seat": 3, "name": "BTN",  "stack": 80,  "in_hand": true, "acted": false, "position": "BTN" },
+    { "seat": 4, "name": "SB",   "stack": 60,  "in_hand": true, "acted": false, "position": "SB" },
+    { "seat": 5, "name": "BB",   "stack": 75,  "in_hand": true, "acted": false, "position": "BB" }
+  ],
+  "button_seat": 3,
+  "sb_seat": 4,
+  "bb_seat": 5,
+  "hero_position_vs_aggressor": "in_position",
+  "num_raises_this_street": 0
+}

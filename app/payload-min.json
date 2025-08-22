@@ -1,0 +1,14 @@
+{
+  "table_id": "t1",
+  "stakes": { "sb": 0.5, "bb": 1, "currency": "USD" },
+  "street": "PREFLOP",
+  "pot": 1.5,
+  "seats": [
+    { "seat": 0, "name": "UTG", "stack": 100, "in_hand": true },
+    { "seat": 1, "name": "HJ",  "stack": 100, "in_hand": true },
+    { "seat": 2, "name": "CO",  "stack": 100, "in_hand": true, "is_hero": true },
+    { "seat": 3, "name": "BTN", "stack": 100, "in_hand": true },
+    { "seat": 4, "name": "SB",  "stack": 100, "in_hand": true },
+    { "seat": 5, "name": "BB",  "stack": 100, "in_hand": true }
+  ]
+}
