@@ -96,6 +96,7 @@ echo.
 
 REM Set environment token for local testing
 set INGEST_TOKEN=test-token-123
+set TEXASSOLVER_API_URL=http://127.0.0.1:8000
 
 REM Start the server
 python -m uvicorn app.api.main:app --host 0.0.0.0 --port 5000 --reload

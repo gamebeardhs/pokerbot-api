@@ -1,0 +1,24 @@
+{
+  "table_id": "t1",
+  "hand_id": "h123",
+  "room": "ClubWPT",
+  "variant": "NLHE",
+  "max_seats": 6,
+  "hero_seat": 2,
+  "stakes": { "sb": 0.5, "bb": 1, "currency": "USD" },
+  "street": "PREFLOP",
+  "board": [],
+  "hero_hole": ["As", "Kd"],
+  "pot": 0,
+  "round_pot": 0,
+  "to_call": 1,
+  "bet_min": 2,
+  "seats": [
+    { "seat": 0, "player_id": "p0", "stack": 100, "in_hand": true, "acted": false, "bet": 0 },
+    { "seat": 1, "player_id": "p1", "stack": 120, "in_hand": true, "acted": false, "bet": 0 },
+    { "seat": 2, "player_id": "hero", "stack": 95,  "in_hand": true, "acted": false, "bet": 0 },
+    { "seat": 3, "player_id": "p3", "stack": 80,  "in_hand": true, "acted": false, "bet": 0 },
+    { "seat": 4, "player_id": "p4", "stack": 60,  "in_hand": true, "acted": false, "bet": 0 },
+    { "seat": 5, "player_id": "p5", "stack": 75,  "in_hand": true, "acted": false, "bet": 0 }
+  ]
+}

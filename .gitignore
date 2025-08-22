@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.build/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+
+# Envs
+.venv/
+venv/
+env/
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs & data
+logs/
+*.log
+data/
+*.db
+*.sqlite
+*.parquet
+*.csv
+
+# Node
+node_modules/
+
+# Windows/C++ artifacts
+*.obj
+*.lib
+*.dll
+*.pdb
+*.exe
+
+# Archives & wheels
+*.zip
+*.tar
+*.tar.gz
+*.whl
+
+# OpenSpiel & third-party builds
+open_spiel/build/
+abseil-cpp/build/

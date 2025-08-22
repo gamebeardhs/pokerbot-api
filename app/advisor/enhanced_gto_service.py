@@ -1,5 +1,6 @@
 """Enhanced GTO decision service with comprehensive poker analysis."""
 
+from app.advisor.texas_solver_client import TexasSolverClient
 import os
 import asyncio
 import logging
@@ -31,7 +32,7 @@ class EnhancedGTODecisionService:
         self.openspiel_wrapper = OpenSpielWrapper()
         self.strategy_cache = StrategyCache()
         self.strategies_path = "app/strategies"
-        
+        self.ts_client = TexasSolverClient(base_url=os.getenv("TEXASSOLVER_API_URL""http://127.0.0.1:8000"))
         # Enhanced GTO components
         self.board_analyzer = BoardAnalyzer()
         self.range_analyzer = RangeAnalyzer()
@@ -105,6 +106,13 @@ class EnhancedGTODecisionService:
         strategy_name: str = "default_cash6max"
     ) -> GTOResponse:
         """Compute comprehensive GTO decision using all available analysis."""
+        use_ts = True  # switch via env/config later
+        if use_ts:
+            ts = self.ts_client.solve(state)
+            if ts.get("status") == "ok" and ts.get("actions"):
+                return self.ts_client.to_gto_response(state, ts)
+    # fallback:
+    # return a minimal, safe response or drop to OpenSpiel (if available)
         try:
             start_time = datetime.now()
             
