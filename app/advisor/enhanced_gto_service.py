@@ -32,7 +32,8 @@ class EnhancedGTODecisionService:
         self.openspiel_wrapper = OpenSpielWrapper()
         self.strategy_cache = StrategyCache()
         self.strategies_path = "app/strategies"
-        self.ts_client = TexasSolverClient(base_url=os.getenv("TEXASSOLVER_API_URL""http://127.0.0.1:8000"))
+        self.ts_client = TexasSolverClient()
+        self.ts_api_url = os.getenv("TEXASSOLVER_API_URL", "http://127.0.0.1:8000")
         # Enhanced GTO components
         self.board_analyzer = BoardAnalyzer()
         self.range_analyzer = RangeAnalyzer()

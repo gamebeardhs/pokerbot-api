@@ -1,0 +1,27 @@
+{
+  "table_id": "t1",
+  "hand_id": "h123",
+  "room": "ClubWPT",
+  "variant": "NLHE",
+  "max_seats": 6,
+  "hero_seat": 2,
+  "stakes": { "sb": 0.5, "bb": 1, "currency": "USD" },
+  "street": "PREFLOP",
+  "board": [],
+  "hero_hole": ["As","Kd"],
+  "pot": 1.5,
+  "round_pot": 0.0,
+  "to_call": 1.0,
+  "bet_min": 2.0,
+  "seats": [
+    { "seat": 0, "name": "UTG",  "stack": 100, "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "UTG",  "is_all_in": false },
+    { "seat": 1, "name": "HJ",   "stack": 120, "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "HJ",   "is_all_in": false },
+    { "seat": 2, "name": "Hero", "stack": 150, "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "CO",   "is_all_in": false },
+    { "seat": 3, "name": "BTN",  "stack": 95,  "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "BTN",  "is_all_in": false },
+    { "seat": 4, "name": "SB",   "stack": 80,  "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "SB",   "is_all_in": false },
+    { "seat": 5, "name": "BB",   "stack": 110, "in_hand": true, "acted": false, "put_in": 0, "total_invested": 0, "position": "BB",   "is_all_in": false }
+  ],
+  "button_seat": 3,
+  "sb_seat": 4,
+  "bb_seat": 5
+}

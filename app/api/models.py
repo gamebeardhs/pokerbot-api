@@ -231,6 +231,25 @@ class GTOMetrics(BaseModel):
     opponent_tendencies: Dict[int, Dict[str, float]] = {}  # Exploitative adjustments
 
 
+# -------- NEW: concise solver summary models --------
+
+class MixItem(BaseModel):
+    action: str
+    weight_pct: float  # e.g., 62.3 for 62.3%
+
+
+class SolverSummary(BaseModel):
+    recommended_action: Literal["CHECK", "CALL", "FOLD", "BET", "RAISE"]
+    amount: float                         # chips or $ depending on your units
+    pct_pot: int                          # rounded percent of pot
+    mix: List[MixItem] = []               # top-3 action mix
+    to_call: float
+    pot: float
+    bb: float
+    notes: Optional[str] = None
+    ui: Optional[str] = None              # one-line string for HUDs
+
+
 class GTOResponse(BaseModel):
     """Enhanced response from GTO decision endpoint."""
     ok: bool = True
@@ -246,6 +265,9 @@ class GTOResponse(BaseModel):
     # Exploitative elements
     exploitative_adjustments: List[str] = []  # List of adjustments made
     gto_baseline: Optional[GTODecision] = None  # Pure GTO decision for comparison
+
+    # NEW: concise, user‑facing summary of the solver output
+    summary: Optional[SolverSummary] = None
 
 
 class HealthResponse(BaseModel):

@@ -1,401 +1,485 @@
-# app/advisor/texas_solver_client.py
-from __future__ import annotations
-
-import os, re, time, json, logging, shutil, subprocess, tempfile
+import json
+import logging
+import os
+import shutil
+import tempfile
+import threading
+import time
+import textwrap
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional, List
-import requests
+from subprocess import Popen, PIPE, TimeoutExpired
+from typing import Optional, Tuple, Dict, Any, Iterable
 
-from app.api.models import (
-    TableState, GTODecision, GTOResponse, GTOMetrics, EquityBreakdown
+def _safe_threads():
+    # cap to 8 to avoid native crashes on some builds
+    cpu = os.cpu_count() or 1
+    return min(cpu, 8)
+
+from app.config import (
+    TEXASSOLVER_EXE as CFG_TEXASSOLVER_EXE,
+    TEXASSOLVER_DIR as CFG_TEXASSOLVER_DIR,
+    RUNTIME_TMP_PREFIX,
+    DEFAULT_SOLVER_TIMEOUT_SECONDS,
 )
 
 log = logging.getLogger(__name__)
 
-# ------------------- small utils -------------------
+class TexasSolverError(Exception):
+    pass
 
-RANK_MAP = {"2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9","t":"T","10":"T","j":"J","q":"Q","k":"K","a":"A"}
-SUITS = {"s","h","d","c"}
+class TexasSolverTimeout(TexasSolverError):
+    pass
 
-def _cpu_threads() -> int:
-    c = os.cpu_count() or 2
-    return max(1, c - 1)
+# ---- Resolve solver paths (env > config), ensure Path objects ----
+_env_dir = os.getenv("TEXASSOLVER_DIR", None)
+_env_exe = os.getenv("TEXASSOLVER_EXE", None)
 
-def _float(x, default: float = 0.0) -> float:
+_base_dir = Path(str(CFG_TEXASSOLVER_DIR)).resolve()
+_exe = Path(str(CFG_TEXASSOLVER_EXE)) if CFG_TEXASSOLVER_EXE else (_base_dir / "console_solver.exe")
+
+if _env_dir:
+    _base_dir = Path(_env_dir).resolve()
+if _env_exe:
+    _exe = Path(_env_exe)
+
+TEXASSOLVER_DIR: Path = _base_dir
+TEXASSOLVER_EXE: Path = _exe
+
+
+def _pump_stream(stream, tag: str):
+    """Stream solver stdout/stderr line-by-line into our logs."""
+    for line in iter(stream.readline, b''):
+        try:
+            decoded = line.decode(errors="replace").rstrip()
+        except Exception:
+            decoded = str(line)
+        if decoded:
+            log.info("[texassolver %s] %s", tag, decoded)
     try:
-        return float(x) if x is not None else default
+        stream.close()
     except Exception:
-        return default
+        pass
 
-# ------------------- client -------------------
+
+def verify_solver_install() -> None:
+    """Make sure solver exe & resources are present and runnable."""
+    exe = TEXASSOLVER_EXE if isinstance(TEXASSOLVER_EXE, Path) else Path(TEXASSOLVER_EXE)
+    base = TEXASSOLVER_DIR if isinstance(TEXASSOLVER_DIR, Path) else Path(TEXASSOLVER_DIR)
+
+    if not exe.exists():
+        raise TexasSolverError(f"TexasSolver exe not found: {exe}")
+    if exe.is_dir():
+        raise TexasSolverError(f"TexasSolver exe points to a directory, not a file: {exe}")
+
+    resources = base / "resources"
+    if not resources.exists():
+        raise TexasSolverError(f"TexasSolver resources/ folder not found at: {resources}")
+
+    log.info("TexasSolver detected at %s", exe)
+
+
+def build_fast_profile_input(
+    pot: float,
+    effective_stack: float,
+    board_cards,
+    ip_range_text: str,
+    oop_range_text: str,
+    betsize_pct: int = 50,
+    threads: int = _safe_threads(),
+    accuracy: float = 5.0,
+    max_iteration: int = 50,
+    allin_threshold: float = 0.67,
+    output_path: str = "output_result.json",
+) -> str:
+    """
+    Return a TexasSolver input.txt string for a tiny/fast tree:
+      - 1 bet size per street (betsize_pct% pot)
+      - include all-in on each street
+      - loose accuracy & low iteration cap so it finishes quickly
+    """
+    board_str = ",".join(board_cards) if board_cards else ""
+
+    script_lines = [
+        f"set_pot {pot}",
+        f"set_effective_stack {effective_stack}",
+    ]
+    if board_str:
+        script_lines.append(f"set_board {board_str}")
+
+    script_lines.extend([
+        f"set_range_ip {ip_range_text}",
+        f"set_range_oop {oop_range_text}",
+
+        # bet sizes (1 size + shove)
+        f"set_bet_sizes oop,flop,bet,{betsize_pct}",
+        f"set_bet_sizes oop,flop,raise,{betsize_pct}",
+        f"set_bet_sizes oop,flop,allin",
+        f"set_bet_sizes ip,flop,bet,{betsize_pct}",
+        f"set_bet_sizes ip,flop,raise,{betsize_pct}",
+        f"set_bet_sizes ip,flop,allin",
+
+        f"set_bet_sizes oop,turn,bet,{betsize_pct}",
+        f"set_bet_sizes oop,turn,raise,{betsize_pct}",
+        f"set_bet_sizes oop,turn,allin",
+        f"set_bet_sizes ip,turn,bet,{betsize_pct}",
+        f"set_bet_sizes ip,turn,raise,{betsize_pct}",
+        f"set_bet_sizes ip,turn,allin",
+
+        f"set_bet_sizes oop,river,bet,{betsize_pct}",
+        f"set_bet_sizes oop,river,raise,{betsize_pct}",
+        f"set_bet_sizes oop,river,allin",
+        f"set_bet_sizes ip,river,bet,{betsize_pct}",
+        f"set_bet_sizes ip,river,raise,{betsize_pct}",
+        f"set_bet_sizes ip,river,allin",
+
+        f"set_allin_threshold {allin_threshold}",
+
+        "build_tree",
+
+        f"set_thread_num {threads}",
+        f"set_accuracy {accuracy}",
+        f"set_max_iteration {max_iteration}",
+        f"set_print_interval 1",
+        "start_solve",
+        "set_dump_rounds 2",
+        f"dump_result {output_path}",
+    ])
+
+    return "\n".join(script_lines) + "\n"
+
+
+def run_solver_with_input_text(input_text: str, timeout_sec: int = DEFAULT_SOLVER_TIMEOUT_SECONDS) -> dict:
+    """
+    Write input_text into a temp dir; run console_solver.exe with cwd=TEXASSOLVER_DIR.
+    Stream logs, enforce timeout, parse output_result.json and return its JSON.
+    """
+    verify_solver_install()
+
+    with tempfile.TemporaryDirectory(prefix=RUNTIME_TMP_PREFIX) as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        input_path = tmpdir_path / "input.txt"
+        output_path = Path(tempfile.gettempdir()) / (RUNTIME_TMP_PREFIX + "out.json")
+
+        try:
+            if output_path.exists():
+                output_path.unlink()
+        except Exception:
+            pass
+
+        input_path.write_text(input_text, encoding="utf-8")
+
+        if "dump_result" not in input_path.read_text(encoding="utf-8"):
+            raise TexasSolverError("Input script missing dump_result; expected caller to include it.")
+
+        cmd = [
+            str(TEXASSOLVER_EXE),
+            "--input_file", str(input_path),
+            "--resource_dir", "resources",  # relative to cwd below
+        ]
+        log.info("Launching TexasSolver: %s", " ".join(cmd))
+
+        env = os.environ.copy()
+        env.setdefault("OMP_NUM_THREADS", "1")
+        env.setdefault("KMP_INIT_AT_FORK", "FALSE")
+
+        proc = Popen(
+            cmd,
+            cwd=str(TEXASSOLVER_DIR),
+            env=env,
+            stdout=PIPE,
+            stderr=PIPE,
+        )
+        t_out = threading.Thread(target=_pump_stream, args=(proc.stdout, "OUT"), daemon=True)
+        t_err = threading.Thread(target=_pump_stream, args=(proc.stderr, "ERR"), daemon=True)
+        t_out.start()
+        t_err.start()
+
+        try:
+            rc = proc.wait(timeout=timeout_sec)
+        except TimeoutExpired:
+            data = None
+            try:
+                if output_path.exists():
+                    data = json.loads(output_path.read_text(encoding="utf-8"))
+            except Exception:
+                data = None
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            if data is not None:
+                return data
+            raise TexasSolverTimeout(f"TexasSolver timed out after {timeout_sec}s")
+
+        if rc != 0:
+            if rc == 3221225477:
+                raise TexasSolverError(
+                    "TexasSolver crashed with 0xC0000005 (access violation). "
+                    "Most common cause: resources not found due to working-directory issues. "
+                    "We now run with cwd=C:\\TexasSolver and --resource_dir=resources. "
+                    "If this persists, verify the tree/config names referenced by your input exist under C:\\TexasSolver\\resources."
+                )
+            raise TexasSolverError(f"TexasSolver exited with code {rc}")
+
+        if not output_path.exists():
+            raise TexasSolverError("TexasSolver completed but output_result.json not found (check dump_result path in your input).")
+
+        try:
+            data = json.loads(output_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            raise TexasSolverError(f"Failed to parse output_result.json: {e}")
+
+        return data
+
+
+# Convenience: a tiny smoke test for a HU flop with toy ranges
+def smoke_test() -> dict:
+    ip_range = "AA,KK,QQ,JJ,TT,AKs,AQs,AJs,ATs,KQs,AKo,AQo"
+    oop_range = "AA,KK,QQ,JJ,TT,99,AKs,AQs,AJs,KQs,AKo,AQo"
+    out_path = Path(tempfile.gettempdir()) / (RUNTIME_TMP_PREFIX + "out.json")
+    input_text = build_fast_profile_input(
+        pot=10.0,
+        effective_stack=100.0,
+        board_cards=["Ah", "Kd", "2c"],
+        ip_range_text=ip_range,
+        oop_range_text=oop_range,
+        betsize_pct=50,
+        threads=_safe_threads(),
+        accuracy=25.0,
+        max_iteration=12,
+        allin_threshold=0.67,
+        output_path=str(out_path),
+    )
+    return run_solver_with_input_text(input_text, timeout_sec=15)
+
+
+# ---------- NEW: script extraction helpers ----------
+
+def _coerce_board_list(b: Any) -> Iterable[str]:
+    if not b:
+        return []
+    if isinstance(b, (tuple, list)):
+        return [str(x) for x in b if x]
+    # allow comma-separated string
+    if isinstance(b, str):
+        return [s.strip() for s in b.split(",") if s.strip()]
+    return []
+
+
+def _build_script_from_state_like(state_like: Any) -> str:
+    """
+    Minimal HU postflop builder from a TableState-like object or dict.
+    Uses conservative toy ranges if none provided.
+    """
+    # Access helpers to work with either attributes or dict keys
+    def get(name: str, default=None):
+        if isinstance(state_like, dict):
+            return state_like.get(name, default)
+        return getattr(state_like, name, default)
+
+    board_cards = _coerce_board_list(get("board", []))
+    pot = float(get("round_pot", 0.0) or get("pot", 0.0) or 0.0)
+    if pot <= 0:
+        pot = 6.0  # safe default if missing
+
+    # Determine effective stack from players still in_hand
+    seats = get("seats", []) or []
+    in_players = []
+    for s in seats:
+        # s can be dict or pydantic model
+        in_hand = s.get("in_hand") if isinstance(s, dict) else getattr(s, "in_hand", False)
+        if in_hand:
+            stack = s.get("stack") if isinstance(s, dict) else getattr(s, "stack", None)
+            try:
+                stack = float(stack)
+            except Exception:
+                stack = None
+            if stack is not None:
+                in_players.append(stack)
+
+    effective_stack = min(in_players) if len(in_players) >= 2 else 100.0
+
+    # Default toy ranges; if your state later carries ranges, thread them in here.
+    ip_range = "AA,KK,QQ,JJ,TT,99,AKs,AQs,AJs,KQs,AKo,AQo"
+    oop_range = "AA,KK,QQ,JJ,TT,99,AKs,AQs,AJs,KQs,AKo,AQo"
+
+    # Allow overrides if present in a loose 'player_ranges'
+    pr = get("player_ranges", None)
+    try:
+        if isinstance(pr, (list, tuple)) and len(pr) >= 2:
+            # heuristically map the first to IP, second to OOP if they look like strings
+            r0 = pr[0].get("range") if isinstance(pr[0], dict) else getattr(pr[0], "range", None)
+            r1 = pr[1].get("range") if isinstance(pr[1], dict) else getattr(pr[1], "range", None)
+            if isinstance(r0, str) and r0.strip():
+                ip_range = r0
+            if isinstance(r1, str) and r1.strip():
+                oop_range = r1
+    except Exception:
+        pass
+
+    out_path = Path(tempfile.gettempdir()) / (RUNTIME_TMP_PREFIX + "out.json")
+    script = build_fast_profile_input(
+        pot=pot,
+        effective_stack=effective_stack,
+        board_cards=board_cards,
+        ip_range_text=ip_range,
+        oop_range_text=oop_range,
+        betsize_pct=50,
+        threads=_safe_threads(),
+        accuracy=25.0,
+        max_iteration=12,
+        allin_threshold=0.67,
+        output_path=str(out_path),
+    )
+    return script
+
+
+def _extract_solver_script(maybe_script: Any) -> str:
+    # Already a script string
+    if isinstance(maybe_script, str):
+        return maybe_script
+
+    # Try common adapters on objects (e.g., Pydantic models/services)
+    for attr in ("to_solver_script", "build_solver_script"):
+        fn = getattr(maybe_script, attr, None)
+        if callable(fn):
+            s = fn()
+            if not isinstance(s, str) or not s.strip():
+                raise TexasSolverError(f"{attr}() must return non-empty str")
+            return s
+
+    # Direct field holding a script
+    val = getattr(maybe_script, "script", None)
+    if isinstance(val, str) and val.strip():
+        return val
+
+    # dict style payload
+    if isinstance(maybe_script, dict):
+        s = maybe_script.get("script")
+        if isinstance(s, str) and s.strip():
+            return s
+
+    # Pydantic BaseModel with a 'script' field
+    try:
+        from pydantic import BaseModel  # type: ignore
+        if isinstance(maybe_script, BaseModel):
+            data = maybe_script.model_dump() if hasattr(maybe_script, "model_dump") else maybe_script.dict()
+            s = data.get("script")
+            if isinstance(s, str) and s.strip():
+                return s
+    except Exception:
+        pass
+
+    # Fallback: build from TableState-like data (board, seats, pot)
+    try:
+        return _build_script_from_state_like(maybe_script)
+    except Exception as e:
+        raise TexasSolverError(
+            "TexasSolverClient.solve expected a solver script (str). "
+            "Got object without a way to extract one. Provide a string script or "
+            "implement one of: to_solver_script(), build_solver_script(), or a 'script' field."
+        ) from e
+
+
+# =========================
+# TexasSolverClient
+# =========================
 
 class TexasSolverClient:
     """
-    Robust CLI-first TexasSolver client.
-
-    Env toggles:
-      TEXASSOLVER_MODE       = "cli" | "http" | "auto"   (default: "cli")
-      TEXASSOLVER_API_URL    = "http://127.0.0.1:8000"
-      TEXASSOLVER_CLI_PATH   = r"C:\Tools\TexasSolver\console_solver.exe"
-      PB_HERO_RANGE_EXACT    = "AA,KK,..."
-      PB_VIL_RANGE_EXACT     = "QQ,JJ,..."
+    Thin client wrapper exposing a stable interface for API endpoints.
+    Uses the module-level helpers you already have.
     """
-    def __init__(self, base_url: Optional[str] = None, timeout: float = 10.0):
-        self.base_url = base_url or os.getenv("TEXASSOLVER_API_URL", "http://127.0.0.1:8000")
-        self.timeout = timeout
-        self.mode = (os.getenv("TEXASSOLVER_MODE") or "cli").strip().lower()
-        if self.mode not in ("cli", "http", "auto"):
-            self.mode = "cli"  # hard default: CLI only
 
-    # ---------- state helpers ----------
+    def __init__(self, base_url: Optional[str] = None, **_ignored: Any):
+        # Accept base_url for compatibility; not used by the local exe wrapper.
+        self.base_url = base_url
 
-    @staticmethod
-    def _bb(state: TableState) -> float:
-        try:
-            return float(state.stakes.bb) if state.stakes and state.stakes.bb is not None else 1.0
-        except Exception:
-            return 1.0
-
-    def _players_in_hand(self, state: TableState) -> int:
-        try:
-            cnt = sum(1 for s in (state.seats or []) if getattr(s, "in_hand", False))
-            return max(2, cnt) if cnt else int(getattr(state, "max_seats", 6) or 6)
-        except Exception:
-            return int(getattr(state, "max_seats", 6) or 6)
-
-    def _effective_stack(self, state: TableState) -> float:
-        try:
-            hero = next(s for s in (state.seats or []) if getattr(s, "is_hero", False))
-            opps = [s for s in (state.seats or []) if getattr(s, "in_hand", False) and not getattr(s, "is_hero", False)]
-            stacks = [float(s.stack) for s in opps if getattr(s, "stack", None) is not None]
-            if getattr(hero, "stack", None) is not None and stacks:
-                return float(min(float(hero.stack), min(stacks)))
-        except Exception:
-            pass
-        return 100.0 * self._bb(state)
-
-    @staticmethod
-    def _is_hero_ip(state: TableState) -> bool:
-        hvp = getattr(state, "hero_position_vs_aggressor", None)
-        if hvp in ("in_position", "heads_up"):
-            return True
-        if hvp == "out_of_position":
-            return False
-        return True  # safe default
-
-    # ---------- board normalization & validation ----------
-
-    @staticmethod
-    def _norm_card(token: str) -> Optional[str]:
-        if not token:
-            return None
-        t = re.sub(r"[^0-9a-zA-Z]", "", token).lower()
-        if not t:
-            return None
-        rank_part = "10" if t.startswith("10") else t[0]
-        suit_part = t[len(rank_part):len(rank_part)+1] if len(t) > len(rank_part) else ""
-        rank = RANK_MAP.get(rank_part)
-        suit = suit_part.lower() if suit_part else ""
-        if not rank or suit not in SUITS:
-            return None
-        return f"{rank}{suit}"
-
-    def _board_for_solver(self, state: TableState) -> str:
-        cards = getattr(state, "board", None) or []
-        parsed = [self._norm_card(c) for c in cards]
-        cleaned = [c for c in parsed if c]
-        # Only valid for postflop streets; console expects exact 3/4/5 cards before build_tree.  :contentReference[oaicite:1]{index=1}
-        street = getattr(state, "street", None)
-        if street in ("FLOP", "TURN", "RIVER"):
-            if len(cleaned) not in (3, 4, 5):
-                raise ValueError(f"TexasSolver requires a valid board for {street} (got {len(cleaned)} cards).")
-            return ",".join(cleaned)
-        # PREFLOP/SHOWDOWN: console postflop solver isn’t applicable
-        raise ValueError(f"TexasSolver console supports postflop trees; received street={street} without a board.")
-
-    # ---------- ranges ----------
-
-    @staticmethod
-    def _explicit_range_fallback() -> str:
-        # Valid explicit tokens (no 22+/A2s+ shorthand; console parser accepts forms like AK, AQs, AKo, pairs, etc.).  :contentReference[oaicite:2]{index=2}
-        return (
-            "AA,KK,QQ,JJ,TT,99,88,77,66,55,44,33,22,"
-            "AK,AQ,AJ,AT,KQ,KJ,QJ,JT,T9,98,87,76,65,54"
-        )
-
-    def _hero_vil_ranges(self) -> Tuple[str, str]:
-        hero_exact = (os.getenv("PB_HERO_RANGE_EXACT") or "").strip().strip(",")
-        vil_exact  = (os.getenv("PB_VIL_RANGE_EXACT") or "").strip().strip(",")
-        if hero_exact and vil_exact:
-            return hero_exact, vil_exact
-        return self._explicit_range_fallback(), self._explicit_range_fallback()
-
-    # ---------- public API ----------
-
-    def solve(self, state: TableState) -> Dict[str, Any]:
-        """
-        Returns raw solver dict. Defaults to CLI-only to avoid slow/failed HTTP attempts.
-        """
-        # Validate early to avoid console crashes
-        try:
-            board = self._board_for_solver(state)  # raises if invalid/unsupported street
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
-
-        if self.mode in ("http", "auto"):
-            try:
-                return self._solve_via_http(state, board)
-            except Exception as e:
-                log.error("TexasSolver HTTP call failed: %s", e)
-                if self.mode == "http":
-                    return {"status": "error", "error": f"http:{e}"}
-                # else fall through to CLI
-
-        try:
-            return self._solve_via_cli(state, board)
-        except Exception as e:
-            log.error("TexasSolver CLI call failed: %s", e)
-            return {"status": "error", "error": f"cli:{e}"}
-
-    # ---------- HTTP (optional) ----------
-
-    def _solve_via_http(self, state: TableState, board: str) -> Dict[str, Any]:
-        hero_range, vil_range = self._hero_vil_ranges()
-        hero_ip = self._is_hero_ip(state)
-        payload = {
-            "pot": round(_float(getattr(state, "pot", 0.0), 0.0), 2),
-            "effective_stack": round(self._effective_stack(state), 2),
-            "board": board,
-            "range_ip":  hero_range if hero_ip else vil_range,
-            "range_oop": vil_range if hero_ip else hero_range,
-            "bet_sizes_oop": ["50"], "raise_sizes_oop": ["60"],
-            "bet_sizes_ip":  ["50"], "raise_sizes_ip":  ["60"],
-            "threads": _cpu_threads(), "accuracy": 0.5,
-            "max_iteration": 200, "print_interval": 10,
+    def healthcheck(self) -> Dict[str, Any]:
+        exe = TEXASSOLVER_EXE if isinstance(TEXASSOLVER_EXE, Path) else Path(TEXASSOLVER_EXE)
+        base = TEXASSOLVER_DIR if isinstance(TEXASSOLVER_DIR, Path) else Path(TEXASSOLVER_DIR)
+        resources = base / "resources"
+        return {
+            "exe_path": str(exe),
+            "exe_exists": exe.exists() and exe.is_file(),
+            "dir_path": str(base),
+            "dir_exists": base.exists() and base.is_dir(),
+            "resources_path": str(resources),
+            "resources_exists": resources.exists() and resources.is_dir(),
         }
-        url = f"{self.base_url.rstrip('/')}/nhle/solve"
-        t0 = time.perf_counter()
-        r = requests.post(url, json=payload, timeout=self.timeout)
-        r.raise_for_status()
-        data = r.json()
-        data["_rt_ms"] = int((time.perf_counter() - t0) * 1000)
-        return data
 
-    # ---------- CLI (primary) ----------
-
-    def _cli_paths(self) -> Tuple[Path, Path]:
-        exe_env = os.getenv("TEXASSOLVER_CLI_PATH")
-        if exe_env:
-            exe = Path(exe_env)
-        else:
-            found = shutil.which("console_solver.exe") or shutil.which("console_solver")
-            if not found:
-                raise RuntimeError(
-                    "TexasSolver console executable not found. "
-                    "Set TEXASSOLVER_CLI_PATH to console_solver(.exe) or add it to PATH."
-                )
-            exe = Path(found)
-        resources_dir = exe.parent / "resources"
-        if not resources_dir.is_dir():
-            raise RuntimeError(
-                f"'resources' folder not found next to {exe}. "
-                "Expected layout: <dir>/console_solver(.exe) and <dir>/resources/ (per console README)."
-            )
-        return exe, resources_dir
-
-    def _bet_menu_lines(self) -> List[str]:
-        # Canonical sample from console doc.  :contentReference[oaicite:3]{index=3}
-        return [
-            "set_bet_sizes oop,flop,bet,50",
-            "set_bet_sizes oop,flop,raise,60",
-            "set_bet_sizes oop,flop,allin",
-            "set_bet_sizes ip,flop,bet,50",
-            "set_bet_sizes ip,flop,raise,60",
-            "set_bet_sizes ip,flop,allin",
-            "set_bet_sizes oop,turn,bet,50",
-            "set_bet_sizes oop,turn,raise,60",
-            "set_bet_sizes oop,turn,allin",
-            "set_bet_sizes ip,turn,bet,50",
-            "set_bet_sizes ip,turn,raise,60",
-            "set_bet_sizes ip,turn,allin",
-            "set_bet_sizes oop,river,bet,50",
-            "set_bet_sizes oop,river,donk,50",
-            "set_bet_sizes oop,river,raise,60,100",
-            "set_bet_sizes oop,river,allin",
-            "set_bet_sizes ip,river,bet,50",
-            "set_bet_sizes ip,river,raise,60,100",
-            "set_bet_sizes ip,river,allin",
-        ]
-
-    def _solve_via_cli(self, state: TableState, board: str) -> Dict[str, Any]:
-        exe, _ = self._cli_paths()
-        hero_range, vil_range = self._hero_vil_ranges()
-        hero_ip = self._is_hero_ip(state)
-
-        pot = max(0.0, round(_float(getattr(state, "pot", 0.0), 0.0), 4))
-        eff = max(0.0, round(self._effective_stack(state), 4))
-
-        range_ip  = (hero_range if hero_ip else vil_range).strip().strip(",")
-        range_oop = (vil_range  if hero_ip else hero_range).strip().strip(",")
-
-        lines: List[str] = []
-        lines.append(f"set_pot {pot}")
-        lines.append(f"set_effective_stack {eff}")
-        lines.append(f"set_board {board}")  # REQUIRED for postflop; avoids crash  :contentReference[oaicite:4]{index=4}
-        lines.append(f"set_range_ip {range_ip}")
-        lines.append(f"set_range_oop {range_oop}")
-        lines += self._bet_menu_lines()
-        lines += [
-            "set_allin_threshold 0.67",
-            "build_tree",                  # must build before start_solve  :contentReference[oaicite:5]{index=5}
-            f"set_thread_num {_cpu_threads()}",
-            "set_accuracy 0.5",
-            "set_max_iteration 200",
-            "set_print_interval 10",
-            "set_use_isomorphism 1",
-            "start_solve",
-            "set_dump_rounds 2",
-            "dump_result output_result.json",
-        ]
-
-        input_preview = "\n".join(lines)
-
-        with tempfile.TemporaryDirectory(prefix="texassolver_") as td:
-            input_txt = Path(td) / "input.txt"
-            input_txt.write_text(input_preview, encoding="utf-8")
-
-            cmd = [str(exe), "-i", str(input_txt)]
-            t0 = time.perf_counter()
-            proc = subprocess.run(
-                cmd,
-                cwd=str(exe.parent),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=int(os.getenv("TEXASSOLVER_CLI_TIMEOUT", "120")),
-            )
-            rt_ms = int((time.perf_counter() - t0) * 1000)
-
-            if proc.returncode != 0:
-                raise RuntimeError(
-                    f"console_solver failed ({proc.returncode}): {proc.stderr.strip() or proc.stdout.strip()}\n"
-                    f"---BEGIN INPUT.TXT---\n{input_preview}\n---END INPUT.TXT---"
-                )
-
-            out_json = Path(exe.parent) / "output_result.json"
-            if not out_json.is_file():
-                raise RuntimeError("console_solver finished but 'output_result.json' not found.")
-
-            data = json.loads(out_json.read_text(encoding="utf-8"))
-            try:
-                out_json.unlink()
-            except Exception:
-                pass
-            data["_rt_ms"] = rt_ms
-            return data
-
-    # ---------- mapping ----------
-
-    def to_gto_response(self, state: TableState, ts: Dict[str, Any]) -> GTOResponse:
-        # If upstream returned an error dict, bubble a safe default decision
-        if isinstance(ts, dict) and ts.get("status") == "error":
-            decision = GTODecision(
-                action="Check",
-                size=0.0,
-                size_bb=0.0,
-                size_pot_fraction=0.0,
-                confidence=0.0,
-                frequency=1.0,
-                alternative_actions=[],
-                reasoning=str(ts.get("error", ""))[:256],
-            )
-            metrics = GTOMetrics(
-                equity_breakdown=EquityBreakdown(
-                    raw_equity=0.0, fold_equity=0.0, realize_equity=0.0,
-                    vs_calling_range=0.0, vs_folding_range=0.0, draw_equity=0.0
-                ),
-                min_call=_float(getattr(state, "to_call", 0.0), 0.0),
-                min_bet=_float(getattr(state, "bet_min", 0.0), 0.0),
-                pot=_float(getattr(state, "pot", 0.0), 0.0),
-                players=self._players_in_hand(state),
-                ev=None, exploitability=None,
-                spr=0.0, effective_stack=self._effective_stack(state),
-                pot_odds=0.0, range_advantage=0.0, nut_advantage=0.0,
-                bluff_catchers=0.0, board_favorability=0.0,
-                positional_advantage=1.0 if self._is_hero_ip(state) else 0.0,
-                initiative=False, commitment_threshold=0.67,
-                reverse_implied_odds=0.0, opponent_tendencies={}
-            )
-            return GTOResponse(
-                ok=False, decision=decision, metrics=metrics,
-                strategy="TexasSolver (CLI)",
-                computation_time_ms=None, game_plan={}, decision_tree=None,
-                exploitative_adjustments=[], gto_baseline=None
-            )
-
-        actions = ts.get("actions") or {}
-        chosen = None
-        if isinstance(actions, dict) and actions:
-            ordered = sorted(actions.items(), key=lambda kv: int(str(kv[0])) if str(kv[0]).isdigit() else 999)
-            bet_like = [v for _, v in ordered if isinstance(v, str) and ("BET" in v.upper() or "RAISE" in v.upper())]
-            chosen = bet_like[0] if bet_like else ordered[0][1]
-        if not chosen:
-            chosen = "CHECK"
-
-        up = chosen.upper()
-        if up.startswith("FOLD"):
-            act, size_abs = "Fold", 0.0
-        elif up.startswith("CHECK"):
-            act, size_abs = "Check", 0.0
-        elif up.startswith("CALL"):
-            act, size_abs = "Call", _float(getattr(state, "to_call", 0.0), 0.0)
-        elif "ALL" in up and "IN" in up:
-            act, size_abs = "All-in", self._effective_stack(state)
-        else:
-            act, size_abs = "Bet", 0.0
-            try:
-                pct = float(up.split()[-1]) / 100.0
-                size_abs = pct * max(1e-9, _float(getattr(state, "pot", 0.0), 0.0))
-            except Exception:
-                pass
-
-        bb = self._bb(state)
-        pot_now = max(1e-9, _float(getattr(state, "pot", 0.0), 0.0))
-
-        decision = GTODecision(
-            action=act,
-            size=size_abs,
-            size_bb=size_abs / bb,
-            size_pot_fraction=size_abs / pot_now,
-            confidence=0.66, frequency=0.66,
-            alternative_actions=[], reasoning=""
+    def solve(self, input_text: Any, timeout_s: Optional[int] = None) -> dict:
+        """
+        Accepts either:
+          - a solver input script (str), or
+          - an object/dict providing enough state to build a minimal HU script.
+        Returns parsed solver JSON or raises TexasSolverError/Timeout.
+        """
+        script = _extract_solver_script(input_text)
+        return run_solver_with_input_text(
+            script,
+            timeout_sec=timeout_s or DEFAULT_SOLVER_TIMEOUT_SECONDS,
         )
 
-        to_call = _float(getattr(state, "to_call", 0.0), 0.0)
-        pot_odds = (to_call / (pot_now + to_call)) if to_call > 0 else 0.0
-        eff_stack = self._effective_stack(state)
-        spr = eff_stack / pot_now if pot_now > 0 else 0.0
+    def solve_from_text(self, input_text: Any, timeout_s: Optional[int] = None) -> Tuple[int, Optional[dict], Optional[str]]:
+        """
+        Returns: (exit_code, result_or_None, error_or_None).
+        Accepts the same inputs as solve().
+        """
+        try:
+            script = _extract_solver_script(input_text)
+            result = run_solver_with_input_text(script, timeout_sec=timeout_s or DEFAULT_SOLVER_TIMEOUT_SECONDS)
+            return (0, result, None)
+        except TexasSolverTimeout as e:
+            return (408, None, str(e))
+        except TexasSolverError as e:
+            return (500, None, str(e))
+        except Exception as e:
+            return (500, None, f"Unexpected error: {e!r}")
 
-        metrics = GTOMetrics(
-            equity_breakdown=EquityBreakdown(
-                raw_equity=0.50, fold_equity=0.00, realize_equity=0.50,
-                vs_calling_range=0.50, vs_folding_range=1.00, draw_equity=0.00
-            ),
-            min_call=to_call, min_bet=_float(getattr(state, "bet_min", 0.0), 0.0),
-            pot=_float(getattr(state, "pot", 0.0), 0.0),
-            players=self._players_in_hand(state), ev=None, exploitability=None,
-            spr=spr, effective_stack=eff_stack, pot_odds=pot_odds,
-            range_advantage=0.0, nut_advantage=0.0, bluff_catchers=0.0,
-            board_favorability=0.0,
-            positional_advantage=1.0 if self._is_hero_ip(state) else 0.0,
-            initiative=False, commitment_threshold=0.67,
-            reverse_implied_odds=0.0, opponent_tendencies={}
-        )
+    def solve_tuple(self, input_text: Any, timeout_s: Optional[int] = None) -> Tuple[int, Optional[dict], Optional[str]]:
+        """Alias for callers preferring a tuple contract."""
+        return self.solve_from_text(input_text, timeout_s=timeout_s)
 
-        return GTOResponse(
-            ok=True, decision=decision, metrics=metrics,
-            strategy="TexasSolver (CLI)" if self.mode == "cli" else "TexasSolver",
-            computation_time_ms=ts.get("_rt_ms"),
-            game_plan={}, decision_tree=None,
-            exploitative_adjustments=[], gto_baseline=None
+    def solve_fast_profile(
+        self,
+        *,
+        pot: float,
+        effective_stack: float,
+        board_cards,
+        ip_range_text: str,
+        oop_range_text: str,
+        betsize_pct: int = 50,
+        threads: int = _safe_threads(),
+        accuracy: float = 5.0,
+        max_iteration: int = 50,
+        allin_threshold: float = 0.67,
+        timeout_s: Optional[int] = None,
+    ) -> dict:
+        """Helper: build a minimal fast-profile tree and solve it."""
+        out_path = Path(tempfile.gettempdir()) / (RUNTIME_TMP_PREFIX + "out.json")
+        script = build_fast_profile_input(
+            pot=pot,
+            effective_stack=effective_stack,
+            board_cards=board_cards,
+            ip_range_text=ip_range_text,
+            oop_range_text=oop_range_text,
+            betsize_pct=betsize_pct,
+            threads=threads,
+            accuracy=accuracy,
+            max_iteration=max_iteration,
+            allin_threshold=allin_threshold,
+            output_path=str(out_path),
         )
+        return run_solver_with_input_text(script, timeout_sec=timeout_s or DEFAULT_SOLVER_TIMEOUT_SECONDS)
+
+
+__all__ = [
+    "TexasSolverError",
+    "TexasSolverTimeout",
+    "verify_solver_install",
+    "build_fast_profile_input",
+    "run_solver_with_input_text",
+    "smoke_test",
+    "TexasSolverClient",
+]
